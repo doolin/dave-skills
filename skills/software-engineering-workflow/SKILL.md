@@ -60,10 +60,11 @@ Fix anything that fails before moving on. Don't push broken code.
   - Link to the issue if there is one
 - **Developer**: Reviews the PR description before it goes up
 
-## 7. Code review — Developer
+## 7. Code review — Together
 
 - **Developer**: Reviews the code, leaves comments
-- **Claude**: Addresses every comment — fix it or explain why not
+- **Claude**: Remediates all review comments — fix the code, push
+  new commits, and confirm each comment is addressed
 - Push fixes as new commits (don't force-push during review)
 - **Developer**: Re-reviews and approves
 
