@@ -21,7 +21,7 @@ who owns it: **Developer**, **Claude**, or **Together**.
 - Create a feature branch from the default branch
 - Use a descriptive branch name: `<type>/<short-description>`
   - Types: `feat/`, `fix/`, `refactor/`, `chore/`, `docs/`
-- Never commit directly to the default branch
+- Never commit or push to the default branch — all work happens on feature branches
 
 ## 3. Make changes — Together
 
