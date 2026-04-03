@@ -1,4 +1,10 @@
-# Skill: Add CI/CD Hash to Solana
+---
+name: solana-cicd-hash
+description: Add CI/CD artifact hashing and on-chain attestation to a Solana project. Bundles all pipeline output (tests, coverage, linting, build artifacts), generates a PDF report, posts the root hash to Solana, and uploads everything to S3.
+disable-model-invocation: true
+---
+
+# Add CI/CD Hash to Solana
 
 Bundle all CI/CD pipeline artifacts — test output, coverage reports,
 linting reports, build artifacts, and anything else the pipeline
