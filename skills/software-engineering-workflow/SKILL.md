@@ -1,68 +1,74 @@
 ---
 name: software-engineering-workflow
-description: Standard software engineering workflow for building features, fixing bugs, and making changes. Covers the full cycle from understanding requirements through CI-green PR.
+description: Collaborative software engineering workflow establishing shared responsibilities between the developer and Claude. Covers the full cycle from understanding requirements through CI-green PR.
 disable-model-invocation: true
 ---
 
 # Software Engineering Workflow
 
-Follow this workflow for all code changes: features, bug fixes, refactors,
-and chores.
+A collaborative framework for making code changes. Each step identifies
+who owns it: **Developer**, **Claude**, or **Together**.
 
-## 1. Understand the work
+## 1. Understand the work — Together
 
-- Read the issue or requirement fully before writing code
-- Identify the acceptance criteria — what does "done" look like?
-- Find the relevant code: grep for keywords, read the modules involved
-- If anything is ambiguous, ask before coding
+- **Developer**: Provides the issue, requirement, or description of the work
+- **Claude**: Reads the issue, explores the relevant code, identifies
+  acceptance criteria, and asks clarifying questions before writing code
+- If anything is ambiguous, Claude asks — don't guess
 
-## 2. Branch
+## 2. Branch — Claude
 
 - Create a feature branch from the default branch
 - Use a descriptive branch name: `<type>/<short-description>`
   - Types: `feat/`, `fix/`, `refactor/`, `chore/`, `docs/`
+- Never commit directly to the default branch
 
-## 3. Make changes
+## 3. Make changes — Together
 
+- **Developer**: Makes design decisions, approves direction
+- **Claude**: Writes the code, following existing style and patterns
 - Work in small, focused commits — each one should compile and pass tests
 - Write the test first when fixing a bug (red-green-refactor)
-- Follow existing code style and patterns in the project
 - Don't change code unrelated to the task
 
-## 4. Validate locally
+## 4. Validate locally — Claude
 
 Run the full CI pipeline locally before pushing:
 
 1. **Build** — confirm it compiles
-2. **Test** — run the full test suite, not just your new tests
+2. **Test** — run the full test suite, not just new tests
 3. **Lint** — run the project's linter
 4. **Format** — run the project's formatter
 
-Fix anything that fails before moving on.
+Fix anything that fails before moving on. Don't push broken code.
 
-## 5. Commit
+## 5. Commit — Claude
 
 - Write clear commit messages: imperative mood, explain the "why"
 - Keep commits atomic — one logical change per commit
 - Don't bundle unrelated changes
+- Never force push, never skip hooks
 
-## 6. Push and open PR
+## 6. Push and open PR — Together
 
-- Push the branch to the remote
-- Open a PR with:
+- **Claude**: Pushes the branch to the remote
+- **Claude**: Opens a PR only when the developer asks for one
+- PR should have:
   - A short title (under 70 characters)
   - A summary describing what changed and why
   - A test plan — how to verify the change works
-- Link the issue if there is one
+  - Link to the issue if there is one
+- **Developer**: Reviews the PR description before it goes up
 
-## 7. Respond to review
+## 7. Code review — Developer
 
-- Address every comment — either fix it or explain why not
+- **Developer**: Reviews the code, leaves comments
+- **Claude**: Addresses every comment — fix it or explain why not
 - Push fixes as new commits (don't force-push during review)
-- Re-request review after addressing feedback
+- **Developer**: Re-reviews and approves
 
-## 8. Merge
+## 8. Merge — Developer
 
-- Ensure CI is green
+- **Developer**: Merges when CI is green and review is approved
 - Squash or merge per the project's convention
 - Delete the feature branch after merge
