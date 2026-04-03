@@ -9,21 +9,35 @@ Commit messages are a Very Big Deal. They are permanent documentation
 baked into the project's history. They require balancing a number of
 constraints, some of which may seem partially conflicting.
 
+## Pre-staging
+
+Before committing, ensure tests, linting, and CI pipelines pass.
+Address any issues related to the current change before staging.
+
 ## Structure
 
 ```text
-<context>: <summary>
+<summary line, 52-57 characters ideal>
 
-<body>
+<body, wrapped at 52-57 characters>
+
+Co-Authored-By: <model> (<tool>) <email>
 ```
 
-- **First line**: A context prefix followed by a concise summary in
-  imperative mood ("Add feature", not "Added feature")
-- **Context prefix**: A word or two providing context — helps find
-  commits in the reflog and scan history quickly
-- **Body** (optional): Explain the *why*, not the *what*. The diff
-  shows what changed; the message explains why it matters.
-- **Keep the first line under 72 characters** when possible
+### Summary line
+
+- **52-57 characters** ideal, 72 maximum
+- Imperative mood: "Add", "Fix", "Refactor" — not past tense
+- No period at the end
+- Specific about what changed
+- Prefix with a word or two of context when it aids scanning
+
+### Body
+
+- Wrap at **52-57 characters**
+- Separated from summary by one blank line
+- Explain the *why*, not the *what* — the diff shows what changed
+- Keep it focused on reasoning and intent
 
 ## Principles
 
@@ -46,8 +60,7 @@ worth committing separately.
 
 ### Context-providing
 
-Always prefix with a word or two of context. This serves multiple
-purposes:
+Prefixing with context serves multiple purposes:
 
 - Scanning `git log --oneline` becomes useful
 - Finding commits in the reflog is practical
@@ -60,6 +73,61 @@ auth: Add token refresh on session expiry
 ci: Pin markdownlint action to commit SHA
 docs: Clarify deployment prerequisites
 test: Cover edge case in rate limiter
+```
+
+## Templates by change type
+
+### Bug fix
+
+```text
+Fix <what was broken>
+
+Previous behavior: <what happened>
+Root cause: <why it happened>
+Correction: <what this change does>
+```
+
+### New feature
+
+```text
+Add <what was introduced>
+
+<Why this feature exists and what it supports>
+```
+
+### Refactor
+
+```text
+Refactor <what was restructured>
+
+<Why the restructuring was needed>
+- <area 1>
+- <area 2>
+```
+
+### Cleanup
+
+```text
+Clean up <area>
+
+- <item 1>
+- <item 2>
+```
+
+### Chore / config / deps
+
+```text
+<Brief description of change>
+
+<Brief rationale>
+```
+
+### Documentation
+
+```text
+docs: <what was documented>
+
+<What was missing or outdated>
 ```
 
 ## Private vs public commits
@@ -89,8 +157,13 @@ reviewable commits.
 
 Claude follows these conventions when committing:
 
-1. Always include a context prefix
-2. Imperative mood, concise first line
-3. Body explains the why when the change isn't self-evident
+1. Gather context first: run `git diff --staged`, `git log --oneline -10`,
+   and `git diff --staged --stat` in parallel
+2. Summary line within 52-57 characters, imperative mood
+3. Body wrapped at 52-57 characters, explains the why
 4. One logical change per commit
 5. Never commit to the default branch
+6. Present the draft message for confirmation before committing
+7. Commit using a HEREDOC and verify with `git log -1`
+8. End with co-author credit:
+   `Co-Authored-By: Claude Opus 4.6 (Claude Code) <noreply@anthropic.com>`
