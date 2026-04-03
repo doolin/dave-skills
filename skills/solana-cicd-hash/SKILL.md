@@ -381,9 +381,7 @@ cicd-all: cicd-pdf cicd-post cicd-upload
 
 Create `scripts/generate-attestation-pdf.py` in the target project:
 
-<!-- markdownlint-disable MD031 MD040 -->
-
-```python
+````python
 #!/usr/bin/env python3
 """Generate a PDF attestation report from the CI/CD artifact bundle."""
 
@@ -510,9 +508,7 @@ h2 {{ border-bottom: 1px solid #ccc; padding-bottom: 4px; margin-top: 24px; }}
 
 HTML(string=styled).write_pdf("cicd-bundle/attestation-report.pdf")
 print("PDF generated: cicd-bundle/attestation-report.pdf")
-```
-
-<!-- markdownlint-enable MD031 MD040 -->
+````
 
 ### 4. Configure secrets and variables
 
