@@ -1,7 +1,6 @@
 ---
 name: software-development-workflow
 description: Collaborative software development workflow establishing shared responsibilities between the developer and Claude. Covers the full cycle from understanding requirements through CI-green PR.
-disable-model-invocation: true
 ---
 
 # Software Engineering Workflow
