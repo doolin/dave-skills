@@ -12,7 +12,7 @@ can verify exactly which commit is running in any environment.
 ## Status
 
 **Placeholder** — full implementation exists locally and will be
-ported here. See gist at https://gist.github.com/doolin for
+ported here. See gist at <https://gist.github.com/doolin> for
 reference material.
 
 ## Intent

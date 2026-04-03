@@ -1,0 +1,10 @@
+{
+  // Line length - disabled because skill files have long descriptions
+  "MD013": false,
+  // Allow multiple top-level headings (frontmatter name + H1)
+  "MD025": false,
+  // Allow inline HTML (used in some markdown contexts)
+  "MD033": false,
+  // Allow hard tabs in code blocks (Makefiles require tabs)
+  "MD010": { "code_blocks": false }
+}
