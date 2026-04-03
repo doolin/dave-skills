@@ -67,7 +67,21 @@ Fix anything that fails before moving on. Don't push broken code.
 - Push fixes as new commits (don't force-push during review)
 - **Developer**: Re-reviews and approves
 
-## 8. Merge — Developer
+## 8. CI enforcement — Claude
+
+CI must pass before merging. This is non-negotiable.
+
+- All builds, tests, linting, and formatting must be green
+- If CI fails, fix it — don't merge around it
+- **Audit trail (optional)**: Projects may use attestation mechanisms to
+  create a verifiable record of CI/CD results. Supported mechanisms include:
+  - Solana blockchain (on-chain memo of artifact hashes)
+  - OpenTimestamps (timestamp proof of build artifacts)
+  - Other mechanisms as configured per project
+- When attestation is configured, CI bundles all artifacts and posts
+  the hash before merge is allowed
+
+## 9. Merge — Developer
 
 - **Developer**: Merges when CI is green and review is approved
 - Squash or merge per the project's convention
