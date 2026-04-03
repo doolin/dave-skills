@@ -381,6 +381,8 @@ cicd-all: cicd-pdf cicd-post cicd-upload
 
 Create `scripts/generate-attestation-pdf.py` in the target project:
 
+<!-- markdownlint-disable MD031 MD040 -->
+
 ```python
 #!/usr/bin/env python3
 """Generate a PDF attestation report from the CI/CD artifact bundle."""
@@ -510,17 +512,21 @@ HTML(string=styled).write_pdf("cicd-bundle/attestation-report.pdf")
 print("PDF generated: cicd-bundle/attestation-report.pdf")
 ```
 
+<!-- markdownlint-enable MD031 MD040 -->
+
 ### 4. Configure secrets and variables
 
 Add these to the GitHub repository settings:
 
 **Secrets:**
+
 - **`SOLANA_KEYPAIR`**: The JSON keypair file contents for the signing
   wallet. This wallet pays memo transaction fees.
 - **`AWS_ACCESS_KEY_ID`**: AWS credentials for S3 upload.
 - **`AWS_SECRET_ACCESS_KEY`**: AWS credentials for S3 upload.
 
 **Variables:**
+
 - **`SOLANA_RPC_URL`** (optional): Custom RPC endpoint. Defaults to
   mainnet-beta.
 - **`CICD_S3_BUCKET`**: The S3 bucket name for artifact storage.
@@ -550,11 +556,12 @@ into the bundle**.
 
 The on-chain memo follows this format:
 
-```
+```text
 cicd:<git-commit-sha>:<root-hash>
 ```
 
 This allows anyone to:
+
 1. Find the memo transaction on a Solana explorer
 2. Match it to a git commit
 3. Download the full bundle from S3
@@ -565,7 +572,7 @@ This allows anyone to:
 
 The S3 path structure is:
 
-```
+```text
 s3://<bucket>/cicd/<commit-sha>/<timestamp>/
   ├── attestation-report.pdf    # Human-readable PDF of everything
   ├── manifest.txt              # File hashes
