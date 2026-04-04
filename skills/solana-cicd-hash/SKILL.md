@@ -42,6 +42,14 @@ Two jobs in `.github/workflows/`:
   artifact directories into one
 - **Attest job conditional** on `main` push -- no on-chain noise from PRs
 
+## Pitfall: ARTIFACT_FILES drift
+
+`scripts/attest.mjs` only zips files listed in `ARTIFACT_FILES`. If CI
+adds a new `upload-artifact` step but `ARTIFACT_FILES` is not updated,
+the attestation succeeds silently with an incomplete bundle. Treat
+`ARTIFACT_FILES` as a manifest and keep it in sync with every
+`upload-artifact` step in the workflow.
+
 ## Artifact capture pattern
 
 Every check step prepends a commit-hash header to its output file:
@@ -81,6 +89,11 @@ retrieve and re-verify the exact artifact bundle.
 
 Set with: `gh secret set SOLANA_KEYPAIR < ~/.config/solana/keypair.json`
 
+**S3 bucket prerequisite**: verify the target bucket has no lifecycle
+rule that expires objects before 90 days. A 24-hour or 7-day expiry
+(common for transient-output buckets) will silently destroy compliance
+records. Check with `aws s3api get-bucket-lifecycle-configuration`.
+
 ## IAM role
 
 The OIDC role trust condition:
@@ -93,6 +106,10 @@ The OIDC role trust condition:
 
 Inline policy needs only `s3:PutObject` on the compliance bucket prefix.
 See `form-terra/slacronym.tf` for the full Terraform pattern.
+
+A role with `repo:*` trust (or `repo:<org>/*`) can serve multiple repos
+without creating a new role per project. Prefer reusing an existing role
+over proliferating roles when the bucket permissions are acceptable.
 
 ## Ruby variant
 
