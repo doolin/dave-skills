@@ -1,0 +1,6 @@
+node_modules/
+ci-output/
+ci-artifacts/
+lint-results.txt
+attestation.pdf
+ci-artifacts.zip
