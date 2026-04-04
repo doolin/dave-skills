@@ -12,7 +12,7 @@ behind a Function URL.
 
 ## Architecture
 
-```
+```text
 Browser → CloudFront (clubstraylight.com/app-name*)
        → Lambda Function URL (us-west-1)
        → Sinatra/Node.js handler
@@ -35,11 +35,13 @@ baa-or-not.tf as templates):
 ### Required resources
 
 1. **S3 deployment bucket** — stores Lambda zip packages
+
    ```hcl
    resource "aws_s3_bucket" "app_deployments" {
      bucket = "app-name-deployments"
    }
    ```
+
    Add `aws_s3_bucket_public_access_block` to block all public access.
 
 2. **Placeholder Lambda artifact** — `data "archive_file"` + `aws_s3_object`
@@ -183,7 +185,7 @@ The deploy job assumes the OIDC role and runs `./bin/deploy`.
 
 ## Step 7: Sinatra app structure (Ruby)
 
-```
+```text
 app.rb          # Lambda handler: Lamby.handler(App::Web, event, context)
 config.rb       # require_relative "lib/app"
 config.ru       # require_relative "lib/app"; run App::Web
@@ -256,7 +258,7 @@ full remediation plan.
 ## Reference implementations
 
 | App | Language | Terraform | Deploy |
-|-----|----------|-----------|--------|
+| ----- | ---------- | ----------- | -------- |
 | slacronym | Node.js | slacronym.tf | deploy.sh (zip + aws lambda update) |
 | retirement | Ruby/Sinatra | retirement.tf | bin/deploy (SAM build + zip) |
 | baa-or-not | Ruby/Sinatra | baa-or-not.tf | bin/deploy (bundle + zip) |

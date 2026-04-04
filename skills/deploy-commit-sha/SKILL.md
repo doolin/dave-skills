@@ -109,7 +109,7 @@ This keeps the page source clean and the SHA accessible via
 ### When to prefer each approach
 
 | Situation | Recommended approach |
-|-----------|---------------------|
+| ----------- | --------------------- |
 | Developer tooling / internal app | Visible footer (short SHA) |
 | Customer-facing, brand-sensitive | `<meta name="build-version">` |
 | API / JSON responses | `x-build-sha` response header |
@@ -130,7 +130,7 @@ This keeps the page source clean and the SHA accessible via
 ## Adapting to other frameworks
 
 | Framework | Injection point |
-|-----------|-----------------|
+| ----------- | ----------------- |
 | Node.js (Lambda/server) | `readFileSync` at startup, `String.replace` |
 | Static site (Vite/Next) | `VITE_COMMIT_SHA` env var set in CI, read via `import.meta.env` |
 | Rails | `ENV["COMMIT_SHA"]` written by deploy hook, rendered in a partial |

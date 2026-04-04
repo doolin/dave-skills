@@ -18,6 +18,7 @@ CI/CD access, it was expedient to reuse this role rather than wire
 up the scoped role that already exists in `baa-or-not.tf`.
 
 **Current state:**
+
 - `slacronym-github-oidc-role` trust: `repo:*` (should be `repo:doolin/slacronym:*`)
 - baa-or-not `AWS_ROLE_ARN` secret points to the slacronym role
 - The slacronym role's Lambda deploy policy now includes both
@@ -28,6 +29,7 @@ up the scoped role that already exists in `baa-or-not.tf`.
   entire clubstraylight distribution
 
 **Remediation:**
+
 1. Tighten slacronym role trust to `repo:doolin/slacronym:*`
 2. Remove baa-or-not resources from slacronym role policies
 3. Wire up `baa-or-not-github-oidc-role` (already in baa-or-not.tf):
@@ -39,6 +41,7 @@ up the scoped role that already exists in `baa-or-not.tf`.
    to `inventium-backups`
 
 **Files to change:**
+
 - `form-terra/slacronym.tf` — revert Lambda/S3/CF additions, tighten trust
 - `form-terra/baa-or-not.tf` — add missing policies
 - GitHub secret: `gh secret set AWS_ROLE_ARN --repo doolin/baa-or-not`
@@ -52,11 +55,13 @@ access to. The correct bucket is `inventium-backups` with a
 `baa-or-not/ci/` prefix (matching the dbb pattern).
 
 **Current state:**
+
 - `S3_COMPLIANCE_BUCKET` variable: `slacronym-artifacts`
 - Attestation artifacts written to `slacronym-artifacts/baa-or-not/ci/...`
 - No lifecycle policy verification on slacronym-artifacts
 
 **Remediation:**
+
 - Add `inventium-backups` write policy to the baa-or-not OIDC role
   (scoped to `baa-or-not/ci/*` prefix)
 - Update GitHub variable to `inventium-backups`
@@ -82,6 +87,7 @@ deploy policy in `baa-or-not.tf`.
 permission. This was added to the slacronym role instead.
 
 **Remediation:** Add a policy statement to the baa-or-not OIDC role:
+
 ```hcl
 {
   Effect   = "Allow"
