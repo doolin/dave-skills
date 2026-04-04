@@ -19,7 +19,6 @@ in `.claude/`, for portability and extraction.
   credit. Auto-invoked by Claude.
 - **solana-cicd-hash** — Bundle all CI/CD artifacts, hash them, generate
   PDF attestation report, post root hash to Solana, upload to S3.
-  Manual invoke only.
 - **deploy-commit-sha** — Placeholder. Display deployed git commit SHA
   on a web page. Implementation to be ported from local machine.
 
