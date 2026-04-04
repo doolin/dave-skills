@@ -42,6 +42,15 @@ Two jobs in `.github/workflows/`:
   artifact directories into one
 - **Attest job conditional** on `main` push -- no on-chain noise from PRs
 
+## Pitfall: Memo program version
+
+Solana has two Memo programs. **Always use Memo v2**
+(`MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr`). The v1 program
+(`Memo1UhkJRfHyvLMcVucJwxXeuD728EqVDDwQDxFMMG`) no longer exists on
+devnet and will fail with `ProgramAccountNotFound`. When hardcoding
+the 32-byte public key, verify the base58 round-trips correctly --
+a single wrong byte silently targets a nonexistent program.
+
 ## Pitfall: ARTIFACT_FILES drift
 
 `scripts/attest.mjs` only zips files listed in `ARTIFACT_FILES`. If CI
