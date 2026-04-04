@@ -59,6 +59,21 @@ Fix anything that fails before moving on. Don't push broken code.
   - Link to the issue if there is one
 - **Developer**: Reviews the PR description before it goes up
 
+### No stacked PRs
+
+Every PR targets the default branch. Stacked PRs (PR B targets
+PR A's branch) create sequencing dependencies, coordination
+overhead, and retargeting work after merge. The cost is nearly
+always higher than the perceived benefit.
+
+When a feature branch has two independent commits, open two PRs
+both targeting master. Each PR's diff narrows automatically as
+the other merges.
+
+The one narrow exception: a rebase-heavy workflow where the
+entire team understands stacking and the tooling supports it.
+Otherwise, don't.
+
 ## 7. Code review — Together
 
 - **Developer**: Reviews the code, leaves comments
