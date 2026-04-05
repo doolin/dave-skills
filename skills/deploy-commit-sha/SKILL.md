@@ -33,6 +33,10 @@ Add a placeholder in the HTML (e.g. footer) where the SHA will appear:
 <footer id="build-info"><!-- BUILD_SHA --></footer>
 ```
 
+Display the bare SHA only — no label like "Build:" or "Version:".
+The SHA is meaningful on its own to anyone who needs it, and a label
+adds visual noise.
+
 ### 3. Server-side injection at startup
 
 Read `version.json` when the server starts, replace the placeholder,
