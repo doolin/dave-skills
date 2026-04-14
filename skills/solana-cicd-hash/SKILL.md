@@ -59,6 +59,15 @@ the attestation succeeds silently with an incomplete bundle. Treat
 `ARTIFACT_FILES` as a manifest and keep it in sync with every
 `upload-artifact` step in the workflow.
 
+## Pitfall: `set -o pipefail` with `tee`
+
+The artifact capture pattern uses `set -o pipefail` and pipes output
+through `tee`. This correctly propagates non-zero exit codes from the
+CI tool (e.g., RuboCop lint failures). If CI previously tolerated
+lint warnings (RuboCop exits non-zero for conventions, not just
+errors), adding `set -o pipefail` will surface those as CI failures.
+Fix the violations or add exceptions before enabling artifact capture.
+
 ## Artifact capture pattern
 
 Every check step prepends a commit-hash header to its output file:

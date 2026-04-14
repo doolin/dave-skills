@@ -19,8 +19,14 @@ in `.claude/`, for portability and extraction.
   credit. Auto-invoked by Claude.
 - **solana-cicd-hash** — Bundle all CI/CD artifacts, hash them, generate
   PDF attestation report, post root hash to Solana, upload to S3.
-- **deploy-commit-sha** — Placeholder. Display deployed git commit SHA
-  on a web page. Implementation to be ported from local machine.
+- **deploy-commit-sha** — Display deployed git commit SHA on a web page.
+  Implemented — reference patterns from slacronym (Node.js) and
+  retirement (Ruby/Sinatra).
+- **clubstraylight-lambda** — Create and deploy a serverless Lambda app
+  behind the clubstraylight.com CloudFront distribution. Covers
+  Terraform, CI/CD, deploy scripts, and CloudFront routing.
+- **clubstraylight-tech-debt** — Tracks AWS infrastructure technical
+  debt — OIDC role sharing, S3 bucket sprawl, permission creep.
 
 ## Conventions
 

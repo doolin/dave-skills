@@ -138,13 +138,51 @@ This keeps the page source clean and the SHA accessible via
 | Node.js (Lambda/server) | `readFileSync` at startup, `String.replace` |
 | Static site (Vite/Next) | `VITE_COMMIT_SHA` env var set in CI, read via `import.meta.env` |
 | Rails | `ENV["COMMIT_SHA"]` written by deploy hook, rendered in a partial |
+| Ruby/Sinatra (Lambda) | `REVISION` file read at module load, rendered in ERB layout |
 | Docker | `ARG COMMIT_SHA` → `ENV COMMIT_SHA` → read at runtime |
 
 For static sites have the CI step write the SHA to an env var before
 the build step runs, rather than a `version.json` file.
+
+## Ruby/Sinatra pattern (from retirement)
+
+Write a plain `REVISION` file (not JSON) at deploy time:
+
+```bash
+git rev-parse --short HEAD > REVISION
+cp REVISION "$BUILD_DIR/REVISION"
+```
+
+Read it as a module constant at load time:
+
+```ruby
+REVISION = if File.exist?(File.expand_path("../REVISION", __dir__))
+               File.read(File.expand_path("../REVISION", __dir__)).strip
+             end
+```
+
+Render conditionally in the ERB layout:
+
+```erb
+<% if MyApp::REVISION %>
+  <p style="text-align:center;color:#ccc;font-size:0.7rem;"><%= MyApp::REVISION %></p>
+<% end %>
+```
+
+## Pitfall: Ruby `__dir__` path resolution
+
+`__dir__` returns the directory of the **file**, not a subdirectory
+named after the module. For `lib/myapp.rb`, `__dir__` is `lib/`, not
+`lib/myapp/`. So `../REVISION` from `lib/` reaches the project root.
+Using `../../REVISION` goes one level too high and silently fails —
+`REVISION` will be `nil` with no error, because the `if File.exist?`
+guard just returns false.
 
 ## Reference implementation
 
 - `slacronym/deploy.sh` — SHA written to `version.json`
 - `slacronym/public/index.html` — `<!-- BUILD_SHA -->` footer placeholder
 - `slacronym/index.mjs` — `loadBuildSha()` and `loadHtmlPage()`
+- `retirement/bin/deploy` — SHA written to `REVISION`
+- `retirement/lib/retirement.rb` — `REVISION` constant loaded at module init
+- `retirement/lib/retirement/views/layout.erb` — conditional footer render

@@ -238,6 +238,13 @@ Always invalidate `/app-name*` after updating the Lambda. CloudFront
 may cache responses even with `default_ttl = 0` if the origin returns
 cache headers.
 
+### Ruby `__dir__` path for REVISION
+
+`__dir__` in `lib/myapp.rb` is `lib/`, not `lib/myapp/`. Use
+`File.expand_path("../REVISION", __dir__)` (one level up) to reach
+the project root. Using `../../REVISION` silently fails — the file
+won't be found and the constant will be nil with no error.
+
 ## TECH DEBT: OIDC role sharing (revisit required)
 
 **Current state:** baa-or-not reuses the slacronym OIDC role because

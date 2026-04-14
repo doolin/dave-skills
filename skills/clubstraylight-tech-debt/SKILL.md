@@ -21,12 +21,16 @@ up the scoped role that already exists in `baa-or-not.tf`.
 
 - `slacronym-github-oidc-role` trust: `repo:*` (should be `repo:doolin/slacronym:*`)
 - baa-or-not `AWS_ROLE_ARN` secret points to the slacronym role
-- The slacronym role's Lambda deploy policy now includes both
-  `aws_lambda_function.slacronym.arn` and `aws_lambda_function.baa_or_not.arn`
-- The slacronym role's S3 policy now includes both `slacronym-artifacts`
-  and `baa-or-not-deployments` buckets
+- retirement `AWS_ROLE_ARN` secret points to the slacronym role
+- The slacronym role's Lambda deploy policy now includes
+  `aws_lambda_function.slacronym.arn`, `aws_lambda_function.baa_or_not.arn`,
+  and `aws_lambda_function.retirement.arn`
+- The slacronym role's S3 policy now includes `slacronym-artifacts`,
+  `baa-or-not-deployments`, and `retirement-deployments` buckets
 - The slacronym role has `cloudfront:CreateInvalidation` on the
   entire clubstraylight distribution
+
+**Apps sharing the slacronym OIDC role:** slacronym, baa-or-not, retirement
 
 **Remediation:**
 
