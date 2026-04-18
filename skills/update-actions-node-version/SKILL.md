@@ -51,20 +51,26 @@ reference.
 ### 3. Force Node version for lagging actions
 
 Some actions (e.g. `gitleaks/gitleaks-action`) may not have a release
-that targets the new Node version. In that case:
+that targets the new Node version. Additionally, the runner injects
+implicit actions (e.g. `actions/cache` for `setup-node`'s `cache:`
+feature) that you can't pin directly.
 
-1. Update to the latest available release SHA.
-2. Add the force environment variable to that step:
+Set `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24` at the **workflow level** to
+cover both explicit and runner-injected actions:
 
 ```yaml
-- uses: gitleaks/gitleaks-action@<latest-sha> # v2.3.9
-  env:
-    GITHUB_TOKEN: ${{ github.token }}
-    FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+name: My Workflow
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+on:
+  push:
 ```
 
-This tells the runner to execute the action under Node 24 even though
-its `action.yml` declares an older version.
+This is cleaner than adding the flag per-step, and catches implicit
+dependencies like `actions/cache` that don't appear in your workflow
+files.
 
 ### 4. Replace all occurrences
 
@@ -104,6 +110,10 @@ This is a stopgap only — it will stop working September 16, 2026.
   may return a tag object SHA, not a commit SHA. If the object type is
   `tag`, dereference it: `gh api repos/.../git/tags/<sha> --jq '.object.sha'`.
   Lightweight tags point directly to the commit.
+- **Runner-injected actions.** `setup-node` with `cache: npm` causes
+  the runner to inject `actions/cache` implicitly. You can't pin this
+  in your workflow file — use the workflow-level
+  `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24` env var to cover it.
 
 ## Node 20 → 24 upgrade map
 
@@ -127,6 +137,8 @@ Actions that already use Node 24 or composite (no update needed):
 
 From CM02:
 
-- `e59314d` — checkout v5, gitleaks v2.3.9 + force flag
+- `e59314d` — checkout v5, gitleaks v2.3.9 + step-level force flag
 - `fe7ae23` — setup-node v6, upload-artifact v7, download-artifact v8,
   attest-build-provenance v4, configure-aws-credentials v6
+- `d7a262e` — workflow-level `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24` to
+  cover runner-injected `actions/cache`
