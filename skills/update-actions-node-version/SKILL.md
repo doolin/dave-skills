@@ -128,8 +128,10 @@ Verified working upgrades as of April 2026:
 | `actions/attest-build-provenance` | v2 | v4.1.0 | `a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32` |
 | `aws-actions/configure-aws-credentials` | v4 | v6.1.0 | `ec61189d14ec14c8efccab744f656cffd0e33f37` |
 | `gitleaks/gitleaks-action` | v2 (node20) | v2.3.9 + `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24` | `ff98106e4c7b2bc287b24eaf42907196329070c7` |
+| `hashicorp/setup-terraform` | v3 (node20) | v4.0.0 | `5e8dbf3c6d9deaf4193ca7a8fb23f2ac83bb6c85` |
 
 Actions that already use Node 24 or composite (no update needed):
+
 - `aquasecurity/trivy-action` — composite runner
 - `anchore/sbom-action` v0.24.0 — Node 24
 
