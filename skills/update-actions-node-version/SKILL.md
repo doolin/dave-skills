@@ -105,12 +105,28 @@ This is a stopgap only — it will stop working September 16, 2026.
   `tag`, dereference it: `gh api repos/.../git/tags/<sha> --jq '.object.sha'`.
   Lightweight tags point directly to the commit.
 
-## Example commit
+## Node 20 → 24 upgrade map
 
-From CM02 (`e59314d`):
+Verified working upgrades as of April 2026:
 
-- `actions/checkout` v4 → v5.0.0 (`08c6903...`)
-- `gitleaks/gitleaks-action` old v2 → v2.3.9 (`ff98106...`) + `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24`
+| Action | Old (Node 20) | New (Node 24) | SHA |
+| --- | --- | --- | --- |
+| `actions/checkout` | v4 | v5.0.0 | `08c6903cd8c0fde910a37f88322edcfb5dd907a8` |
+| `actions/setup-node` | v4 | v6.3.0 | `53b83947a5a98c8d113130e565377fae1a50d02f` |
+| `actions/upload-artifact` | v4 | v7.0.1 | `043fb46d1a93c77aae656e7c1c64a875d1fc6a0a` |
+| `actions/download-artifact` | v4 | v8.0.1 | `3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c` |
+| `actions/attest-build-provenance` | v2 | v4.1.0 | `a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32` |
+| `aws-actions/configure-aws-credentials` | v4 | v6.1.0 | `ec61189d14ec14c8efccab744f656cffd0e33f37` |
+| `gitleaks/gitleaks-action` | v2 (node20) | v2.3.9 + `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24` | `ff98106e4c7b2bc287b24eaf42907196329070c7` |
 
-Applied across `golden-pipeline.yml` (6 checkout refs, 1 gitleaks ref)
-and `ci-cd.yml` (2 checkout refs).
+Actions that already use Node 24 or composite (no update needed):
+- `aquasecurity/trivy-action` — composite runner
+- `anchore/sbom-action` v0.24.0 — Node 24
+
+## Example commits
+
+From CM02:
+
+- `e59314d` — checkout v5, gitleaks v2.3.9 + force flag
+- `fe7ae23` — setup-node v6, upload-artifact v7, download-artifact v8,
+  attest-build-provenance v4, configure-aws-credentials v6
