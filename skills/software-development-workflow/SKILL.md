@@ -99,5 +99,24 @@ CI must pass before merging. This is non-negotiable.
 ## 9. Merge — Developer
 
 - **Developer**: Merges when CI is green and review is approved
-- Squash or merge per the project's convention
-- Delete the feature branch after merge
+- **Squash-merge** is the default convention: each PR collapses to
+  one commit on the default branch. This keeps `master` history
+  linear and every commit CI-green by construction — intermediate
+  "fix markdown lint", "address review", etc. commits stay on the
+  feature branch and never land on `master`.
+- Rewrite the squashed commit message before merging: drop fixup
+  noise, keep the real story (what changed and why).
+- Delete the feature branch after merge.
+
+### Future: agent-autonomous PR cadence
+
+Once squash-merge is the enforced policy on a repo (branch
+protection requires CI green + squash-only), Claude can stage,
+commit, push, and open PRs at its own cadence without developer
+intervention on each step. The master-green guarantee holds by
+construction.
+
+Until that policy is in place on a given repo, the **Developer**
+drives commits, pushes, and PR opening; Claude prepares the
+changes locally and stops at the staging boundary unless
+explicitly told to proceed.
