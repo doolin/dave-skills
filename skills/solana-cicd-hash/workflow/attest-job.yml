@@ -1,0 +1,80 @@
+# Drop-in attest job for .github/workflows/ci.yml.
+#
+# Prerequisites:
+#   - A prior job (or jobs) uploads artifacts with actions/upload-artifact
+#     and retention-days >= 90.
+#   - scripts/attest.mjs from skills/solana-cicd-hash/scripts/ is copied
+#     into the repo at scripts/attest.mjs, with @solana/web3.js, archiver,
+#     and pdfkit in package.json.
+#   - Repo secrets: SOLANA_KEYPAIR, AWS_ROLE_ARN.
+#   - Repo variables: S3_COMPLIANCE_BUCKET, EVIDENCE_BUNDLE (e.g. "<repo>/ci"),
+#     AWS_REGION, SOLANA_NETWORK.
+#
+# Replace <check-jobs> with the id(s) the check phase produces (e.g. [test, lint]).
+
+attest:
+  name: Attest CI Artifacts
+  needs: [<check-jobs>]
+  if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+  runs-on: ubuntu-latest
+  permissions:
+    id-token: write
+    contents: read
+  steps:
+    - uses: actions/checkout@v4
+
+    - uses: actions/setup-node@v4
+      with:
+        node-version: "20"
+        cache: npm
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Download all CI artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: ci-artifacts
+        merge-multiple: true
+
+    - name: Write Solana keypair to temp file
+      env:
+        SOLANA_KEYPAIR: ${{ secrets.SOLANA_KEYPAIR }}
+      run: |
+        if [ -n "$SOLANA_KEYPAIR" ]; then
+          KEYPAIR_FILE=$(mktemp)
+          printf '%s' "$SOLANA_KEYPAIR" > "$KEYPAIR_FILE"
+          chmod 600 "$KEYPAIR_FILE"
+          echo "SOLANA_KEYPAIR_PATH=$KEYPAIR_FILE" >> "$GITHUB_ENV"
+        fi
+
+    - name: Configure AWS credentials (OIDC)
+      if: vars.S3_COMPLIANCE_BUCKET != ''
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+        aws-region: ${{ vars.AWS_REGION || 'us-east-1' }}
+
+    - name: Attest CI artifacts on Solana
+      env:
+        ARTIFACT_DIR: ci-artifacts
+        OUTPUT_DIR: ci-output
+        EVIDENCE_BUNDLE: ${{ vars.EVIDENCE_BUNDLE }}
+        S3_COMPLIANCE_BUCKET: ${{ vars.S3_COMPLIANCE_BUCKET }}
+        SOLANA_NETWORK: ${{ vars.SOLANA_NETWORK || 'devnet' }}
+        AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
+      run: node scripts/attest.mjs
+
+    - name: Upload attestation artifacts
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: attestation
+        path: |
+          ci-output/ci-artifacts.zip
+          ci-output/attestation.pdf
+        retention-days: 90
+
+    - name: Cleanup keypair
+      if: always()
+      run: rm -f "$SOLANA_KEYPAIR_PATH"

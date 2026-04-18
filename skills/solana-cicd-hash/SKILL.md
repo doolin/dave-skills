@@ -1,120 +1,128 @@
 ---
 name: solana-cicd-hash
-description: Add CI/CD artifact attestation to any project. Collects pipeline output, zips it, SHA-256 hashes the archive, posts the hash as a JSON memo on Solana, generates a PDF attestation report, and uploads everything to S3.
+description: Attest a CI/CD run on Solana. Zips CI artifacts, SHA-256s the archive, posts the hash as a JSON memo on Solana, generates a PDF attestation report, and uploads everything to S3.
 disable-model-invocation: true
 ---
 
 # CI/CD Hash Attestation on Solana
 
 Create a tamper-proof, on-chain record that a CI/CD pipeline ran for a
-specific commit and what it produced. Implemented in `scripts/attest.mjs`
-(Node.js). Ruby variant in `dbb` uses `Ci::Attester` + `Database::SolanaAnchor`.
+specific commit and what it produced. The attestation runs as its own
+GitHub Actions job after check/test jobs complete, on `main` pushes only.
 
-## How it works
+For the broader pipeline shape (check / attest / deploy) and for CI
+conventions outside this job, see the `inventium-cicd-pipeline` skill.
 
-1. Each CI check step writes output to a file with a commit-hash header
-2. A separate `attest` job downloads all artifacts and zips them
-3. SHA-256 the **zip archive** (not individual files)
-4. Post a JSON memo to the Solana memo program via `@solana/web3.js`
-5. Generate a PDF attestation report with `pdfkit`
-6. Upload zip + PDF to S3
+## When to use
 
-Solana and S3 steps are fault-tolerant -- failures are logged, CI continues.
+Apply this skill when:
 
-## Pipeline structure
+- Adding compliance/audit evidence to a new repo.
+- A repo has the attestation inlined into a check job and needs it
+  split into its own job (so it doesn't run on PRs or block on check
+  failures).
+- The attest script or memo format needs updating across repos.
 
-Two jobs in `.github/workflows/`:
+## What ships with the skill
 
-- **`check`** (or named by tool: `markdown-lint`, `scan_ruby`, etc.) --
-  runs CI steps, uploads artifact files with `retention-days: 90`
-- **`attest`** -- runs on `main` push only, downloads all artifacts,
-  runs `node scripts/attest.mjs`
+- `scripts/attest.mjs` — Node implementation (canonical).
+- `scripts/attest.rb` — standalone Ruby implementation.
+- `workflow/attest-job.yml` — drop-in `attest` job for `.github/workflows/ci.yml`.
 
-## Key decisions
+For Rails projects, the Ruby implementation can be adapted into
+`Ci::Attester` + `Database::SolanaAnchor` classes; see `dbb` for a
+reference implementation.
 
-- **`printf '%s'` not `echo`** for the keypair -- `echo` adds a trailing
-  newline that corrupts the JSON array
-- **`chmod 600`** on the temp keypair file immediately after creation
-- **`if: always()`** on keypair cleanup -- runs even when prior steps fail
-- **OIDC for AWS** via `aws-actions/configure-aws-credentials` -- no
-  static key/secret stored as secrets
-- **`merge-multiple: true`** on `download-artifact` -- flattens all
-  artifact directories into one
-- **Attest job conditional** on `main` push -- no on-chain noise from PRs
+## Quick start: add to a repo
 
-## Pitfall: Memo program version
+1. Copy `scripts/attest.mjs` (or `scripts/attest.rb`) from this skill into
+   the target repo at `scripts/attest.mjs`.
+2. For Node: add `@solana/web3.js`, `archiver`, and `pdfkit` to `package.json`.
+   For Ruby: add `ed25519` to `Gemfile`.
+3. Copy `workflow/attest-job.yml` into `.github/workflows/ci.yml` as a
+   new job. Replace `<check-jobs>` in `needs:` with the actual check job
+   id(s).
+4. Set repo secrets:
+   - `SOLANA_KEYPAIR` — 64-byte keypair as JSON array.
+   - `AWS_ROLE_ARN` — IAM role ARN for OIDC assume-role.
+5. Set repo variables:
+   - `S3_COMPLIANCE_BUCKET` — target bucket (unset → skip S3, keep Solana + PDF).
+   - `EVIDENCE_BUNDLE` — S3 key prefix root, e.g. `<repo>/ci` (optional;
+     unset → auto-derive from `GITHUB_REPOSITORY`).
+   - `AWS_REGION` — default `us-east-1`.
+   - `SOLANA_NETWORK` — `devnet` or `mainnet-beta` (default `devnet`).
+6. Push to `main` and verify the Solana transaction on Solana Explorer,
+   then confirm the zip hash matches the memo (see Verification below).
 
-Solana has two Memo programs. **Always use Memo v2**
-(`MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr`). The v1 program
-(`Memo1UhkJRfHyvLMcVucJwxXeuD728EqVDDwQDxFMMG`) no longer exists on
-devnet and will fail with `ProgramAccountNotFound`. When hardcoding
-the 32-byte public key, verify the base58 round-trips correctly --
-a single wrong byte silently targets a nonexistent program.
-
-## Pitfall: ARTIFACT_FILES drift
-
-`scripts/attest.mjs` only zips files listed in `ARTIFACT_FILES`. If CI
-adds a new `upload-artifact` step but `ARTIFACT_FILES` is not updated,
-the attestation succeeds silently with an incomplete bundle. Treat
-`ARTIFACT_FILES` as a manifest and keep it in sync with every
-`upload-artifact` step in the workflow.
-
-## Pitfall: `set -o pipefail` with `tee`
-
-The artifact capture pattern uses `set -o pipefail` and pipes output
-through `tee`. This correctly propagates non-zero exit codes from the
-CI tool (e.g., RuboCop lint failures). If CI previously tolerated
-lint warnings (RuboCop exits non-zero for conventions, not just
-errors), adding `set -o pipefail` will surface those as CI failures.
-Fix the violations or add exceptions before enabling artifact capture.
-
-## Artifact capture pattern
-
-Every check step prepends a commit-hash header to its output file:
+Set the keypair secret with:
 
 ```bash
-set -o pipefail
-COMMIT_SHA="${GITHUB_SHA:-$(git rev-parse HEAD)}"
-{ echo "# commit: ${COMMIT_SHA}"; echo "---"; } > lint-results.txt
-npx markdownlint-cli2 "**/*.md" 2>&1 | tee -a lint-results.txt
+gh secret set SOLANA_KEYPAIR < ~/.config/solana/keypair.json
 ```
+
+## Attest job shape
+
+Three invariants the job must preserve (see `workflow/attest-job.yml`
+for the full, copy-paste-ready version):
+
+1. `needs: [<check-jobs>]` — attest runs after check, not alongside.
+2. `if: github.ref == 'refs/heads/main' && github.event_name == 'push'` —
+   no on-chain noise from PRs, no wasted Solana fees.
+3. `permissions: { id-token: write, contents: read }` — required for
+   OIDC assume-role.
+
+The job downloads every artifact uploaded by check jobs
+(`merge-multiple: true`), then runs `node scripts/attest.mjs`.
+
+## S3 layout
+
+The script derives the S3 key as:
+
+```text
+s3://<S3_COMPLIANCE_BUCKET>/<prefix>/YYYY/MM/DD/HHMMSS-<shortsha>/ci-artifacts.zip
+```
+
+Where `<prefix>` is:
+
+- `EVIDENCE_BUNDLE` env var if set (e.g. `slacronym/ci`); or
+- `<repo>/ci` derived from `GITHUB_REPOSITORY` as a fallback.
+
+Set `EVIDENCE_BUNDLE` in repo variables when the target bucket
+enforces a specific prefix layout (e.g. a shared compliance bucket
+with per-repo IAM policies). Leave it unset for ad-hoc buckets; the
+fallback produces a sensible `<repo>/ci/...` key by default.
 
 ## Memo payload format
 
-JSON object posted to the Solana memo program:
+JSON posted to the Solana Memo v2 program:
 
 ```json
 {
-  "s3_key": "repo/ci/2026/04/01/120000-abc1234/ci-artifacts.zip",
+  "s3_key": "slacronym/ci/2026/04/17/120000-abc1234/ci-artifacts.zip",
   "artifact_checksum": "sha256:<hex>",
   "commit": "<full-sha>",
-  "timestamp": "2026-04-01T12:00:00.000Z"
+  "timestamp": "2026-04-17T12:00:00.000Z"
 }
 ```
 
-`s3_key` makes the memo self-contained -- anyone with S3 access can
-retrieve and re-verify the exact artifact bundle.
-
-## Required secrets and variables
-
-| Name | Type | Description |
-| --- | --- | --- |
-| `SOLANA_KEYPAIR` | Secret | 64-byte keypair as JSON array |
-| `AWS_ROLE_ARN` | Secret | IAM role ARN for OIDC assume-role |
-| `S3_COMPLIANCE_BUCKET` | Variable | S3 bucket name (empty = skip S3) |
-| `AWS_REGION` | Variable | AWS region (default: `us-east-1`) |
-| `SOLANA_NETWORK` | Variable | `devnet` or `mainnet-beta` (default: `devnet`) |
-
-Set with: `gh secret set SOLANA_KEYPAIR < ~/.config/solana/keypair.json`
-
-**S3 bucket prerequisite**: verify the target bucket has no lifecycle
-rule that expires objects before 90 days. A 24-hour or 7-day expiry
-(common for transient-output buckets) will silently destroy compliance
-records. Check with `aws s3api get-bucket-lifecycle-configuration`.
+`s3_key` makes the memo self-contained: anyone with S3 access can
+retrieve and re-verify the exact artifact bundle from the on-chain
+record alone.
 
 ## IAM role
 
-The OIDC role trust condition:
+The attest job's OIDC role needs one inline policy, scoped to the
+evidence bundle prefix only:
+
+```json
+{
+  "Effect": "Allow",
+  "Action": ["s3:PutObject"],
+  "Resource": "arn:aws:s3:::<bucket>/<evidence-bundle>/*"
+}
+```
+
+Trust condition scoped to the specific repo:
 
 ```json
 "StringLike": {
@@ -122,26 +130,80 @@ The OIDC role trust condition:
 }
 ```
 
-Inline policy needs only `s3:PutObject` on the compliance bucket prefix.
-See `form-terra/slacronym.tf` for the full Terraform pattern.
+## Required secrets and variables
 
-A role with `repo:*` trust (or `repo:<org>/*`) can serve multiple repos
-without creating a new role per project. Prefer reusing an existing role
-over proliferating roles when the bucket permissions are acceptable.
+| Name | Type | Description |
+| --- | --- | --- |
+| `SOLANA_KEYPAIR` | Secret | 64-byte keypair as JSON array |
+| `AWS_ROLE_ARN` | Secret | IAM role ARN for OIDC assume-role |
+| `S3_COMPLIANCE_BUCKET` | Variable | S3 bucket (unset → skip S3) |
+| `EVIDENCE_BUNDLE` | Variable | S3 key prefix root (optional) |
+| `AWS_REGION` | Variable | Default `us-east-1` |
+| `SOLANA_NETWORK` | Variable | `devnet` or `mainnet-beta` (default `devnet`) |
 
-## Ruby variant
+## Pitfall: Memo program version
 
-`dbb` implements the same pattern in Ruby:
+Solana has two Memo programs. Always use **Memo v2**
+(`MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr`). Memo v1
+(`Memo1UhkJRfHyvLMcVucJwxXeuD728EqVDDwQDxFMMG`) no longer exists on
+devnet and will fail with `ProgramAccountNotFound`. When hardcoding
+the 32-byte public key (as the Ruby variant does), verify the base58
+round-trips correctly — a single wrong byte silently targets a
+nonexistent program.
 
-- `app/utils/database/solana_anchor.rb` -- memo via `ed25519` + raw RPC
-- `app/utils/ci/attester.rb` -- zip -> checksum -> memo -> PDF -> S3
-- `lib/tasks/ci_attest.rake` -- entry point: `bundle exec rake ci:attest`
+## Pitfall: keypair corruption from `echo`
 
-Memo format and S3 layout are identical to the Node.js version.
+Use `printf '%s'` to write `$SOLANA_KEYPAIR` to the temp file:
+
+```bash
+printf '%s' "$SOLANA_KEYPAIR" > "$KEYPAIR_FILE"
+chmod 600 "$KEYPAIR_FILE"
+```
+
+`echo` appends a trailing newline that breaks JSON-array parsing —
+the error surfaces as `Keypair must be a 64-byte JSON array` or as an
+opaque ed25519 error, depending on the variant.
+
+The cleanup step must run under `if: always()` so the temp file is
+removed even when prior steps fail. `chmod 600` must run immediately
+after creation, not after the attest script, to avoid leaving the
+keypair world-readable during execution.
+
+## Pitfall: `ARTIFACT_FILES` drift
+
+If `ARTIFACT_FILES` is set (comma-separated manifest), only those
+files are included in the zip. If CI adds a new `upload-artifact`
+step but `ARTIFACT_FILES` is not updated, the attestation succeeds
+silently with an incomplete bundle.
+
+When `ARTIFACT_FILES` is unset, the script includes every regular
+file in `ARTIFACT_DIR`. This is the safer default unless you need to
+exclude a file that arrives in the artifact directory.
+
+Treat `ARTIFACT_FILES` as a manifest: keep it in sync with every
+`upload-artifact` step in the workflow, or leave it unset.
+
+## Pitfall: S3 lifecycle expires compliance records
+
+Before using a bucket for attestation, verify it has no lifecycle
+rule that expires objects early:
+
+```bash
+aws s3api get-bucket-lifecycle-configuration --bucket <bucket>
+```
+
+A 24-hour or 7-day expiry (common on transient-output buckets) will
+silently destroy compliance records. Compliance buckets should either
+have no expiration, or transition to Glacier IR after a long retention
+period.
 
 ## Verification
 
-1. Find the transaction on Solana Explorer (`?cluster=devnet` for devnet)
-2. Extract `s3_key` and `artifact_checksum` from the memo JSON
-3. Download the zip from S3 using the `s3_key`
-4. `sha256sum ci-artifacts.zip` -- must match `artifact_checksum`
+To verify any past attestation from the on-chain record alone:
+
+1. Find the transaction on Solana Explorer (add `?cluster=devnet` for
+   devnet). The attest script prints a direct link when Solana
+   submission succeeds.
+2. Extract `s3_key` and `artifact_checksum` from the memo JSON.
+3. Download the zip from S3 using the `s3_key`.
+4. `sha256sum ci-artifacts.zip` — must match `artifact_checksum`.
