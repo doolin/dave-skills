@@ -1,0 +1,34 @@
+%% CI/CD Golden Pipeline — reusable workflow + per-repo caller
+%% Source of truth: skills/cicd-golden-pipeline/SKILL.md
+%% Rebuild rendered artifacts via `make` in this directory.
+
+flowchart TB
+    trigger([push or pull_request])
+
+    subgraph caller["ci-cd.yml — per-repo caller"]
+        direction LR
+        compliance["compliance<br/>(calls golden-pipeline.yml)"]
+        deploy["deploy<br/>(Lambda + S3 + SLSA · main only)"]
+        attest["attest<br/>(Solana memo + PDF · main only)"]
+        compliance --> deploy
+        deploy --> attest
+    end
+
+    subgraph golden["golden-pipeline.yml — reusable (workflow_call)"]
+        direction TB
+        secrets["secrets-scan<br/>(PW.6 · gitleaks)"]
+        test["test<br/>(format + test suite)"]
+        vuln["vulnerability-scan<br/>(PW.7 / PW.8 · npm audit + Trivy)"]
+        sbom["sbom<br/>(PW.4 · CycloneDX)"]
+        oscal["oscal<br/>(M-24-15 · OSCAL artifacts)"]
+        verify["verify-evidence<br/>(SHA-256 manifest + drift check)"]
+
+        test --> sbom
+        vuln --> oscal
+        vuln --> verify
+        sbom --> verify
+        oscal --> verify
+    end
+
+    trigger --> compliance
+    compliance -. workflow_call .-> golden

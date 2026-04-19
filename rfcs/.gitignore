@@ -1,0 +1,4 @@
+# Rendered diagram outputs are derived from *.mmd via `make`.
+# The mermaid source is the only thing we version; rebuild as needed.
+*.png
+*.svg
