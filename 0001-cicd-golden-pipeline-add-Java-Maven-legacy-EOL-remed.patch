@@ -1,0 +1,199 @@
+From 606561caf7541abb370e5dcabad66f5bde506831 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sun, 19 Apr 2026 17:47:04 +0000
+Subject: [PATCH] cicd-golden-pipeline: add Java/Maven + legacy-EOL remediation
+ patterns
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Lessons from adapting the pipeline to a Spring Boot 2.7 + Angular app:
+
+- Add Java/Maven row to the non-Node adaptation table. Trivy parses
+  pom.xml directly for vuln scanning; syft needs dependency:resolve
+  to run first so the runtime tree is on disk.
+- New subsection: "Multi-language projects (e.g. Spring Boot + Angular)"
+  covering paired setup-java + setup-node, ordering of SBOM pre-resolve
+  steps, and scope of each audit tool.
+- New subsection: "Legacy / EOL frameworks with unfixable CVEs" with
+  two remediation patterns — BOM property overrides for transitive
+  patches that stay within the framework line, and scoped .trivyignore
+  entries for CVEs only fixed in the next major. Each .trivyignore
+  entry must carry CVE-ID + justification + removal condition.
+- New Pitfall: "Env-vars override profile-based test config" —
+  SPRING_PROFILES_ACTIVE=test + SPRING_DATASOURCE_URL env var silently
+  defeats H2.
+- New Pitfall: "Findings visible only to desktop reviewers" — use
+  \$GITHUB_STEP_SUMMARY to surface CVE tables + surefire failures to
+  mobile reviewers without a log drill-down. Ordering matters: JSON
+  evidence first, summary next, gate last.
+
+update-actions-node-version: add actions/setup-java row
+
+v5.2.0 / be666c2fcd27ec809703dec50e508c2fdc7f6654, verified against
+the javasprang Golden Pipeline PR.
+---
+ skills/cicd-golden-pipeline/SKILL.md        | 120 ++++++++++++++++++++
+ skills/update-actions-node-version/SKILL.md |   1 +
+ 2 files changed, 121 insertions(+)
+
+diff --git a/skills/cicd-golden-pipeline/SKILL.md b/skills/cicd-golden-pipeline/SKILL.md
+index 4a5330b..01f6db0 100644
+--- a/skills/cicd-golden-pipeline/SKILL.md
++++ b/skills/cicd-golden-pipeline/SKILL.md
+@@ -342,6 +342,54 @@ The pipeline intentionally runs Trivy twice: once for human-readable
+ `table` output in the logs, once for machine-readable `json` output
+ as evidence. This is not a bug.
+ 
++### Env-vars override profile-based test config
++
++Spring Boot (and most framework config systems) loads properties
++from both profile files and environment variables, with env vars at
++the top of the precedence chain. Setting `SPRING_PROFILES_ACTIVE=test`
++to activate an in-memory H2 profile **and** leaving
++`SPRING_DATASOURCE_URL=jdbc:postgresql://...` in the job env will
++silently override H2 back to Postgres — the profile activates but
++its datasource never wins.
++
++For hermetic tests, set only the profile variable and let the profile
++file own the datasource config. Same principle applies to Rails
++`RAILS_ENV=test` vs `DATABASE_URL`, Django `DJANGO_SETTINGS_MODULE`
++vs `DATABASE_URL`.
++
++### Findings visible only to desktop reviewers
++
++The human-readable Trivy table and surefire reports are behind a
++log-drill-down only a desktop reviewer is likely to tolerate.
++Reviewers on a phone see the red ✗ and nothing else actionable.
++Surface the signal up into the PR checks UI with
++`$GITHUB_STEP_SUMMARY`:
++
++```yaml
++- name: Summarize Trivy findings in PR
++  if: always()
++  run: |
++    count=$(jq '[.Results[]?.Vulnerabilities[]?] | length' trivy-results.json)
++    {
++      echo "## Trivy findings"
++      echo
++      echo "**Total fixable at severity gate:** $count"
++      echo
++      if [ "$count" -gt 0 ]; then
++        echo "| CVE | Severity | Package | Installed | Fixed in |"
++        echo "| --- | --- | --- | --- | --- |"
++        jq -r '[.Results[]?.Vulnerabilities[]?] | unique_by(.VulnerabilityID + .PkgName) | .[] | "| \(.VulnerabilityID) | \(.Severity) | \(.PkgName) | \(.InstalledVersion) | \(.FixedVersion // "-") |"' trivy-results.json
++      fi
++    } >> "$GITHUB_STEP_SUMMARY"
++```
++
++Run the JSON-evidence Trivy scan first (non-gating, `exit-code: 0`),
++then the summary step, then the gating table scan. That ordering
++guarantees the summary populates even when the gate fails. Same
++pattern works for surefire reports on the test job — parse
++`target/surefire-reports/*.txt` into a failed-class listing on
++`if: failure()`.
++
+ ## Adapting for non-Node.js projects
+ 
+ The golden pipeline is Node.js-oriented but the structure adapts:
+@@ -349,6 +397,7 @@ The golden pipeline is Node.js-oriented but the structure adapts:
+ | Language | Test step | Audit step | SBOM tool |
+ | --- | --- | --- | --- |
+ | Node.js | `npm test` | `npm audit` | `anchore/sbom-action` (CycloneDX) |
++| Java / Maven | `./mvnw -B -ntp verify` | Trivy (parses `pom.xml` directly) | `anchore/sbom-action` — requires `./mvnw dependency:resolve -DincludeScope=runtime` before syft so the full runtime tree is resolved on disk |
+ | Ruby | `bundle exec rspec` | `bundle audit check` | `anchore/sbom-action` or `cyclonedx-ruby` |
+ | Python | `pytest` | `pip-audit` | `cyclonedx-py` |
+ | Go | `go test ./...` | `govulncheck ./...` | `cyclonedx-gomod` |
+@@ -358,6 +407,77 @@ Replace the test and audit commands via `workflow_call` inputs. The
+ SBOM generation step may need a different action. Secrets scan,
+ OSCAL generation, and evidence verification are language-agnostic.
+ 
++### Multi-language projects (e.g. Spring Boot + Angular)
++
++Repos that ship a backend plus a bundled SPA need both toolchains in
++the test job — don't split. Pair `actions/setup-java` with
++`actions/setup-node`, run `./mvnw verify` (which invokes the frontend
++build via `frontend-maven-plugin`), then run the frontend's unit
++tests (Karma / Jest) as a separate step. `npm audit --omit=dev` runs
++in the frontend subdirectory; Trivy covers the Maven tree via its
++`pom.xml` scanner in a single filesystem scan.
++
++For the SBOM job, run language-specific pre-resolve steps before
++invoking syft from the repo root so it picks up both trees in one
++pass:
++
++```yaml
++- run: ./mvnw -B -ntp dependency:resolve -DincludeScope=runtime
++- run: npm --prefix src/main/frontend ci --omit=dev
++- uses: anchore/sbom-action@<sha>
++  with:
++    path: .
++    format: cyclonedx-json
++    output-file: sbom.cyclonedx.json
++```
++
++### Legacy / EOL frameworks with unfixable CVEs
++
++Apps pinned to an EOL framework (Spring Boot 2.7, Rails 5.x, etc.)
++routinely surface CRITICALs that have no in-series patch. Two
++remediation patterns, in order of preference:
++
++1. **BOM property overrides.** Most framework BOMs expose version
++   properties that downstream projects can redefine to pull patched
++   transitive versions in without bumping the framework itself.
++   Example (Spring Boot 2.7.18 → clears CVE-2024-1597 / 2024-38821 /
++   2024-50379 / 2024-56337 / 2022-1471 / etc.):
++
++   ```xml
++   <properties>
++       <spring-framework.version>5.3.39</spring-framework.version>
++       <spring-security.version>5.7.14</spring-security.version>
++       <tomcat.version>9.0.117</tomcat.version>
++       <logback.version>1.2.13</logback.version>
++       <snakeyaml.version>2.6</snakeyaml.version>
++       <postgresql.version>42.7.10</postgresql.version>
++   </properties>
++   ```
++
++   Verify `./mvnw verify` still passes after each bump — the newer
++   patch must remain API-compatible with the framework line.
++
++2. **Scoped `.trivyignore` with justification + removal condition.**
++   When a CVE is only fixed in the next framework major (e.g.
++   requires Spring Boot 3 / Jakarta), or when the finding is a
++   verifiable false positive (the "fixed" version removes an API
++   this codebase doesn't use), suppress **that specific CVE ID** —
++   never blanket-ignore. Each entry must carry a justification and
++   a removal condition:
++
++   ```
++   # CVE-2016-1000027 — spring-web HttpInvokerServiceExporter
++   # Only "fixed" by removing the feature in Spring Framework 6.0.
++   # Verified unused in this codebase (grep HttpInvoker returns 0).
++   # False positive. Remove after Spring Boot 3 migration.
++   CVE-2016-1000027
++   ```
++
++   Wire it into the Trivy action with `trivyignores: .trivyignore`
++   on **every** Trivy step — both the JSON-evidence step and the
++   gating step. Inconsistent ignore lists cause the two scans to
++   disagree and produce confusing audit trails.
++
+ ## Cross-references
+ 
+ - `inventium-cicd-pipeline` — higher-level pipeline conventions
+diff --git a/skills/update-actions-node-version/SKILL.md b/skills/update-actions-node-version/SKILL.md
+index 7e2916f..8ad26cc 100644
+--- a/skills/update-actions-node-version/SKILL.md
++++ b/skills/update-actions-node-version/SKILL.md
+@@ -123,6 +123,7 @@ Verified working upgrades as of April 2026:
+ | --- | --- | --- | --- |
+ | `actions/checkout` | v4 | v5.0.0 | `08c6903cd8c0fde910a37f88322edcfb5dd907a8` |
+ | `actions/setup-node` | v4 | v6.3.0 | `53b83947a5a98c8d113130e565377fae1a50d02f` |
++| `actions/setup-java` | v4 | v5.2.0 | `be666c2fcd27ec809703dec50e508c2fdc7f6654` |
+ | `actions/upload-artifact` | v4 | v7.0.1 | `043fb46d1a93c77aae656e7c1c64a875d1fc6a0a` |
+ | `actions/download-artifact` | v4 | v8.0.1 | `3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c` |
+ | `actions/attest-build-provenance` | v2 | v4.1.0 | `a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32` |
+-- 
+2.43.0
+

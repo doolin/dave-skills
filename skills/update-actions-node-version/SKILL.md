@@ -123,6 +123,7 @@ Verified working upgrades as of April 2026:
 | --- | --- | --- | --- |
 | `actions/checkout` | v4 | v5.0.0 | `08c6903cd8c0fde910a37f88322edcfb5dd907a8` |
 | `actions/setup-node` | v4 | v6.3.0 | `53b83947a5a98c8d113130e565377fae1a50d02f` |
+| `actions/setup-java` | v4 | v5.2.0 | `be666c2fcd27ec809703dec50e508c2fdc7f6654` |
 | `actions/upload-artifact` | v4 | v7.0.1 | `043fb46d1a93c77aae656e7c1c64a875d1fc6a0a` |
 | `actions/download-artifact` | v4 | v8.0.1 | `3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c` |
 | `actions/attest-build-provenance` | v2 | v4.1.0 | `a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32` |
