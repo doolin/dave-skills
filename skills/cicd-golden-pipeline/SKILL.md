@@ -22,14 +22,13 @@ stakeholders.
 
 ### Executive Order 14028 (May 2021)
 
-**"Improving the Nation's Cybersecurity"**
-
+Improving the Nation's Cybersecurity.
 The foundational directive. Section 4 mandates secure software
 development practices, SBOMs, and supply chain transparency for
 software sold to the federal government.
 
-- Full text: https://www.whitehouse.gov/briefing-room/presidential-actions/2021/05/12/executive-order-on-improving-the-nations-cybersecurity/
-- NIST summary: https://www.nist.gov/itl/executive-order-14028-improving-nations-cybersecurity
+- [Full text](https://www.whitehouse.gov/briefing-room/presidential-actions/2021/05/12/executive-order-on-improving-the-nations-cybersecurity/)
+- [NIST summary](https://www.nist.gov/itl/executive-order-14028-improving-nations-cybersecurity)
 
 ### NIST Secure Software Development Framework (SSDF) SP 800-218
 
@@ -47,20 +46,19 @@ directly:
 | PS.1 | Protect all forms of code from unauthorized access | Build provenance attestation |
 | PS.2 | Verify the integrity of the software release | Build provenance attestation |
 
-- Full text: https://csrc.nist.gov/pubs/sp/800/218/final
-- SSDF practices quick reference: https://csrc.nist.gov/projects/ssdf
+- [Full text](https://csrc.nist.gov/pubs/sp/800/218/final)
+- [SSDF practices quick reference](https://csrc.nist.gov/projects/ssdf)
 
 ### OMB Memorandum M-22-18 (September 2022)
 
-**"Enhancing the Security of the Software Supply Chain through
-Secure Software Development Practices"**
-
+Enhancing the Security of the Software Supply Chain through
+Secure Software Development Practices.
 Requires federal agencies to obtain self-attestation from software
 producers that they follow SSDF practices. Sets deadlines for
 compliance. The pipeline produces machine-readable evidence that
 supports self-attestation.
 
-- Full text: https://www.whitehouse.gov/wp-content/uploads/2022/09/M-22-18.pdf
+- [Full text](https://www.whitehouse.gov/wp-content/uploads/2022/09/M-22-18.pdf)
 
 ### OMB Memorandum M-24-15 (June 2024)
 
@@ -70,18 +68,17 @@ artifacts. Specifically calls for OSCAL-formatted assessment results.
 
 The pipeline's OSCAL generation stage directly addresses this.
 
-- Full text: https://www.whitehouse.gov/wp-content/uploads/2024/06/M-24-15-Modernizing-the-Federal-Risk-and-Authorization-Management-Program-FedRAMP.pdf
+- [Full text](https://www.whitehouse.gov/wp-content/uploads/2024/06/M-24-15-Modernizing-the-Federal-Risk-and-Authorization-Management-Program-FedRAMP.pdf)
 
 ### OMB Memorandum M-21-31 (August 2021)
 
-**"Improving the Federal Government's Investigative and Remediation
-Capabilities Related to Cybersecurity Incidents"**
-
+Improving the Federal Government's Investigative and Remediation
+Capabilities Related to Cybersecurity Incidents.
 Requires comprehensive logging and event forwarding. The pipeline
 emits structured JSON audit events at each stage. The deploy job
 emits a final audit summary.
 
-- Full text: https://www.whitehouse.gov/wp-content/uploads/2021/08/M-21-31-Improving-the-Federal-Governments-Investigative-and-Remediation-Capabilities-Related-to-Cybersecurity-Incidents.pdf
+- [Full text](https://www.whitehouse.gov/wp-content/uploads/2021/08/M-21-31-Improving-the-Federal-Governments-Investigative-and-Remediation-Capabilities-Related-to-Cybersecurity-Incidents.pdf)
 
 ### OSCAL (Open Security Controls Assessment Language)
 
@@ -90,9 +87,9 @@ component definitions, and system security plans. M-24-15 requires
 OSCAL artifacts. The pipeline generates three OSCAL documents per
 run.
 
-- OSCAL project page: https://pages.nist.gov/OSCAL/
-- OSCAL reference: https://pages.nist.gov/OSCAL/reference/
-- OSCAL GitHub: https://github.com/usnistgov/OSCAL
+- [OSCAL project page](https://pages.nist.gov/OSCAL/)
+- [OSCAL reference](https://pages.nist.gov/OSCAL/reference/)
+- [OSCAL GitHub](https://github.com/usnistgov/OSCAL)
 
 ## Architecture
 
@@ -260,10 +257,10 @@ jobs:
     secrets: inherit
 ```
 
-3. Add repo-specific deploy/attest jobs as needed
-4. Add OSCAL generation script (`scripts/generate-oscal.js`)
-5. Add evidence verification script (`scripts/verify-evidence.js`)
-6. Ensure all local CI checks pass before pushing:
+1. Add repo-specific deploy/attest jobs as needed
+1. Add OSCAL generation script (`scripts/generate-oscal.js`)
+1. Add evidence verification script (`scripts/verify-evidence.js`)
+1. Ensure all local CI checks pass before pushing:
 
 ```bash
 npm run format:check
