@@ -178,6 +178,44 @@ Using `../../REVISION` goes one level too high and silently fails —
 `REVISION` will be `nil` with no error, because the `if File.exist?`
 guard just returns false.
 
+## Local dev server
+
+Projects often have a separate local dev server (`serve.js`,
+`rackup`, `shotgun`, etc.) that serves the same HTML as the
+production handler but doesn't go through the Lambda/deploy path.
+The `version.json` or `REVISION` file won't exist locally, so the
+placeholder is never replaced — it renders as an invisible HTML
+comment or is silently absent.
+
+Fix: hardcode `"dev"` in the local server's HTML replacement.
+
+**Node.js** (`serve.js`):
+
+```js
+let html = fs.readFileSync(htmlPath, "utf8");
+html = html.replace("<!-- BUILD_SHA -->", "dev");
+res.end(html);
+```
+
+**Ruby/Sinatra** (in the route or before filter):
+
+```ruby
+get "/" do
+  html = File.read(File.join(settings.public_folder, "index.html"))
+  html.sub("<!-- BUILD_SHA -->", "dev")
+end
+```
+
+Or use the `REVISION` constant with a fallback:
+
+```ruby
+display = MyApp::REVISION || "dev"
+html.sub("<!-- BUILD_SHA -->", display)
+```
+
+This way `"dev"` always appears in the footer during local
+development, making it obvious the page is not a deployed build.
+
 ## Reference implementation
 
 - `slacronym/deploy.sh` — SHA written to `version.json`
@@ -186,3 +224,7 @@ guard just returns false.
 - `retirement/bin/deploy` — SHA written to `REVISION`
 - `retirement/lib/retirement.rb` — `REVISION` constant loaded at module init
 - `retirement/lib/retirement/views/layout.erb` — conditional footer render
+- `CM02/.github/workflows/ci-cd.yml` — `version.json` generated at deploy time
+- `CM02/index.js` — `loadBuildSha()` and `<!-- BUILD_SHA -->` replacement
+- `CM02/serve.js` — hardcoded `"dev"` replacement for local server
+- `CM02/public/index.html` — `<!-- BUILD_SHA -->` footer placeholder
