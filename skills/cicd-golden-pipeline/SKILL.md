@@ -478,6 +478,130 @@ remediation patterns, in order of preference:
    gating step. Inconsistent ignore lists cause the two scans to
    disagree and produce confusing audit trails.
 
+## Adapting for GitLab CI
+
+The golden pipeline is designed for GitHub Actions but the structure
+maps to GitLab CI. Key differences and pitfalls discovered during
+the javasprang GitLab CI mirror:
+
+### Structural differences
+
+- **No `workflow_call`** — GitLab has no reusable workflow primitive.
+  Use `include: local:` to pull a shared pipeline definition into the
+  caller. The included file defines jobs; the caller defines stages,
+  variables, and caller-specific jobs.
+- **Artifact passing** — Use `needs: [{job: x, artifacts: true}]`
+  instead of `actions/download-artifact`. Artifacts from `needs:`
+  jobs are automatically restored to the workspace.
+- **No `$GITHUB_STEP_SUMMARY`** — Findings only appear in job logs,
+  not the MR checks UI. Reviewers on a phone see the red X and
+  nothing else actionable. Consider a bot comment or MR note as a
+  workaround.
+- **`workflow:rules` replaces `on:` triggers** — Controls which
+  pipelines run. Define in the caller, not the included file.
+
+### Docker image entrypoint conflicts
+
+Images like `gitleaks` and `trivy` set the binary as the Docker
+entrypoint. GitLab CI prepends `sh -c` to script commands, producing
+`gitleaks sh -c "..."` which fails with "unknown command sh".
+
+Fix: override the entrypoint in the job definition:
+
+```yaml
+image:
+  name: zricethezav/gitleaks:v8.22.1
+  entrypoint: [""]
+```
+
+GitHub Actions `uses:` actions manage their own invocation, so this
+problem does not surface there.
+
+### Ubuntu snap chromium stub in Docker
+
+The `chromium` apt package on Ubuntu-based images (including
+`eclipse-temurin`) is a snap redirect, not a real binary. Snap does
+not work inside Docker containers. `apt-get install chromium`
+succeeds but the resulting `/usr/bin/chromium-browser` wrapper
+demands snap at runtime.
+
+Install Google Chrome from Google's apt repo instead:
+
+```yaml
+before_script:
+  - apt-get update -qq && apt-get install -y -qq curl wget gnupg
+  - wget -q -O- https://dl.google.com/linux/linux_signing_key.pub | apt-key add -
+  - echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list
+  - apt-get update -qq && apt-get install -y -qq google-chrome-stable
+variables:
+  CHROME_BIN: /usr/bin/google-chrome-stable
+```
+
+Docker containers run as root, so Chrome also needs `--no-sandbox`.
+Add a Karma custom launcher:
+
+```js
+customLaunchers: {
+  ChromeHeadlessCI: {
+    base: 'ChromeHeadless',
+    flags: ['--no-sandbox']
+  }
+}
+```
+
+GitHub Actions runners have Chrome pre-installed and run as non-root,
+so neither issue surfaces there.
+
+### Environment variables do not persist across script steps
+
+GitLab CI runs each `before_script` / `script` list item in its own
+shell context. `export FOO=bar` in `before_script` is lost by the
+time `script` runs. Use job-level `variables:` for values that must
+be visible across steps.
+
+### `$CI_JOB_STATUS` only works in `after_script`
+
+During `script` execution, `$CI_JOB_STATUS` is always `running`.
+Move structured audit event JSON to `after_script` where it correctly
+reports `success` or `failed`. The GitHub Actions equivalent
+`${{ job.status }}` works in `if: always()` steps.
+
+### `npm audit --json` exits non-zero under implicit `set -e`
+
+GitLab CI runs scripts with implicit `set -e`. When `npm audit`
+finds vulnerabilities, the JSON-capture line exits non-zero and
+kills the job before Trivy runs. Add `|| true` to the JSON-capture
+line; the subsequent human-readable gating run still fails the job
+properly. GitHub Actions steps are independent — one step failing
+does not prevent the next from starting.
+
+### `workflow:rules` and `$CI_OPEN_MERGE_REQUESTS`
+
+Using `$CI_OPEN_MERGE_REQUESTS == ""` in `workflow:rules` to
+prevent duplicate pipelines can prevent pipelines from triggering
+on branch pushes entirely. Simpler rules are more reliable:
+
+```yaml
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH && $CI_PIPELINE_SOURCE == "push"'
+```
+
+This allows duplicate pipelines (MR + push) for branches with open
+MRs, but is reliable. Deduplicate later with
+`interruptible: true` once the pipeline is stable.
+
+### Pipeline visualization ignores `needs:` DAG
+
+GitLab's pipeline graph shows stage-based grouping, not the actual
+`needs:` dependency edges. A job like `oscal` that only
+`needs: vulnerability-scan` appears downstream of all
+`compliance-check` jobs in the visualization, even though it starts
+as soon as `vulnerability-scan` finishes. The runtime behavior is
+correct; the graph is misleading. Add a comment in the YAML so
+reviewers understand the actual dependency.
+
 ## Cross-references
 
 - `inventium-cicd-pipeline` — higher-level pipeline conventions
@@ -491,8 +615,16 @@ remediation patterns, in order of preference:
 
 ## Reference implementation
 
+### GitHub Actions
+
 - `CM02/.github/workflows/golden-pipeline.yml` — reusable workflow
 - `CM02/.github/workflows/ci-cd.yml` — caller with deploy + attest
 - `CM02/scripts/generate-oscal.js` — OSCAL artifact generation
 - `CM02/scripts/verify-evidence.js` — evidence manifest + drift detection
 - `CM02/scripts/attest.mjs` — Solana attestation script
+
+### GitLab CI
+
+- `javasprang/.gitlab-ci.yml` — caller with package stage
+- `javasprang/.gitlab/ci/golden-pipeline.yml` — included pipeline
+  (mirrors the GitHub Actions golden-pipeline.yml)
