@@ -71,6 +71,16 @@ Present a recommendation to the human before starting work.
   GitHub Actions workflows.
 - **entertainment-disclaimer** — Small focused skill for attaching an
   entertainment-only disclaimer.
+- **document-drift** — Audit a repo for stale documentation: broken
+  cross-references, outdated indexes, orphaned mentions, and drift
+  between docs and the actual codebase.
+- **linear-walkthrough** — Create a structured code walkthrough using
+  Showboat. Reads source, plans a linear explanation, builds the document.
+- **pause-session** — Capture session context and next steps before
+  stepping away. Writes a resume brief to `.development/next.md`.
+- **self-host-development-light** — Lightweight self-hosted project
+  management using markdown files in `.development/`. Covers backlog,
+  planning, todo, and saved plans.
 
 ## Conventions
 
