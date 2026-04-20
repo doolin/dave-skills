@@ -37,6 +37,8 @@ identify the highest-leverage next step. Check for:
   cross-pollinated back
 - New skills or scripts that landed without being wired into the project
   documentation
+- Whether `.development/` is scaffolded per the self-host-development-light
+  skill; run setup if not
 
 Present a recommendation to the human before starting work.
 

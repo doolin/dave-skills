@@ -60,20 +60,25 @@ worth committing separately.
 
 ### Context-providing
 
-Prefixing with context serves multiple purposes:
-
-- Scanning `git log --oneline` becomes useful
-- Finding commits in the reflog is practical
-- The scope of the change is immediately clear
+The summary line should make the scope of the change immediately
+clear through good word choice, not through a prefix convention.
 
 Examples:
 
 ```text
-auth: Add token refresh on session expiry
-ci: Pin markdownlint action to commit SHA
-docs: Clarify deployment prerequisites
-test: Cover edge case in rate limiter
+Add token refresh on session expiry
+Pin markdownlint action to commit SHA
+Clarify deployment prerequisites
+Cover edge case in rate limiter
 ```
+
+## Not Conventional Commits
+
+Do not use the Conventional Commits specification (`feat:`,
+`fix:`, `chore:`, scoped prefixes, etc.). It solves a problem
+that doesn't exist and adds noise to every commit message in
+the history. Write a clear summary in imperative mood — that's
+all the structure a commit message needs.
 
 ## Templates by change type
 
@@ -114,7 +119,7 @@ Clean up <area>
 - <item 2>
 ```
 
-### Chore / config / deps
+### Config / dependency changes
 
 ```text
 <Brief description of change>
@@ -125,7 +130,7 @@ Clean up <area>
 ### Documentation
 
 ```text
-docs: <what was documented>
+Document <what was documented>
 
 <What was missing or outdated>
 ```
