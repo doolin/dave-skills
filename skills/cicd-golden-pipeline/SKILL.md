@@ -1,6 +1,6 @@
 ---
 name: cicd-golden-pipeline
-description: Reusable GitHub Actions CI/CD pipeline implementing NIST SSDF, EO 14028, OMB M-22-18, and M-24-15 compliance. Covers secrets scanning, testing, vulnerability scanning, SBOM, OSCAL, evidence verification, build provenance, S3 archival, and Solana attestation.
+description: Reusable GitHub Actions CI/CD pipeline implementing NIST SSDF, EO 14028, and OMB M-21-31/M-24-15/M-26-05 compliance. Covers secrets scanning, testing, vulnerability scanning, SBOM, OSCAL, evidence verification, build provenance, S3 archival, and Solana attestation.
 disable-model-invocation: true
 ---
 
@@ -39,36 +39,105 @@ directly:
 
 | Practice | Description | Pipeline stage |
 | --- | --- | --- |
+| PO.3.3 | Configure tools to generate secure-development artifacts, audit trails, and retention-aware data | Structured audit events, evidence manifest |
+| PO.4.1 | Define and track criteria for security checks throughout the SDLC | Evidence verification |
+| PO.4.2 | Gather and safeguard the evidence needed to support those criteria | Evidence verification, S3 archival |
+| PO.5.1 | Separate and protect development, build, test, and distribution environments | OIDC auth, per-repo IAM roles |
+| PS.1 | Protect all forms of code from unauthorized access | Build provenance attestation |
+| PS.2 | Verify the integrity of the software release | Build provenance attestation |
+| PS.3.1 | Securely archive release files and supporting integrity/provenance data | S3 archival with checksums |
 | PW.4 | Reuse existing, well-secured software | SBOM generation |
 | PW.6 | Configure the compilation, interpreter, and build processes to improve executable security | Secrets scan |
 | PW.7 | Review and/or analyze human-readable code to identify vulnerabilities | Vulnerability scan (npm audit) |
 | PW.8 | Test executable code to identify vulnerabilities not found by other means | Vulnerability scan (Trivy) |
-| PS.1 | Protect all forms of code from unauthorized access | Build provenance attestation |
-| PS.2 | Verify the integrity of the software release | Build provenance attestation |
+| RV.1.1 | Gather vulnerability information from users, acquirers, and public sources | npm audit, Trivy |
+| RV.1.2 | Review, analyze, and test software to confirm undetected vulnerabilities | Assessment results |
+| RV.2.1 | Analyze each vulnerability to plan remediation or other risk response | Build-failing vuln scans (no `\|\| true`) |
 
 - [Full text](https://csrc.nist.gov/pubs/sp/800/218/final)
 - [SSDF practices quick reference](https://csrc.nist.gov/projects/ssdf)
 
-### OMB Memorandum M-22-18 (September 2022)
+### DISA ASD STIG (Application Security and Development)
+
+The ASD STIG V6R3 provides findings applicable to application
+development and CI/CD artifact handling. The pipeline's evidence
+artifacts map to these findings with varying directness:
+
+| Finding | Description | Pipeline evidence |
+| --- | --- | --- |
+| V-222480 | Centrally manage the content captured in audit records | Build logs, audit events |
+| V-222487 | Centrally review and analyze audit records | Pipeline execution metadata, audit events |
+| V-222501 | Protect audit data from unauthorized modification | Evidence manifest checksums, S3 archival |
+| V-222507 | Use cryptographic mechanisms to protect audit information integrity | Evidence manifest SHA-256, attestation |
+| V-222513 | Verify patches/components are digitally signed before installation | Build provenance, release signing |
+| V-222570 | Use FIPS-validated cryptographic modules when signing | Attestation, provenance |
+| V-222571 | Use FIPS-validated cryptographic modules for hashes | Evidence manifest SHA-256 |
+| V-222614 | Keep security-relevant software updates current | npm audit, Trivy |
+| V-222632 | Create and maintain a software configuration management plan | SBOM, component definition |
+| V-222644 | Create and execute test plans before releases | Raw test results |
+| V-222645 | Cryptographically hash application files before deployment | Evidence manifest, attestation |
+| V-222646 | Designate personnel to test for security flaws | Assessment results |
+| V-222648 | Perform application code review | Security scan results |
+| V-222649 | Maintain code coverage statistics for each release | Raw coverage artifacts |
+| V-222650 | Track code-review flaws in a defect tracking system | Vulnerability scan findings |
+| V-222652 | Fix or formally address security flaws | SBOM tracking, vulnerability remediation |
+
+Mappings marked "Direct ASD fit" in the companion retention table
+mean the STIG finding language closely names the same kind of
+artifact or activity. "Best-fit ASD analog" means the row is still
+grounded in the XCCDF but reaches through adjacent integrity or
+configuration-management concepts rather than explicit modern
+artifact terminology (e.g., SBOM, SLSA provenance).
+
+- [ASD STIG V6R3 ZIP](https://dl.dod.cyber.mil/wp-content/uploads/stigs/zip/U_ASD_V6R3_STIG.zip)
+
+### OMB Memorandum M-22-18 (September 2022) — rescinded by M-26-05
 
 Enhancing the Security of the Software Supply Chain through
 Secure Software Development Practices.
-Requires federal agencies to obtain self-attestation from software
-producers that they follow SSDF practices. Sets deadlines for
-compliance. The pipeline produces machine-readable evidence that
-supports self-attestation.
+Required federal agencies to obtain self-attestation from software
+producers that they follow SSDF practices. **Rescinded by M-26-05
+in January 2026.** Resources developed under M-22-18 (such as the
+Secure Software Development Attestation Form) remain usable under
+the successor risk-based model, but the mandatory government-wide
+self-attestation regime M-22-18 described is no longer operative.
+
+The pipeline originally targeted M-22-18 compliance. It now produces
+risk-based assurance evidence under M-26-05 rather than attestation
+artifacts for a rescinded mandate.
 
 - [Full text](https://www.whitehouse.gov/wp-content/uploads/2022/09/M-22-18.pdf)
 
 ### OMB Memorandum M-24-15 (June 2024)
 
-Expands M-22-18 with stronger requirements for third-party
-assessment, continuous monitoring, and machine-readable compliance
-artifacts. Specifically calls for OSCAL-formatted assessment results.
+FedRAMP modernization memorandum. Requires authorization artifacts
+to be reusable and provided in machine-readable, interoperable
+formats. Specifically expects agency GRC and system-inventory
+tooling to produce, transmit, and ingest OSCAL-based authorization
+and continuous monitoring artifacts.
 
 The pipeline's OSCAL generation stage directly addresses this.
+M-24-15 makes machine-legible evidence artifacts more valuable when
+they can be reused or automatically processed across tools and
+reviews — this is the strongest present-day policy justification for
+OSCAL-first evidence design.
 
 - [Full text](https://www.whitehouse.gov/wp-content/uploads/2024/06/M-24-15-Modernizing-the-Federal-Risk-and-Authorization-Management-Program-FedRAMP.pdf)
+
+### OMB Memorandum M-26-05 (January 2026)
+
+Rescinds M-22-18 and M-23-16. Shifts agencies toward a risk-based
+software and hardware assurance model. Agencies are still expected
+to maintain complete software inventory and may request a current
+SBOM from producers. Agencies may continue to use resources
+developed under M-22-18, including the attestation form, but these
+are no longer mandatory.
+
+The pipeline's evidence bundle serves as reusable risk-based
+assurance evidence under M-26-05 rather than proof of compliance
+with the rescinded M-22-18 attestation regime.
+
+- [Full text](https://www.whitehouse.gov/wp-content/uploads/2026/01/M-26-05.pdf)
 
 ### OMB Memorandum M-21-31 (August 2021)
 
@@ -227,6 +296,22 @@ raw test result, coverage artifact, secrets-scan artifact, OSCAL
 document, SBOM, or provenance artifact is missing. "SSP says it exists"
 is not enough; the file itself must be present and hashed.
 
+**Failure semantics:** The verification job must exit non-zero (fail
+the pipeline) when any mandatory artifact is missing or when a
+SHA-256 checksum does not match the generated file. A warning-only
+mode defeats the purpose of drift detection. The SSP fragment claims
+specific artifacts exist as evidence; if the bundle contradicts
+those claims, the pipeline must not report success.
+
+**Manifest schema:** The evidence manifest JSON should be treated as
+a normative schema that consuming tools can parse mechanically. At
+minimum, each entry must include: `path`, `size`, `sha256`, and
+`artifact-class` (one of the categories below). The manifest should
+also carry per-artifact `retention-class` metadata binding each
+artifact to its expected GRS item and minimum retention period, so
+that downstream archival can enforce retention without external
+lookup.
+
 At a minimum the manifest should track:
 
 - secrets scan artifact
@@ -238,6 +323,8 @@ At a minimum the manifest should track:
 - OSCAL assessment results
 - OSCAL component definition
 - OSCAL SSP fragment
+- structured audit events
+- pipeline definition snapshot or content hash
 - packaged bundle checksum
 - machine-legible provenance / attestation record when present
 
@@ -324,6 +411,8 @@ npm audit --audit-level=high --omit=dev
 | `format-check-command` | `"npm run format:check"` | Formatter/linter check |
 | `trivy-severity` | `"CRITICAL,HIGH"` | Trivy severity filter |
 | `npm-audit-level` | `"high"` | npm audit minimum severity |
+| `test-result-format` | `"junit"` | Test result format: junit, surefire, rspec-junit, pytest-junit |
+| `coverage-format` | `"cobertura"` | Coverage format: cobertura, jacoco, lcov, simplecov-json |
 
 ## Action versions (Node 24)
 
@@ -683,6 +772,26 @@ workflow:
 This allows duplicate pipelines (MR + push) for branches with open
 MRs, but is reliable. Deduplicate later with
 `interruptible: true` once the pipeline is stable.
+
+### Evidence bundle parity
+
+The goal is that both GitHub Actions and GitLab CI produce
+interchangeable evidence bundles with the same manifest schema,
+artifact classes, SHA-256 checksums, and OSCAL documents. Known
+divergences to watch for:
+
+- GitLab CI does not have `actions/attest-build-provenance`. The
+  GitLab equivalent is the `cosign` or `in-toto` signing step,
+  which must produce the same machine-legible provenance JSON.
+- GitLab artifact retention is configured per-job with `expire_in`,
+  not per-upload with `retention-days`. Ensure the compliance jobs
+  set `expire_in: 90 days` or longer.
+- The structured audit events that use `${{ job.status }}` in GitHub
+  Actions must use `$CI_JOB_STATUS` in `after_script` on GitLab
+  (see below). The JSON schema should be identical.
+- The evidence manifest and verification script should be the same
+  across both CI systems. If a manifest entry is mandatory on GitHub
+  Actions, it is mandatory on GitLab CI.
 
 ### Pipeline visualization ignores `needs:` DAG
 
