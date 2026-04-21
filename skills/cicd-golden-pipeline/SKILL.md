@@ -124,6 +124,11 @@ test command, etc.).
 Runs gitleaks with `fetch-depth: 0` (full history) to catch secrets
 that were committed and later removed.
 
+The stage must emit a machine-legible evidence artifact even when no
+findings are present. A bare `[]` is too weak for audit because it
+does not preserve tool version, scan scope, ref/commit context, or
+timestamp.
+
 ```yaml
 secrets-scan:
   name: Secrets Scan (PW.6)
@@ -137,10 +142,22 @@ secrets-scan:
         GITHUB_TOKEN: ${{ github.token }}
 ```
 
+Minimum evidence content:
+
+- tool name and version
+- scan scope (full history vs working tree)
+- repository, ref, and commit SHA
+- execution timestamp
+- explicit findings array, even when empty
+
 ### 2. Test
 
 Runs the project's format check and test suite. Commands are
 configurable via `workflow_call` inputs.
+
+This stage must emit raw test and coverage artifacts, not just a pass
+/ fail job status. If downstream OSCAL claims `SA-11` evidence exists,
+the underlying files have to be in the evidence bundle.
 
 ```yaml
 test:
@@ -156,6 +173,16 @@ test:
     - run: ${{ inputs.format-check-command }}
     - run: ${{ inputs.test-command }}
 ```
+
+Minimum evidence artifacts:
+
+- machine-legible test results:
+  - JUnit XML, surefire XML, rspec_junit_formatter XML, pytest JUnit XML,
+    or the language-appropriate equivalent
+- machine-legible coverage output:
+  - Cobertura XML, JaCoCo XML, LCOV, SimpleCov JSON, or the
+    language-appropriate equivalent
+- optional human-readable summaries for logs and PR surfaces
 
 ### 3. Vulnerability Scan (PW.7, PW.8)
 
@@ -195,6 +222,25 @@ completeness. Generates an evidence manifest with SHA-256 checksums
 for each artifact. This is the drift detection step — if an upstream
 job silently stopped producing an artifact, this job catches it.
 
+The verifier must treat the evidence set as incomplete if any expected
+raw test result, coverage artifact, secrets-scan artifact, OSCAL
+document, SBOM, or provenance artifact is missing. "SSP says it exists"
+is not enough; the file itself must be present and hashed.
+
+At a minimum the manifest should track:
+
+- secrets scan artifact
+- raw test result artifact(s)
+- raw coverage artifact(s)
+- `npm audit` JSON
+- Trivy JSON
+- SBOM
+- OSCAL assessment results
+- OSCAL component definition
+- OSCAL SSP fragment
+- packaged bundle checksum
+- machine-legible provenance / attestation record when present
+
 ## Caller workflow (ci-cd.yml)
 
 The per-repo workflow calls the golden pipeline and adds
@@ -218,6 +264,7 @@ repo-specific jobs:
 - Downloads all CI artifacts, zips them, computes SHA-256
 - Anchors the hash on Solana via memo transaction
 - Generates a PDF attestation report
+- Generates a machine-legible attestation companion artifact
 - Uploads attestation artifacts to S3
 - See `solana-cicd-hash` skill for details
 
@@ -302,9 +349,24 @@ full upgrade map and SHA pins.
 - **Structured JSON audit events.** Every significant event emits a
   JSON object with `event`, `severity`, `timestamp`, and context
   fields. This satisfies M-21-31 logging requirements.
+- **Raw test and coverage artifacts are mandatory evidence.** A green
+  check alone is not evidence. Preserve the underlying machine-legible
+  outputs in the artifact bundle and in long-term archival.
+- **No metadata-free evidence artifacts.** Empty arrays and ad hoc text
+  blobs are not enough when a stage is expected to support compliance
+  review. Every evidence file should preserve generator identity,
+  timestamp, scope, and run context.
 - **Evidence archived to S3 with checksums.** Each artifact is
   uploaded with `--checksum-algorithm SHA256` and metadata including
   the commit SHA, run ID, and artifact type.
+- **Preserve the pipeline definition used for the run.** Archive the
+  exact `golden-pipeline.yml` / caller workflow content or at least a
+  content hash plus immutable source reference. Reviewers should not
+  have to infer pipeline behavior from an SBOM side effect.
+- **PDF attestations need a machine-legible companion.** A PDF summary
+  is useful for humans, but compliance bundles also need structured
+  provenance data that other tooling can verify without OCR or manual
+  transcription.
 
 ## Pitfalls
 
@@ -329,6 +391,36 @@ GitHub Actions artifacts default to 90-day retention. Do not rely
 on this for long-term compliance storage. The deploy job archives
 evidence to S3, which has indefinite retention with Glacier
 transition at 365 days. GitHub artifacts are a convenience copy.
+
+### SSP claims evidence that the bundle does not contain
+
+An OSCAL SSP fragment may correctly describe that tests, coverage, or
+other checks are retained as compliance evidence, but that claim is not
+enough on its own. If the packaged evidence bundle does not actually
+contain those raw artifacts, the bundle is incomplete and the
+verification job should fail.
+
+### Metadata-free "no findings" output
+
+A gitleaks or similar scan artifact that only contains `[]` is too weak
+for review. The evidence needs enough context to answer what ran, when
+it ran, what it scanned, and under which commit/ref it ran. Preserve
+that metadata even when the findings list is empty.
+
+### Pipeline provenance only implied, not preserved
+
+If the evidence bundle references `golden-pipeline.yml` or the caller
+workflow indirectly but does not preserve the actual workflow
+definition, reviewers cannot reconstruct what policy was enforced for
+that run without chasing mutable repo state. Preserve the workflow
+definition or an immutable hash-bound reference as evidence.
+
+### PDF-only attestation
+
+A PDF report is not enough for downstream automation. Always emit a
+machine-legible attestation companion file that carries the same
+provenance facts: artifact hash, commit SHA, run ID, timestamp, and any
+blockchain anchor or signature material.
 
 ### S3 lifecycle deletes compliance records
 
