@@ -274,10 +274,14 @@ to avoid generating SBOMs for broken builds.
 
 ### 5. OSCAL Generation (M-24-15)
 
-Consumes vulnerability scan results and generates three OSCAL
-documents:
+Consumes vulnerability scan results and secrets scan results,
+then generates three OSCAL documents:
 
-- **Assessment results** — findings from npm audit and Trivy
+- **Assessment results** — findings from npm audit, Trivy, and
+  gitleaks. Gitleaks findings map to SI-3 observations; npm audit
+  and Trivy findings map to RA-5 observations. The OSCAL generation
+  script must consume all three scan inputs so that every scanner
+  in the pipeline has its results represented in the assessment.
 - **Component definition** — the software component being assessed
 - **SSP fragment** — system security plan fragment
 
