@@ -4,3 +4,4 @@ ci-artifacts/
 lint-results.txt
 attestation.pdf
 ci-artifacts.zip
+.claude/settings.local.json
