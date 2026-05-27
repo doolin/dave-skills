@@ -3,6 +3,10 @@
 /**
  * CI/CD Attestation Pipeline
  *
+ * SYNC: this file is a dogfood copy of skills/solana-cicd-hash/scripts/attest.mjs.
+ * The skill copy is canonical. Edit the skill copy first, then mirror byte-for-byte
+ * here (`diff` must return empty).
+ *
  * Zips CI artifacts, SHA-256s the archive, anchors the checksum on Solana
  * via a memo transaction, generates a PDF attestation report, and uploads
  * everything to S3. Solana and S3 steps are fault-tolerant: failures are
