@@ -1,6 +1,6 @@
 ---
 name: self-host-development-light
-description: Lightweight self-hosted project management using markdown files in a .development directory. Covers backlog, planning, todo, and saved plans — everything an agent needs to orient and start working.
+description: Lightweight self-hosted project management using markdown files in a .development directory. Covers backlog, planning, todo, roadmap, and saved plans — everything an agent needs to orient and start working.
 disable-model-invocation: true
 ---
 
@@ -23,6 +23,7 @@ if all four items below exist, skip to [Ongoing usage](#ongoing-usage).
 ├── backlog.md
 ├── planning.md
 ├── todo.md
+├── roadmap.md     (optional — see Roadmap vs plans)
 └── plans/
     └── .gitkeep
 ```
@@ -141,6 +142,25 @@ descriptive name:
 
 Plans are reference material. They don't replace the three
 working files.
+
+### Roadmap vs plans
+
+Roadmaps and plans are different artifacts — don't let the
+terms collide:
+
+- **`roadmap.md`** carries project scope: direction,
+  architecture, and milestones. One per project, living at
+  `.development/roadmap.md`. It changes when the destination
+  changes.
+- **`plans/`** carries task scope: a single implementation
+  approach or multi-step breakdown. Many per project, cheap
+  to save. A plan changes (or gets superseded) when the
+  approach changes.
+
+A roadmap is optional — not every project has one, and young
+projects often shouldn't yet. When one exists, backlog items
+should trace to it; when priorities in `planning.md` drift
+from it, update one or the other.
 
 ### Updating planning.md
 
