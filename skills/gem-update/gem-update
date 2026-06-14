@@ -1,0 +1,157 @@
+#!/usr/bin/env bash
+#
+# gem-update -- Ruby gem stewardship pass (the DBB-0019 protocol).
+#
+# Reports outdated gems split into patch / minor / major buckets, then
+# -- by default -- batch-applies the PATCH updates (low-risk, per the
+# DBB-0019 policy that patch bumps are batchable) and runs the
+# verification gauntlet. Minor and major bumps are LISTED, never applied
+# automatically: the policy is to do those one gem at a time with the
+# suite run between each, which needs a human in the loop.
+#
+# Surface mode for commits: it edits Gemfile.lock but never commits --
+# a human reviews the diff and commits under DBB-0019 (or the repo's
+# equivalent stewardship ticket).
+#
+# The gauntlet auto-detects what the repo has: bundler-audit, brakeman,
+# rubocop, rspec. Each prefers a bin/ binstub, falls back to
+# `bundle exec`, and is skipped (with a note) if absent -- so the same
+# skill serves any Ruby/Rails Straylight repo.
+#
+# Usage:
+#   gem-update              report buckets, apply patch bumps, run gauntlet
+#   gem-update --report     show the patch/minor/major buckets only
+#   gem-update --verify     run the gauntlet only; make no changes
+#   gem-update --quick      apply + gauntlet but skip the (slow) rspec run
+#   gem-update -h | --help
+#
+# Exit codes:
+#   0   success
+#   1   a gauntlet step failed
+#   10  unknown option
+#   11  no Gemfile in the current directory
+
+set -euo pipefail
+
+mode="full"
+run_spec=1
+case "${1:-}" in
+  -h|--help) awk 'NR<3{next} /^#/{sub(/^# ?/,""); print; next} {exit}' "$0"; exit 0 ;;
+  --report) mode="report" ;;
+  --verify) mode="verify" ;;
+  --quick) run_spec=0 ;;
+  "") ;;
+  *) echo "gem-update: unknown option: $1" >&2; exit 10 ;;
+esac
+
+if [ ! -f Gemfile ]; then
+  echo "gem-update: no Gemfile in $(pwd) -- not a Ruby project" >&2
+  exit 11
+fi
+
+hr() { printf -- '------------------------------------------------------------\n'; }
+
+# Resolve a tool to a runnable command: prefer a bin/ binstub, else
+# `bundle exec`. Echoes nothing if the gem is not in the bundle.
+resolve() {
+  local tool="$1" gem="${2:-$1}"
+  if [ -x "bin/$tool" ]; then
+    printf 'bin/%s' "$tool"
+  elif bundle show "$gem" >/dev/null 2>&1; then
+    printf 'bundle exec %s' "$tool"
+  fi
+}
+
+# Categorize outdated gems into patch/minor/major buckets.
+# Parses the Bundler table (Gem | Current | Latest | ...).
+# Emits lines: "<bucket> <gem> <installed> -> <newest>"
+buckets() {
+  bundle outdated 2>/dev/null \
+    | awk '
+        /^Gem +Current +Latest/ { seen=1; next }
+        seen && NF>=3 && $2 ~ /^[0-9]/ && $3 ~ /^[0-9]/ {
+          split($3, n, "."); split($2, i, ".")   # $3=Latest (newest), $2=Current (installed)
+          na=n[1]+0; ni=n[2]+0; np=n[3]+0; nq=n[4]+0
+          ia=i[1]+0; ii=i[2]+0; ip=i[3]+0; iq=i[4]+0
+          if      (na > ia)                                 b="major"
+          else if (na==ia && ni > ii)                       b="minor"
+          else if (na==ia && ni==ii && np > ip)             b="patch"
+          else if (na==ia && ni==ii && np==ip && nq > iq)   b="patch"  # 4-segment security release, e.g. 0.6.4 -> 0.6.4.1
+          else                                              b="other"
+          printf "%s %s %s -> %s\n", b, $1, $2, $3
+        }'
+}
+
+# --- gauntlet (shared by full + verify) ---------------------------------
+run_gauntlet() {
+  local -a names cmds
+  local c
+  c=$(resolve bundler-audit); [ -n "$c" ] && { names+=("bundler-audit"); cmds+=("$c check --update"); }
+  c=$(resolve brakeman);      [ -n "$c" ] && { names+=("brakeman");      cmds+=("$c --no-pager -q"); }
+  c=$(resolve rubocop);       [ -n "$c" ] && { names+=("rubocop");       cmds+=("$c"); }
+  if [ "$run_spec" = "1" ]; then
+    c=$(resolve rspec); [ -n "$c" ] && { names+=("rspec"); cmds+=("$c"); }
+  fi
+
+  echo "== verification gauntlet =="
+  local overall=0 i name cmd log
+  local -a results
+  for i in "${!names[@]}"; do
+    name="${names[$i]}"; cmd="${cmds[$i]}"; log="/tmp/gem-update-$name.log"
+    printf '  -> %-14s ' "$name"
+    # shellcheck disable=SC2086  # cmd is a deliberately word-split command line
+    if eval $cmd >"$log" 2>&1; then
+      echo "PASS"; results+=("PASS  $name")
+    else
+      echo "FAIL  (log: $log)"; results+=("FAIL  $name"); overall=1
+    fi
+  done
+  hr
+  echo "== summary =="
+  printf '  %s\n' "${results[@]}"
+  [ "$overall" = "0" ] && echo "  ALL GREEN" || echo "  GAUNTLET FAILED"
+  return "$overall"
+}
+
+# --- verify-only --------------------------------------------------------
+if [ "$mode" = "verify" ]; then
+  run_gauntlet
+  exit $?
+fi
+
+# --- report buckets -----------------------------------------------------
+all=$(buckets || true)
+echo "== outdated gems by bump size =="
+for b in patch minor major other; do
+  rows=$(printf '%s\n' "$all" | awk -v b="$b" '$1==b {sub(/^[^ ]+ /,""); print "  " $0}')
+  count=$(printf '%s\n' "$rows" | grep -c . || true)
+  echo "$b ($count):"
+  [ "$count" -gt 0 ] && printf '%s\n' "$rows"
+done
+hr
+
+if [ "$mode" = "report" ]; then
+  exit 0
+fi
+
+# --- apply patch bumps --------------------------------------------------
+patch_gems=$(printf '%s\n' "$all" | awk '$1=="patch" {print $2}')
+if [ -n "$patch_gems" ]; then
+  echo "== applying patch bumps (conservative) =="
+  # shellcheck disable=SC2086  # intentional word-split into gem args
+  bundle update --conservative $patch_gems
+  hr
+else
+  echo "No patch-level bumps to apply."
+  hr
+fi
+
+minor_major=$(printf '%s\n' "$all" | awk '$1=="minor" || $1=="major" {print "  " $0}')
+if [ -n "$minor_major" ]; then
+  echo "== minor/major bumps -- do these one at a time, suite between =="
+  printf '%s\n' "$minor_major"
+  hr
+fi
+
+run_gauntlet
+exit $?
