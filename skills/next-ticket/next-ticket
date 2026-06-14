@@ -1,0 +1,102 @@
+#!/usr/bin/env bash
+#
+# next-ticket -- return the next available ticket number for the repo in
+# the current working directory.
+#
+# Scans every subdirectory of .development/ for ticket files of the form
+# <PREFIX>-NNNN-*.md, auto-detects the repo's ticket prefix (the
+# non-document prefix), and prints the next number, zero-padded to 4
+# digits.
+#
+# Straylight repos each carry their own ticket prefix (dbb -> DBB,
+# clubstraylight.com -> CSL, openclose -> OC) alongside the shared
+# document-artifact prefixes (ADR / PRD / DES / RFC). This script tells
+# them apart so the same tool works in every repo without configuration.
+#
+# Usage:
+#   next-ticket                 # auto-detect prefix, print next ticket
+#   next-ticket FOO             # force prefix FOO (bare arg)
+#   next-ticket --prefix=FOO    # force prefix FOO
+#   next-ticket -h | --help
+#
+# A new repo with a .development/ tree but no tickets yet has no prefix
+# to detect: pass --prefix to mint the first one (FOO -> FOO-0001).
+#
+# Exit codes:
+#   0   success
+#   10  cannot determine prefix (none or several; pass --prefix)
+#   11  no .development/ directory in the current repo
+
+set -euo pipefail
+
+DEV_DIR=".development"
+
+# Artifact classes that are NOT tickets. Anything left after removing
+# these is the repo's ticket prefix.
+DOC_PREFIXES="ADR PRD DES RFC SPIKE"
+
+usage() {
+  sed -n '3,28p' "$0" | sed 's/^# \{0,1\}//'
+}
+
+override=""
+case "${1:-}" in
+  -h|--help) usage; exit 0 ;;
+  --prefix=*) override="${1#--prefix=}" ;;
+  --prefix) override="${2:-}" ;;
+  "") ;;
+  -*) echo "next-ticket: unknown option: $1" >&2; exit 10 ;;
+  *) override="$1" ;;
+esac
+
+if [ ! -d "$DEV_DIR" ]; then
+  echo "next-ticket: no $DEV_DIR/ in $(pwd)" >&2
+  echo "  run from a repo root that has a .development/ ticket tree" >&2
+  exit 11
+fi
+
+# All ticket-like ids, basename only, e.g. "DBB-0440".
+ids=$(find "$DEV_DIR" -type f -name '*-[0-9][0-9][0-9][0-9]-*.md' \
+  | sed 's#.*/##' \
+  | grep -oE '^[A-Z]+-[0-9]+' \
+  || true)
+
+# Resolve the ticket prefix.
+if [ -n "$override" ]; then
+  prefix="$override"
+else
+  all_prefixes=$(printf '%s\n' "$ids" | sed -E 's/-[0-9]+$//' | sort -u | sed '/^$/d')
+  ticket_prefixes=""
+  for p in $all_prefixes; do
+    case " $DOC_PREFIXES " in
+      *" $p "*) continue ;;
+    esac
+    ticket_prefixes="$ticket_prefixes $p"
+  done
+  # shellcheck disable=SC2086
+  set -- $ticket_prefixes
+  if [ "$#" -eq 1 ]; then
+    prefix="$1"
+  elif [ "$#" -eq 0 ]; then
+    echo "next-ticket: no tickets found in $DEV_DIR/ and no --prefix given" >&2
+    echo "  for a new repo, mint the first one: next-ticket --prefix=FOO" >&2
+    exit 10
+  else
+    echo "next-ticket: multiple ticket prefixes found: $*" >&2
+    echo "  disambiguate with --prefix=XXX" >&2
+    exit 10
+  fi
+fi
+
+# Highest existing number for the chosen prefix.
+max=0
+while read -r n; do
+  [ -n "$n" ] || continue
+  n=$((10#$n)) # force base-10 so 0008/0440 are not read as octal
+  [ "$n" -gt "$max" ] && max=$n
+done < <(printf '%s\n' "$ids" \
+  | grep -E "^${prefix}-[0-9]+$" \
+  | sed -E "s/^${prefix}-//" \
+  || true)
+
+printf 'Next ticket: %s-%04d\n' "$prefix" "$((max + 1))"
