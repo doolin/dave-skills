@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+#
+# git-orient -- one-shot, read-only orientation for the git repo in the
+# current working directory. Reports the branch, upstream tracking with
+# ahead/behind counts, any unpushed commits, the working-tree status,
+# and the most recent commits -- everything an agent needs to answer
+# "where does this repo stand?" at session start.
+#
+# Built to replace the ad-hoc chain (git rev-parse + git log
+# origin/..HEAD + git status + git log -n) that agents type at the top
+# of every session. That chain matches no allowlist prefix and so
+# re-prompts every time; this single command allowlists once and
+# travels with the skill.
+#
+# Usage:
+#   git-orient            # orient on the repo in the current directory
+#   git-orient -n 8       # show N recent commits (default 5)
+#   git-orient -h|--help
+#
+# Exit codes:
+#   0   success
+#   12  not inside a git work tree
+
+set -euo pipefail
+
+count=5
+
+usage() {
+  sed -n '3,22p' "$0" | sed 's/^# \{0,1\}//'
+}
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    -h|--help) usage; exit 0 ;;
+    -n) count="${2:-5}"; shift 2 ;;
+    -n*) count="${1#-n}"; shift ;;
+    *) echo "git-orient: unknown argument: $1" >&2; exit 12 ;;
+  esac
+done
+
+if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  echo "git-orient: not inside a git work tree ($(pwd))" >&2
+  exit 12
+fi
+
+branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "?")
+if [ "$branch" = "HEAD" ]; then
+  branch="(detached @ $(git rev-parse --short HEAD))"
+fi
+
+# Upstream tracking branch, if any.
+upstream=$(git rev-parse --abbrev-ref --symbolic-full-name '@{upstream}' 2>/dev/null || true)
+
+echo "Branch:   $branch"
+
+if [ -n "$upstream" ]; then
+  # rev-list --count emits "<behind>\t<ahead>" for @{upstream}...HEAD.
+  read -r behind ahead < <(git rev-list --left-right --count "${upstream}...HEAD" 2>/dev/null | tr '\t' ' ' || echo "0 0")
+  echo "Upstream: $upstream  (ahead $ahead, behind $behind)"
+  if [ "${ahead:-0}" -gt 0 ]; then
+    echo
+    echo "Unpushed commits (${upstream}..HEAD):"
+    git log --oneline "${upstream}..HEAD"
+  fi
+else
+  echo "Upstream: (none -- branch is not tracking a remote)"
+fi
+
+echo
+status=$(git status --short)
+if [ -n "$status" ]; then
+  echo "Working tree (dirty):"
+  printf '%s\n' "$status"
+else
+  echo "Working tree: clean"
+fi
+
+echo
+echo "Recent commits (last $count):"
+git log --oneline -n "$count"
