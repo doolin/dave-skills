@@ -74,6 +74,10 @@ Present a recommendation to the human before starting work.
 - **document-drift** — Audit a repo for stale documentation: broken
   cross-references, outdated indexes, orphaned mentions, and drift
   between docs and the actual codebase.
+- **index-drift-audit** — Keep a `.development/` document set from
+  rotting silently: an auditor-managed `INDEX.md` manifest plus a
+  deterministic reconciler that flags orphaned, missing, and stale
+  documents. Cheap enough for a recurring small-model pass.
 - **linear-walkthrough** — Create a structured code walkthrough using
   Showboat. Reads source, plans a linear explanation, builds the document.
 - **pause-session** — Capture session context and next steps before
