@@ -85,8 +85,9 @@ Present a recommendation to the human before starting work.
 - **self-host-development-light** — Lightweight self-hosted project
   management using markdown files in `.development/` — one file per
   concern (roadmap, backlog, todo, changelog, decisions, requirements,
-  design, stewardship, operator capture) plus saved plans, with the
-  rule for growing any concern into its full directory form.
+  design, stewardship, lessons learned, operator capture) plus saved
+  plans, with the rule for growing any concern into its full
+  directory form.
 
 ## Conventions
 

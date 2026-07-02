@@ -1,6 +1,6 @@
 ---
 name: self-host-development-light
-description: Lightweight self-hosted project management using markdown files in a .development directory — one file per concern: roadmap, backlog, todo, changelog, decisions, requirements, design, stewardship, and an operator capture inbox, plus saved plans. Includes provisioning stubs and the rule for growing any concern into its full directory form.
+description: Lightweight self-hosted project management using markdown files in a .development directory — one file per concern: roadmap, backlog, todo, changelog, decisions, requirements, design, stewardship, lessons learned, and an operator capture inbox, plus saved plans. Includes provisioning stubs and the rule for growing any concern into its full directory form.
 disable-model-invocation: true
 ---
 
@@ -48,6 +48,7 @@ next.
 ├── prd.md             requirements
 ├── design.md          how the system is put together
 ├── stewardship.md     recurring maintenance
+├── lessons-learned.md traps and techniques, in hindsight
 ├── CAPTURE.md         operator inbox (operator-owned)
 └── plans/             saved task-scoped plans
     └── .gitkeep
@@ -164,7 +165,18 @@ guardrails, and a dated log line per pass. These sections are
 never "done."
 ```
 
-### 10. Initialize CAPTURE.md
+### 10. Initialize lessons-learned.md
+
+```markdown
+# Lessons learned
+
+Traps and techniques from doing the work — the things
+that were only obvious in hindsight, and the methods
+worth reusing. One `##` section per theme, concrete
+enough to lift: playbooks and skills harvest this file.
+```
+
+### 11. Initialize CAPTURE.md
 
 ```markdown
 # Capture
@@ -175,7 +187,7 @@ file and may triage items into `backlog.md` when asked, but
 never author entries here.
 ```
 
-### 11. Wire the agent contract
+### 12. Wire the agent contract
 
 Add a pointer in the repo root `AGENTS.md` (create it if
 absent) so any visiting agent finds the system:
@@ -234,6 +246,9 @@ Remove the item from `todo.md`. If it's worth recording, add
 a dated line to `changelog.md`. If completing it settled a
 decision, record that in `adr.md` — the changelog says what
 shipped, the decision log says why it went the way it did.
+If the work taught something a future project needs — a trap
+that was only obvious in hindsight, a technique worth reusing
+— capture it in `lessons-learned.md`.
 
 ### Blocking and unblocking
 
@@ -264,6 +279,13 @@ descriptive name:
 
 Plans are reference material. They don't replace the working
 files.
+
+Because `plans/` is the one place documents accumulate, it is
+also where staleness hides. When it grows past a handful of
+files, adopt the **index-drift-audit** skill: an
+auditor-managed `INDEX.md` manifest plus a deterministic
+reconciler that flags orphaned, missing, and stale documents
+on a recurring schedule.
 
 ### Roadmap, design, and plans
 
