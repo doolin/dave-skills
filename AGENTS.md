@@ -79,8 +79,10 @@ Present a recommendation to the human before starting work.
 - **pause-session** — Capture session context and next steps before
   stepping away. Writes a resume brief to `.development/next.md`.
 - **self-host-development-light** — Lightweight self-hosted project
-  management using markdown files in `.development/`. Covers backlog,
-  planning, todo, roadmap, and saved plans.
+  management using markdown files in `.development/` — one file per
+  concern (roadmap, backlog, todo, changelog, decisions, requirements,
+  design, stewardship, operator capture) plus saved plans, with the
+  rule for growing any concern into its full directory form.
 
 ## Conventions
 

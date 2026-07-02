@@ -1,34 +1,79 @@
 ---
 name: self-host-development-light
-description: Lightweight self-hosted project management using markdown files in a .development directory. Covers backlog, planning, todo, roadmap, and saved plans — everything an agent needs to orient and start working.
+description: Lightweight self-hosted project management using markdown files in a .development directory — one file per concern: roadmap, backlog, todo, changelog, decisions, requirements, design, stewardship, and an operator capture inbox, plus saved plans. Includes provisioning stubs and the rule for growing any concern into its full directory form.
 disable-model-invocation: true
 ---
 
 # Self-Host Development Light
 
-Keep all project management artifacts in the repo as plain markdown.
-No external tools, no heavy process. Three files and a plans directory
-are enough for a solo developer or a small team working with agents.
+Keep all project management artifacts in the repo as plain
+markdown. No external tools, no ticket numbers, no heavy
+process. This is the light form of the self-hosted development
+system, for a solo developer or a small team working with
+agents.
+
+**The unifying rule: light form = one file per concern; full
+form = one directory per concern.** This skill provisions the
+light form. Every file below can grow independently into its
+directory counterpart (see [Growing a
+concern](#growing-a-concern)); a repo at full form for every
+concern is running the complete `.development` architecture.
+
+Features and components are `##` sections within these files —
+never separate files, never IDs. The one exception to the
+no-directories rule is `plans/`, a filing cabinet for saved
+task-scoped plans.
 
 ## Setup (run once)
 
-Create the `.development/` directory and its initial files. Before
-doing any work, check whether setup has already been completed —
-if all four items below exist, skip to [Ongoing usage](#ongoing-usage).
+Before doing any work, check whether setup has already been
+completed — if the scaffold below exists, skip to
+[Ongoing usage](#ongoing-usage).
+
+Provision **all** files from day one, each as the populated
+stub below. No file is optional and none is deferred until
+needed: the stub text is part of the deliverable. It teaches
+the workflow to whoever — human or agent — opens the file
+next.
 
 ### 1. Create the directory structure
 
 ```text
 .development/
-├── backlog.md
-├── planning.md
-├── todo.md
-├── roadmap.md     (optional — see Roadmap vs plans)
-└── plans/
+├── roadmap.md         direction and milestones
+├── backlog.md         planned, not yet scheduled
+├── todo.md            active and blocked work
+├── changelog.md       shipped work
+├── adr.md             decisions
+├── prd.md             requirements
+├── design.md          how the system is put together
+├── stewardship.md     recurring maintenance
+├── CAPTURE.md         operator inbox (operator-owned)
+└── plans/             saved task-scoped plans
     └── .gitkeep
 ```
 
-### 2. Initialize backlog.md
+### 2. Initialize roadmap.md
+
+```markdown
+# Roadmap
+
+Project direction: where this is going, the shape it is
+converging on, and the milestones on the way. One per
+project. Current priorities live here; backlog items should
+trace to something in this file. Update when the destination
+changes, not for every step.
+
+## Direction
+
+<!-- Where the project is going and why. -->
+
+## Milestones
+
+<!-- Coarse and ordered. Date them when they land. -->
+```
+
+### 3. Initialize backlog.md
 
 ```markdown
 # Backlog
@@ -37,28 +82,6 @@ Items not yet scheduled. Add new work here. Move to `todo.md`
 when it becomes active.
 
 <!-- Newest items at the top. -->
-```
-
-### 3. Initialize planning.md
-
-```markdown
-# Planning
-
-High-level direction, priorities, and open questions. Update
-this when the project's focus shifts or after significant
-milestones.
-
-## Current priorities
-
-<!-- What matters most right now and why. -->
-
-## Open questions
-
-<!-- Decisions that need input before work can proceed. -->
-
-## Recent decisions
-
-<!-- Decided items, with brief rationale, newest first. -->
 ```
 
 ### 4. Initialize todo.md
@@ -78,25 +101,114 @@ handful of items, move deferred work back to `backlog.md`.
 <!-- Items waiting on something. Note what they're waiting on. -->
 ```
 
-### 5. Verify setup
+### 5. Initialize changelog.md
 
-Confirm all files exist and contain their templates. The
-`.development/plans/` directory should be present with a
-`.gitkeep`. Commit the scaffold with a message like
-`Scaffold .development for project management`.
+```markdown
+# Changelog
+
+Shipped work worth recording — one dated line per item,
+newest first. When an item leaves `todo.md` finished, note it
+here. Not every completion needs an entry; record the ones a
+future reader would want to find.
+```
+
+### 6. Initialize adr.md
+
+```markdown
+# Decisions
+
+Significant decisions — architecture, tooling, direction —
+one `##` section per decision, newest first: the context, the
+decision, and its consequences. No numbering; sections are
+the unit.
+
+## Open questions
+
+<!-- Decisions that need input before work can proceed. -->
+
+<!-- Decided: "## YYYY-MM-DD — Title" sections below, newest
+     first. -->
+```
+
+### 7. Initialize prd.md
+
+```markdown
+# Requirements
+
+What the project must do, one `##` section per feature or
+component. Keep each section to observable behavior — what a
+user or caller can verify — not implementation.
+```
+
+### 8. Initialize design.md
+
+```markdown
+# Design
+
+How the system is put together: structure, key mechanisms,
+and the reasoning behind them. One `##` section per area.
+Task-scoped implementation plans go in `plans/`, not here;
+when a plan ships, promote its durable outcome into a
+section.
+```
+
+### 9. Initialize stewardship.md
+
+```markdown
+# Stewardship
+
+Standing maintenance — recurring, identical-in-kind work
+(dependency updates, consistency sweeps, doc-drift checks).
+One `##` section per activity: what it covers, its
+guardrails, and a dated log line per pass. These sections are
+never "done."
+```
+
+### 10. Initialize CAPTURE.md
+
+```markdown
+# Capture
+
+Operator inbox: quick notes, ideas, and requests jotted by
+the human between sessions. Operator-owned — agents read this
+file and may triage items into `backlog.md` when asked, but
+never author entries here.
+```
+
+### 11. Wire the agent contract
+
+Add a pointer in the repo root `AGENTS.md` (create it if
+absent) so any visiting agent finds the system:
+
+```markdown
+## Development tracking
+
+Project management is self-hosted in `.development/` — flat
+markdown, one file per concern, no ticket IDs. Orient by
+reading `todo.md`, `roadmap.md`, and `backlog.md`. Record
+decisions in `adr.md` and shipped work in `changelog.md`.
+```
+
+### 12. Verify setup
+
+Confirm every file exists and contains its stub, and that
+`plans/` is present with a `.gitkeep`. Commit the scaffold
+with a message like `Scaffold .development for project
+management`.
 
 ## Ongoing usage
 
 ### Orientation
 
-At the start of each session, read all three files to orient:
+At the start of each session, read three files to orient:
 
 1. `todo.md` — what's active and what's blocked
-2. `planning.md` — current priorities and open questions
+2. `roadmap.md` — direction and current priorities
 3. `backlog.md` — what's waiting
 
-Present a short summary to the human before starting work.
-This pairs with the What's Next checklist in `AGENTS.md`.
+Glance at `CAPTURE.md` for new operator notes. Present a
+short summary to the human before starting work. This pairs
+with the What's Next checklist in `AGENTS.md`.
 
 ### Adding work
 
@@ -113,20 +225,30 @@ item isn't self-explanatory, but keep it brief.
 ### Starting work
 
 Move the item from `backlog.md` to the **Active** section of
-`todo.md`. Don't copy — move. The item should exist in exactly
-one place.
+`todo.md`. Don't copy — move. The item should exist in
+exactly one place.
 
 ### Completing work
 
-Remove the item from `todo.md`. If it's worth recording, add a
-one-line entry to the **Recent decisions** section of
-`planning.md` with the date and outcome.
+Remove the item from `todo.md`. If it's worth recording, add
+a dated line to `changelog.md`. If completing it settled a
+decision, record that in `adr.md` — the changelog says what
+shipped, the decision log says why it went the way it did.
 
 ### Blocking and unblocking
 
-Move blocked items to the **Blocked** section of `todo.md` with
-a note explaining what they're waiting on. When the blocker
-clears, move back to **Active**.
+Move blocked items to the **Blocked** section of `todo.md`
+with a note explaining what they're waiting on. When the
+blocker clears, move back to **Active**.
+
+### Recording decisions
+
+When a significant decision is made — architecture, tooling,
+scope, direction — add a `## YYYY-MM-DD — Title` section to
+`adr.md` with the context, the decision, and its
+consequences. Questions still awaiting a decision sit in the
+**Open questions** section at the top; move them down into a
+dated section once decided.
 
 ### Saving plans
 
@@ -140,51 +262,61 @@ descriptive name:
 .development/plans/oidc-role-remediation.md
 ```
 
-Plans are reference material. They don't replace the three
-working files.
+Plans are reference material. They don't replace the working
+files.
 
-### Roadmap vs plans
+### Roadmap, design, and plans
 
-Roadmaps and plans are different artifacts — don't let the
-terms collide:
+Three artifacts carry "how and where," at different scopes —
+don't let the terms collide:
 
-- **`roadmap.md`** carries project scope: direction,
-  architecture, and milestones. One per project, living at
-  `.development/roadmap.md`. It changes when the destination
-  changes.
+- **`roadmap.md`** carries project scope: direction and
+  milestones. It changes when the destination changes.
+- **`design.md`** carries system scope: how the thing is put
+  together and why. It changes when the structure changes.
 - **`plans/`** carries task scope: a single implementation
-  approach or multi-step breakdown. Many per project, cheap
-  to save. A plan changes (or gets superseded) when the
-  approach changes.
+  approach. Many per project, cheap to save, superseded
+  freely.
 
-A roadmap is optional — not every project has one, and young
-projects often shouldn't yet. When one exists, backlog items
-should trace to it; when priorities in `planning.md` drift
-from it, update one or the other.
+When a plan ships, its durable residue belongs in `design.md`
+(structure) or `adr.md` (the decision), not in the plan file.
 
-### Updating planning.md
+## Growing a concern
 
-Revise `planning.md` when:
+Any concern can grow to full form independently: explode the
+file's sections into the matching directory — `adr.md` →
+`adr/` with one file per decision, `backlog.md` → `backlog/`
+with one file per item — minting numbering or ticket IDs only
+at that point. It is one mechanical operation per concern, in
+any order; a repo can run `adr/` alongside `backlog.md`.
 
-- Priorities shift
-- A significant decision is made
-- An open question gets resolved
-- The project's direction changes after a milestone
+Signals that a concern has outgrown its file: you scan the
+file to find things, sections need to be referenced by name
+from elsewhere, or more than one person or agent works the
+concern concurrently.
 
-Keep it current. Stale planning docs are worse than no planning
-docs.
+**Exactly one form per concern.** A file and its directory
+both present (`prd.md` and `prd/`) is drift — finish the
+migration or revert it. `CAPTURE.md` and `plans/` are exempt:
+they have one form only.
 
 ## Principles
 
-- **One source of truth per item.** An item lives in exactly one
-  file at a time.
+- **One source of truth per item.** An item lives in exactly
+  one file at a time.
 - **Short todo list.** If `todo.md` grows past five or six
   active items, push lower-priority work back to the backlog.
-- **Backlog is append-only until groomed.** Don't over-organize
-  the backlog. Newest items go at the top. Groom periodically
+- **Backlog is append-only until pruned.** Don't over-organize
+  the backlog. Newest items go at the top. Prune periodically
   by removing items that are no longer relevant.
 - **Plans are cheap.** Save any plan worth revisiting. The
   plans directory is a filing cabinet, not a commitment.
-- **Process follows the work.** If this structure stops fitting,
-  change it. The point is to support the work, not to maintain
-  the process.
+- **Stubs teach.** Every file is provisioned from day one
+  with text that explains its own use. An empty scaffold is a
+  puzzle; a stubbed one is documentation.
+- **Keep it current.** Stale planning docs are worse than no
+  planning docs.
+- **Process follows the work.** If this structure stops
+  fitting, change it — or grow the crowded concern to its
+  directory form. The point is to support the work, not to
+  maintain the process.
