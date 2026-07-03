@@ -201,7 +201,7 @@ reading `todo.md`, `roadmap.md`, and `backlog.md`. Record
 decisions in `adr.md` and shipped work in `changelog.md`.
 ```
 
-### 12. Verify setup
+### 13. Verify setup
 
 Confirm every file exists and contains its stub, and that
 `plans/` is present with a `.gitkeep`. Commit the scaffold
