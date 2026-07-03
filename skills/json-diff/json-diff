@@ -1,0 +1,87 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# json-diff -- structural diff of two JSON files.
+#
+# Parses both files and compares them as data, so key order,
+# whitespace, and formatting never register as differences. Each
+# differing path is reported with a marker:
+#
+#   ~ .panels[2].title: "Old title" -> "New title"   (changed)
+#   + .templating: {...}                             (only in B)
+#   - .rows: [...]                                   (only in A)
+#
+# Usage:
+#   json-diff A.json B.json
+#   json-diff -q A.json B.json    # no output, exit code only
+#
+# Exit codes: 0 semantically identical, 1 different,
+#             12 usage or parse error.
+
+require "json"
+
+def usage!(msg = nil)
+  warn msg if msg
+  warn "usage: json-diff [-q] FILE_A FILE_B"
+  exit 12
+end
+
+quiet = !ARGV.delete("-q").nil? | !ARGV.delete("--quiet").nil?
+usage! if ARGV.intersect?(["-h", "--help"])
+usage!("json-diff: expected exactly two files") unless ARGV.length == 2
+
+docs = ARGV.map do |path|
+  usage!("json-diff: no such file: #{path}") unless File.file?(path)
+  begin
+    JSON.parse(File.read(path))
+  rescue JSON::ParserError => e
+    warn "json-diff: #{path} is not valid JSON: #{e.message[0, 100]}"
+    exit 12
+  end
+end
+
+def summarize(value, limit = 60)
+  s = JSON.generate(value)
+  s.length > limit ? "#{s[0, limit - 3]}..." : s
+end
+
+def diff(a, b, path, out)
+  if a.is_a?(Hash) && b.is_a?(Hash)
+    (a.keys | b.keys).each do |k|
+      sub = "#{path}.#{k}"
+      if !b.key?(k)    then out << ["-", sub, summarize(a[k])]
+      elsif !a.key?(k) then out << ["+", sub, summarize(b[k])]
+      else                  diff(a[k], b[k], sub, out)
+      end
+    end
+  elsif a.is_a?(Array) && b.is_a?(Array)
+    [a.length, b.length].max.times do |i|
+      sub = "#{path}[#{i}]"
+      if i >= b.length    then out << ["-", sub, summarize(a[i])]
+      elsif i >= a.length then out << ["+", sub, summarize(b[i])]
+      else                     diff(a[i], b[i], sub, out)
+      end
+    end
+  elsif a != b # scalars, or mismatched types; == lets 1 equal 1.0
+    out << ["~", path, "#{summarize(a)} -> #{summarize(b)}"]
+  end
+end
+
+out = []
+diff(docs[0], docs[1], "", out)
+
+if out.empty?
+  puts "Semantically identical." unless quiet
+  exit 0
+end
+
+unless quiet
+  out.each do |mark, path, detail|
+    puts "#{mark} #{path.empty? ? '(root)' : path}: #{detail}"
+  end
+  counts = out.group_by(&:first).transform_values(&:length)
+  puts
+  puts "#{counts['~'].to_i} changed, #{counts['+'].to_i} added " \
+       "(only in B), #{counts['-'].to_i} removed (only in A)"
+end
+exit 1

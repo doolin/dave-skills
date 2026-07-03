@@ -78,6 +78,10 @@ Present a recommendation to the human before starting work.
   rotting silently: an auditor-managed `INDEX.md` manifest plus a
   deterministic reconciler that flags orphaned, missing, and stale
   documents. Cheap enough for a recurring small-model pass.
+- **json-diff** — Structural (semantic) diff of two JSON files in
+  pure-stdlib Ruby: parses both and compares as data, so key order
+  and formatting never register. Reports changed/added/removed paths;
+  exit code doubles as a script guard.
 - **linear-walkthrough** — Create a structured code walkthrough using
   Showboat. Reads source, plans a linear explanation, builds the document.
 - **pause-session** — Capture session context and next steps before
