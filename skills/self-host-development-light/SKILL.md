@@ -208,6 +208,44 @@ Confirm every file exists and contains its stub, and that
 with a message like `Scaffold .development for project
 management`.
 
+## Migrating existing documents
+
+Setup often lands in a repo that already has
+planning-flavored markdown at the root — `PLANNING.md`,
+`NOTES.md`, `TODO.md`, `ROADMAP.md`, working-notes files.
+Migrate them as their own commit, after the scaffold
+commit: the scaffold is mechanical, the migration is
+judgment, and a reviewer should see them separately.
+
+For each candidate document:
+
+1. **Classify by scope**, the same rule that separates the
+   working files: direction → `roadmap.md`, requirements →
+   `prd.md`, system structure → `design.md`, a single
+   task's approach → `plans/<name>.md`. Most working notes
+   are task-scoped and land in `plans/` intact.
+2. **Move, don't copy.** Use `git mv` so history survives
+   the migration, and one source of truth holds.
+3. **Extract the live work.** Unchecked checklists and
+   "to explore" lists inside a document are backlog items
+   in hiding — pull each into `backlog.md` with a pointer
+   back to the plan. The plan stays reference material;
+   the backlog is where work gets scheduled from.
+4. **Harvest the lessons.** A trap or technique buried in
+   working notes ("X renders blank when exported through
+   Y — do Z instead") belongs in `lessons-learned.md`,
+   where the next project can find it.
+5. **Fix inbound references.** Grep for the old filename
+   before committing — `README.md` and `AGENTS.md` often
+   point at it.
+
+Not everything migrates. `README.md`, `AGENTS.md` /
+`CLAUDE.md`, and product documentation describe the
+artifact, not the work — they stay where they are.
+
+Commit the whole migration as one commit, e.g. `Migrate
+planning docs into .development`.
+
 ## Ongoing usage
 
 ### Orientation
