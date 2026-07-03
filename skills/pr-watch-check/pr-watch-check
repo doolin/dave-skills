@@ -1,0 +1,106 @@
+#!/bin/bash
+# pr-watch-check — wait for ALL GitHub checks on the current branch's PR.
+#
+# watch-ci watches ONE workflow run; on branches whose push triggers
+# several workflows (Ruby Actions + Shellcheck + ...) it latches onto
+# whichever registered last and the others go unwatched. This tool
+# waits for every check on the PR and mirrors the aggregate result.
+#
+# Usage:
+#   pr-watch-check [pr-number] [--initial-wait N]
+#
+# With no pr-number, resolves the PR for the current branch.
+# After checks pass, keeps watching until the PR is merged or closed
+# (the operator merges by hand), so one background task covers the
+# whole checks→merge arc. --no-merge-wait restores checks-only.
+# Exit codes:
+#   0   every check passed (and PR merged, unless --no-merge-wait)
+#   1   at least one check failed (gh pr checks semantics)
+#   2   PR closed without merging
+#   10  bad input
+#   11  no PR found for the current branch / checks never registered
+set -uo pipefail
+
+initial_wait=8
+merge_wait=1
+pr=""
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --initial-wait)
+      shift
+      [ $# -gt 0 ] || { echo "pr-watch-check: --initial-wait needs a value" >&2; exit 10; }
+      initial_wait="$1"
+      ;;
+    --no-merge-wait)
+      merge_wait=0
+      ;;
+    -*)
+      echo "pr-watch-check: unknown flag $1" >&2
+      exit 10
+      ;;
+    *)
+      pr="$1"
+      ;;
+  esac
+  shift
+done
+
+echo "[1/3] waiting ${initial_wait}s for checks to register..."
+sleep "$initial_wait"
+
+# Retry the initial listing: right after a push, checks can take a few
+# seconds to appear, and gh errors out when none are reported yet.
+# gh pr checks exit codes: 0 = all pass, 1 = some failed, 8 = still
+# pending — all three mean checks EXIST, so only other codes retry.
+attempts=0
+while :; do
+  gh pr checks ${pr:+"$pr"} >/dev/null 2>&1
+  code=$?
+  case "$code" in
+    0|1|8) break ;;
+  esac
+  attempts=$((attempts + 1))
+  if [ "$attempts" -ge 6 ]; then
+    echo "pr-watch-check: no PR or no checks registered for this branch" >&2
+    exit 11
+  fi
+  sleep 10
+done
+
+echo "[2/3] watching all checks${pr:+ on PR #$pr}..."
+gh pr checks ${pr:+"$pr"} --watch --interval 10
+status=$?
+
+# Re-list authoritatively: --watch has had quiet moments historically
+# (same reason watch-ci re-checks gh run watch's conclusion).
+echo
+gh pr checks ${pr:+"$pr"} || status=$?
+
+if [ "$status" -ne 0 ]; then
+  echo "✗ checks failed (exit $status)"
+  exit "$status"
+fi
+echo "✓ all checks passed"
+
+if [ "$merge_wait" -eq 0 ]; then
+  exit 0
+fi
+
+# Checks are green; now wait for the operator's merge. 30s poll keeps
+# well inside API limits; the task runs until merge, close, or kill.
+echo "[3/3] checks green — waiting for merge${pr:+ of PR #$pr}..."
+while :; do
+  state=$(gh pr view ${pr:+"$pr"} --json state --jq '.state' 2>/dev/null)
+  case "$state" in
+    MERGED)
+      echo "✓ merged"
+      exit 0
+      ;;
+    CLOSED)
+      echo "✗ closed without merging"
+      exit 2
+      ;;
+  esac
+  sleep 30
+done
