@@ -88,6 +88,11 @@ Present a recommendation to the human before starting work.
   design, stewardship, lessons learned, operator capture) plus saved
   plans, with the rule for growing any concern into its full
   directory form.
+- **development-with-ticketing** — Marisu's fork of
+  self-host-development-light (copied as-is 2026-07-02), to be
+  extended in place for Jira-tracked development (GEN-### commits via
+  marisu-jira). Expect it to diverge; the light skill stays
+  ticket-free.
 
 ## Conventions
 
