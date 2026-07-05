@@ -71,6 +71,12 @@ Present a recommendation to the human before starting work.
   GitHub Actions workflows.
 - **entertainment-disclaimer** — Small focused skill for attaching an
   entertainment-only disclaimer.
+- **cold-reader** — Editorial precepts for durable documents
+  (reports, ADRs, PRDs, design docs): write for the reader who
+  holds only the artifact and its citations, not the session that
+  produced it. Generalizes the commit-message anti-patterns; ends
+  with a four-sweep audit to run before a document ships or
+  prints.
 - **document-drift** — Audit a repo for stale documentation: broken
   cross-references, outdated indexes, orphaned mentions, and drift
   between docs and the actual codebase.
