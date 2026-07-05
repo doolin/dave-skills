@@ -55,8 +55,9 @@ decode is a violation.
 
 Ticket IDs, file paths, companion-document names may tell the
 reader where more detail lives. They may not be the sole carrier
-of a load-bearing fact. If removing the pointer removes the
-claim's content, the content was never in the document.
+of a fact the document's argument rests on. If removing the
+pointer removes the claim's content, the content was never in
+the document.
 
 Wrong: "the threshold defect (see ticket 41)."
 Right: "the accessor returns the wrong field, so the admission
