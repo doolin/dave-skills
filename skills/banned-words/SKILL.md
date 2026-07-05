@@ -51,6 +51,19 @@ Ground rules:
 - **Carve-out:** counting and matching claims keep it — "exactly
   one `ADR.md` per module", "the copies match exactly".
 
+### honest
+
+- **Banned:** as a self-applied credibility marker — "the honest
+  answer", "an honest caveat", "honest minimum", "to be honest".
+- **Why:** anything prefaced with "honest" immediately raises
+  suspicion about everything else. Credibility is carried by the
+  content, not asserted over it.
+- **Instead:** delete the word and let the statement stand, or
+  name what the marker was gesturing at — the limitation, the
+  uncertainty, the unflattering number.
+- **Carve-out:** describing a person's character, and direct
+  quotation of sources.
+
 ## Adding a word
 
 When the operator bans a word: add an entry above with the four
