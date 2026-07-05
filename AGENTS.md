@@ -71,6 +71,10 @@ Present a recommendation to the human before starting work.
   GitHub Actions workflows.
 - **entertainment-disclaimer** — Small focused skill for attaching an
   entertainment-only disclaimer.
+- **banned-words** — The operator's banned-words list: words that
+  read as bafflegab, filler, or euphemism, each with scope,
+  replacements, and carve-outs. Applies to all agent-produced
+  prose; grows by operator decree.
 - **cold-reader** — Editorial precepts for durable documents
   (reports, ADRs, PRDs, design docs): write for the reader who
   holds only the artifact and its citations, not the session that
