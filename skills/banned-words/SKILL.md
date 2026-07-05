@@ -76,6 +76,27 @@ Ground rules:
 - **Carve-out:** the concrete verb "clean up" (removing things)
   is a different word and not covered.
 
+### spine
+
+- **Banned:** as structural metaphor — "the spine of the
+  document", "narrative spine", "the spine of the argument".
+- **Why:** it names a shape where the reader needs the function.
+- **Instead:** say what the thing does — the ordering principle,
+  the main sequence, the section everything else references.
+- **Carve-out:** literal spines — anatomy, book bindings.
+
+### load bearing
+
+- **Banned:** as an importance marker, hyphenated or not — "the
+  load-bearing sentence", "load-bearing consistency".
+- **Why:** it asserts that something depends on this without
+  naming what. If nothing named would break, the phrase was
+  decoration.
+- **Instead:** name the dependent — "X breaks if this changes",
+  "the claim the argument rests on".
+- **Carve-out:** literal structural and rock mechanics — walls,
+  beams, pillars, abutments.
+
 ## Adding a word
 
 When the operator bans a word: add an entry above with the four
