@@ -64,6 +64,18 @@ Ground rules:
 - **Carve-out:** describing a person's character, and direct
   quotation of sources.
 
+### cleanly
+
+- **Banned:** as an outcome adverb — "applies cleanly", "compiles
+  cleanly", "maps cleanly", "separates cleanly".
+- **Why:** it asserts nothing went wrong without saying what was
+  checked. The reader learns the author's satisfaction, not the
+  result.
+- **Instead:** name the check and its result — "applies with no
+  conflicts", "compiles with zero warnings" — or delete.
+- **Carve-out:** the concrete verb "clean up" (removing things)
+  is a different word and not covered.
+
 ## Adding a word
 
 When the operator bans a word: add an entry above with the four
