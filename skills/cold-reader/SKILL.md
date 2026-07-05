@@ -105,8 +105,8 @@ this).
 
 Every table and figure self-captions: a reader who lands on it
 without the surrounding prose can tell what it shows, in what
-units, from what source. Paper is the honest test here too —
-figures get detached, photocopied, and cited on their own. This
+units, from what source. Paper is the unforgiving test here too
+— figures get detached, photocopied, and cited on their own. This
 is the complement of "don't repeat the evidence": if the prose
 must not re-carry the fact, the evidence must be able to carry
 it alone.
@@ -163,8 +163,8 @@ findings can be compared rather than merged silently.
   arrives years later mid-refactor; rejected-alternative names
   and constraint sources must resolve on the spot.
 - **Technical report** — all eight precepts, full audit before
-  print. Printing is the honest test: paper strips every referent
-  the session was silently supplying.
+  print. Printing is the unforgiving test: paper strips every
+  referent the session was silently supplying.
 - **PRD / design doc** — precept 6 dominates: these documents are
   *about* future artifacts, so the design/promise line must be
   explicit — what exists today vs. what the document proposes.
