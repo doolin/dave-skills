@@ -157,6 +157,22 @@ reviewable commits.
 - **Bundling unrelated changes** — one commit doing three things
 - **Repeating the diff** — "Change X from Y to Z" when the diff
   already shows that. Explain *why* it changed.
+- **Private references** — "per lever 4", "see §5", "the Tuesday
+  item": labels that resolve only inside some other document or the
+  author's working memory at the time of writing. Name the concept
+  in place. A commit message is read alone, by someone (including
+  your future self) without the session that produced it.
+- **Background narration** — history, design discussion, or context
+  that belongs in the artifact being changed. The document carries
+  the content; the message carries the reason the change was made.
+- **Confessing invisible cleanups** — "also removes a stale
+  comment." If nobody would notice it's gone, it isn't worth a
+  sentence.
+
+The test that generalizes these: write for a reader who has only
+the message and the diff — no session, no memory of the
+conversation, no other documents open. Every referent must resolve
+from those two things alone.
 
 ## When Claude writes commit messages
 
