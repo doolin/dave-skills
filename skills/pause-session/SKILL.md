@@ -1,6 +1,6 @@
 ---
 name: pause-session
-description: Capture session context before stepping away, keyed to the ticket or thread the work advances. Writes a thread file under .development/threads/ (or the single next.md where that's the convention) and commits under the ticket's own prefix. Degrades to chat output in projects with no .development/.
+description: Capture session context before stepping away, keyed to the ticket or thread the work advances. In a full-form .development repo the active ticket file is the thread (update it in place); in the light form, write a threads/ file plus the next.md index; commit under the ticket's prefix. Scoped to the current repo only; degrades to chat output where there is no .development/.
 ---
 
 # Pause Session
@@ -15,9 +15,10 @@ Name the artifact after the handle the operator will resume by —
 human-meaningful and source-resident:
 
 - **Ticketed project** (commits carry a `CSL-` / `OC-` / … ticket
-  prefix): key on the **ticket the session advanced** —
-  `.development/threads/CSL-0034.md`. The ticket is the natural
-  filename and the natural commit prefix in one.
+  prefix): key on the **ticket the session advanced**. The ticket is
+  the natural filename and the natural commit prefix in one. Where the
+  file physically lives depends on the repo's `.development` form — see
+  step 4.
 - **Otherwise:** a short thread name —
   `.development/threads/the-commons.md`.
 - **Never a session UUID.** It is canonical for the machine and
@@ -27,14 +28,24 @@ Add a facet suffix only when one session carries several
 independent resume points (`CSL-0034-migration`,
 `CSL-0034-rollback`).
 
-Two-tier structure, where `.development/` exists (why: an agent
-can't un-read what it has loaded — context poisoning happens at
-Read time, so scope is enforced at the file boundary):
+Two-tier structure, in the light form (why: an agent can't un-read
+what it has loaded — context poisoning happens at Read time, so scope
+is enforced at the file boundary):
 
 - `.development/next.md` — a thin **index**: one pointer line per
   open thread, no narrative. Safe for any session to read.
 - `.development/threads/<key>[-facet].md` — one file per thread,
   holding the narrative.
+
+**Full-form `.development` is the exception.** A repo running the full
+system — per-concern *directories*, an `active/` of ticket files —
+already has a live thread per active ticket: the ticket file itself,
+which carries its own State/Next. There the pause updates the active
+ticket's file (`active/<TICKET>.md`) and commits under that ticket. Do
+NOT add a `threads/` dir or `next.md` beside `active/` — that
+duplicates what the ticket already holds. `threads/` + `next.md` is for
+the light/non-ticketed form, which has no per-ticket file to carry
+state.
 
 ## When to use
 
@@ -47,7 +58,9 @@ Read time, so scope is enforced at the file boundary):
 
 When the user invokes this skill:
 
-1. Read the current project state:
+1. Read the current project state — **this repo only. Never read a
+   sibling project's working tree to pause the one you are in; a pause
+   is scoped to the current repo.**
    - `git status` and `git log --oneline -5`
    - `git branch` to see what branch we're on
    - `git stash list` for any stashed work
@@ -64,12 +77,16 @@ When the user invokes this skill:
    obvious from context. Don't guess — the user knows what
    matters.
 
-4. Write or update the thread file (template below) and refresh
-   that thread's line in the `next.md` index. Where the project
-   keeps a single `.development/next.md` and no `threads/` dir,
-   write that snapshot instead. Where there is no `.development/`
-   at all, the brief is this skill's output — hand it to the
-   operator; there is nothing to commit.
+4. Write the pause where the repo's form keeps it:
+   - **Full form** (`active/` dir of ticket files): update the active
+     ticket's file (`active/<TICKET>.md`) — its State/Next — in place.
+     No `threads/`, no `next.md`.
+   - **Light + threads** (`threads/` and/or `next.md` present): write
+     the thread file (template below) and refresh its line in
+     `next.md`.
+   - **Single `next.md`, no `threads/`:** write that snapshot.
+   - **No `.development/`:** the brief is this skill's output — hand it
+     to the operator; there is nothing to commit.
 
 ## Committing the pause
 
@@ -125,6 +142,8 @@ apply for the GitLab OIDC role" not "finish GitLab setup".)
 
 ## Principles
 
+- **A pause is single-repo.** Read and write only the repo you are
+  pausing. Never open a sibling project's working tree to do it.
 - **Concrete over abstract.** "Add the attest job to
   `.gitlab-ci.yml`" not "work on CI."
 - **One next step per thread.** If there are multiple, pick the
