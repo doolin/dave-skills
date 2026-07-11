@@ -15,6 +15,7 @@
 # Usage:
 #   git-orient            # orient on the repo in the current directory
 #   git-orient -n 8       # show N recent commits (default 5)
+#   git-orient -C DIR     # orient on the repo at DIR (like git -C)
 #   git-orient -h|--help
 #
 # Exit codes:
@@ -24,9 +25,10 @@
 set -euo pipefail
 
 count=5
+dir=
 
 usage() {
-  sed -n '3,22p' "$0" | sed 's/^# \{0,1\}//'
+  sed -n '3,23p' "$0" | sed 's/^# \{0,1\}//'
 }
 
 while [ "$#" -gt 0 ]; do
@@ -34,9 +36,15 @@ while [ "$#" -gt 0 ]; do
     -h|--help) usage; exit 0 ;;
     -n) count="${2:-5}"; shift 2 ;;
     -n*) count="${1#-n}"; shift ;;
+    -C) dir="${2:-}"; shift 2 ;;
+    -C*) dir="${1#-C}"; shift ;;
     *) echo "git-orient: unknown argument: $1" >&2; exit 12 ;;
   esac
 done
+
+if [ -n "$dir" ]; then
+  cd "$dir" 2>/dev/null || { echo "git-orient: cannot cd to $dir" >&2; exit 12; }
+fi
 
 if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   echo "git-orient: not inside a git work tree ($(pwd))" >&2

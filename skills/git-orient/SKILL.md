@@ -27,6 +27,11 @@ It reports, in order:
 - **Recent commits** — the last N one-liners (default 5; `-n N` to
   change).
 
+Pass `-C DIR` to orient on a repo at another path (same spelling as
+`git -C`) — for cross-repo work like a commons distribution, where you
+need to check a sibling's branch and history before committing in it,
+without a `cd` chain that defeats the allowlist.
+
 ```text
 Branch:   main
 Upstream: origin/main  (ahead 0, behind 0)
