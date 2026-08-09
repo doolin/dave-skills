@@ -53,6 +53,7 @@ what, which marks are knocked out vs painted. Idealize print wobble
 into clean vectors; say so explicitly.}
 
 Ruby requirements (stdlib only, no gems):
+
 - Create {WORKDIR}/{MODULE_FILE} defining `module {MODULE}` with the
   API `{MODULE}.svg_element(cx:, cy:, length:, angle: 0)`. Convention:
   angle 0 = {CANONICAL_ORIENTATION}; positive = clockwise (SVG y-down);
@@ -65,6 +66,7 @@ Ruby requirements (stdlib only, no gems):
   the photo's orientation for direct comparison, plus one at angle 0.
 
 Construction rules:
+
 - Knockouts (letters, holes) are subpaths of the body path with
   fill-rule="evenodd" — NEVER a background-colored shape painted on
   top; the real background is not uniform.
@@ -79,6 +81,7 @@ Construction rules:
   reading, trust your measurement and note the difference.
 
 CRITICAL — iterate visually, this is the whole game:
+
 1. `magick {WORKDIR}/{PREVIEW}.svg {WORKDIR}/{PREVIEW}.png`
 2. Read the PNG and re-Read the reference photo side by side.
 3. Compare named dimensions: {DIMENSIONS TO CHECK — axis angle, part

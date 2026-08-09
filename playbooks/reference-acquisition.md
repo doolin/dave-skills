@@ -22,7 +22,7 @@ substrate `DBB-0460` (shipped); MCP adapter `DBB-0461` (deferred).
 Base: `http://localhost:3000/api/v1/references`
 
 | Call | Returns |
-|------|---------|
+| ---- | ------- |
 | `GET /references` | search/list. Params: `q` (full-text), `tags` (comma-separated, **match-all/AND**), `domain`, `reading_state`, `limit` (default 25, max 100). |
 | `GET /references/:id` | one reference's metadata + AI summary |
 | `GET /references/:id/content` | the cached page body for `:id` |

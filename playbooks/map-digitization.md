@@ -10,7 +10,7 @@ distillation with model-class assignments.
 ## Pipeline stages, and which model class handles each
 
 | # | Stage | Model class |
-|---|-------|-------------|
+| --- | ----- | ----------- |
 | 1 | Raw vector trace: ImageMagick grayscale/despeckle → `mkbitmap -f 32 -s 2 -t 0.42` → `potrace -s -t 40 --tight`. Keep as reference only, never ship it. | **Haiku** — mechanical, commands above |
 | 2 | Node detection: OpenCV Hough circles scored by ring-likeness (sample the circumference against the OUTSIDE background only — digits inside circles poison interior estimates), radius sweep ±4 px; targeted ROI passes for stubborn circles; adaptive threshold + contours for squares. **Freeze results to JSON immediately** — ids derive from them. | **Fable** to derive for a new map; **Sonnet** to re-run the documented recipe |
 | 3 | Edge classification: sample the scan along each close node pair (perpendicular-band min darkness), require thin-line isolation (flanks light) so illustrations don't read as paths, run-length analysis for dashed vs solid, collinearity pruning. | **Fable** first time; **Sonnet** with the recipe |
