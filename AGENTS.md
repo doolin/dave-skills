@@ -125,6 +125,10 @@ Present a recommendation to the human before starting work.
   extended in place for Jira-tracked development (GEN-### commits via
   marisu-jira). Expect it to diverge; the light skill stays
   ticket-free.
+- **session-telemetry** — Append-only JSONL session event log for
+  agent efficacy review: session boundaries, commits, ticket
+  transitions, blockers, and lapses, with a hypothesis-report
+  stopping rule. Status: proposal.
 - **update-family-graph-entry** — Correct your own entry in the family
   knowledge graph (knowledge.json in clubstraylight.com): mechanical
   corrections only, every graph location, validated, one
