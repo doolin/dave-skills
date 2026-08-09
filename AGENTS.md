@@ -11,6 +11,24 @@ Skills live at `skills/<kebab-name>/SKILL.md` — intentionally at the top
 level, not under `.claude/` or `.cursor/`, so they stay portable and easy
 to lift into other repos.
 
+## Playbooks
+
+`playbooks/` holds cross-project reference procedure — harvested,
+hard-won process write-ups (map digitization, counter-sheet
+extraction, framework migration, ...). Playbooks are NOT skills:
+no `SKILL.md` frontmatter, never client-invoked; an agent Reads
+one before starting matching work. The operator's global
+`CLAUDE.md` indexes them by path.
+
+Symlink contract: `~/.claude/playbooks` is ONE whole-directory
+symlink to this repo's `playbooks/` (unlike skills, which link
+per-directory into `~/.claude/skills/`). Playbooks have exactly
+one source, and a new playbook committed here appears at
+`~/.claude/playbooks/<name>.md` without re-linking. Every
+playbook path referenced elsewhere resolves through that
+symlink — renaming or removing a playbook breaks those
+references, so treat filenames as public API.
+
 ## Persona
 
 Adopt the persona most appropriate for the task and context at hand.
