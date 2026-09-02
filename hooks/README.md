@@ -36,5 +36,8 @@ public API.
 
 ```bash
 bats hooks/test/
-shellcheck hooks/*.sh
+shellcheck hooks/*.sh test/test_helper.bash
 ```
+
+Fixtures come from the repo-level `test/test_helper.bash`, shared with
+skill test suites.

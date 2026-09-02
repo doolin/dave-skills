@@ -1,17 +1,21 @@
 #!/usr/bin/env bash
-# Shared bats fixtures for hooks/test/*.bats
+# Shared bats fixtures for this repo's test suites (hooks/test/*.bats,
+# skills/<name>/test/*.bats).
 #
-# Load via:  load test_helper
+# Load with a path relative to the test file, e.g.
+#   load ../../test/test_helper          # from hooks/test/
+#   load ../../../test/test_helper       # from skills/<name>/test/
 #
-# Each test gets a fresh $TEST_TMPDIR and REPO_ROOT pointing at it, so a
-# hook that defaults to the git toplevel reads the fixture tree instead
-# of this repo. $HOOKS_DIR is the absolute path to hooks/.
+# Each test gets a fresh $TEST_TMPDIR, REPO_ROOT pointing at it (so a
+# tool that defaults to the git toplevel reads the fixture tree instead
+# of this repo), and $SUBJECT_DIR: the directory holding the code under
+# test, i.e. the parent of the test directory.
 
 setup() {
-  TEST_TMPDIR="$(mktemp -d -t bats-hooks.XXXXXX)"
-  HOOKS_DIR="$(cd "$(dirname "$BATS_TEST_FILENAME")/.." && pwd)"
+  TEST_TMPDIR="$(mktemp -d -t bats-dave-skills.XXXXXX)"
+  SUBJECT_DIR="$(cd "$(dirname "$BATS_TEST_FILENAME")/.." && pwd)"
   REPO_ROOT="$TEST_TMPDIR"
-  export TEST_TMPDIR HOOKS_DIR REPO_ROOT
+  export TEST_TMPDIR SUBJECT_DIR REPO_ROOT
 }
 
 teardown() {

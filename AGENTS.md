@@ -130,6 +130,10 @@ Present a recommendation to the human before starting work.
   full-form `.development` repo it updates the ticket's `## Next` in
   place (read back by `hooks/session-resume.sh`); in the light form it
   writes a `threads/` file plus the `next.md` index.
+- **rspec-summary** — Digest a full rspec run into the lines that
+  decide the pre-commit gate: example tally, SimpleCov line and branch
+  totals, coverage-floor breach, failures grouped by spec directory.
+  `--run` runs the suite through it. Any rspec + SimpleCov repo.
 - **self-host-development-light** — Lightweight self-hosted project
   management using markdown files in `.development/` — one file per
   concern (roadmap, backlog, todo, changelog, decisions, requirements,

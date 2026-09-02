@@ -3,10 +3,10 @@
 # Always exits 0. test_helper exports REPO_ROOT as the scratch dir, so
 # the hook reads $TEST_TMPDIR/.development/active.
 
-load test_helper
+load ../../test/test_helper
 
 hook() {
-  echo "$HOOKS_DIR/session-resume.sh"
+  echo "$SUBJECT_DIR/session-resume.sh"
 }
 
 @test "no active/ directory → says so, exit 0" {
