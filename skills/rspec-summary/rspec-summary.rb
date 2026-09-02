@@ -26,6 +26,7 @@
 # Exit codes: 0 summary printed · 1 the run failed (--run only, mirrors
 # rspec) · 10 bad args · 11 log missing or has no rspec summary line
 
+require 'English' # $CHILD_STATUS
 require 'fileutils'
 
 DEFAULT_LOG = 'tmp/rspec-full.log'

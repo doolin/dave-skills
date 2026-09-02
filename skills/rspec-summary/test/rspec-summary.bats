@@ -111,6 +111,37 @@ EOF
   assert_output_contains "ABORTED: Stopped processing SimpleCov"
 }
 
+# --run against a stub `bundle` on PATH: proves the log is written,
+# the stale resultset is cleared, the summary is printed, and the
+# suite's exit status is mirrored.
+stub_bundle() {
+  mkdir -p "$TEST_TMPDIR/bin"
+  cat > "$TEST_TMPDIR/bin/bundle" <<'EOF'
+#!/usr/bin/env bash
+echo "Finished in 0.1 seconds"
+echo "2 examples, 1 failure"
+echo "rspec ./spec/e2e/x_spec.rb:1 # x"
+echo "Line coverage: 1 / 2 (50.00%)"
+echo "Branch coverage: 0 / 1 (0.00%)"
+exit 1
+EOF
+  chmod +x "$TEST_TMPDIR/bin/bundle"
+}
+
+@test "--run writes the log, clears the resultset, summarizes, mirrors exit 1" {
+  stub_bundle
+  mkdir -p "$TEST_TMPDIR/coverage"
+  echo '{}' > "$TEST_TMPDIR/coverage/.resultset.json"
+  cd "$TEST_TMPDIR"
+  PATH="$TEST_TMPDIR/bin:$PATH" run "$(script)" --run
+  [ "$status" -eq 1 ]
+  [ -f "$TEST_TMPDIR/tmp/rspec-full.log" ]
+  [ ! -f "$TEST_TMPDIR/coverage/.resultset.json" ]
+  assert_output_contains "2 examples, 1 failure"
+  assert_output_contains "   1  spec/e2e"
+  assert_output_contains "rspec exit: 1"
+}
+
 @test "a green log prints no failure section" {
   cat > "$TEST_TMPDIR/green.log" <<'EOF'
 Finished in 1.0 seconds
