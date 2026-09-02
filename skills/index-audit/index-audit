@@ -1,0 +1,110 @@
+#!/usr/bin/env bash
+#
+# index-audit -- one-shot, read-only audit of the git index before a
+# commit. Answers "what exactly am I about to commit, and what am I
+# leaving behind?" in one call: the staged files with their diffstat,
+# a warning for any staged path that should never be committed
+# (secrets, logs, coverage, temp files), and the working-tree changes
+# that are NOT staged, so a file left out by mistake is visible next to
+# the ones going in.
+#
+# Built to replace the `git diff --cached --stat` + `git status --short`
+# pair that precedes every commit. Two commands are two prompts and two
+# reads; one named command allowlists once and travels with the skill.
+#
+# Usage:
+#   index-audit             # audit the index of the repo in the cwd
+#   index-audit -C DIR      # audit the repo at DIR (like git -C)
+#   index-audit --strict    # exit 4 when a staged path draws a warning
+#   index-audit -h|--help
+#
+# Exit codes:
+#   0   staged changes listed (warnings, if any, printed but not fatal)
+#   3   nothing is staged; a commit now would be empty
+#   4   --strict and at least one staged path drew a warning
+#   12  not inside a git work tree, or bad arguments
+
+set -euo pipefail
+
+strict=
+dir=
+
+usage() {
+  sed -n '3,26p' "$0" | sed 's/^# \{0,1\}//'
+}
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    -h|--help) usage; exit 0 ;;
+    --strict) strict=1; shift ;;
+    -C) dir="${2:-}"; shift 2 ;;
+    -C*) dir="${1#-C}"; shift ;;
+    *) echo "index-audit: unknown argument: $1" >&2; exit 12 ;;
+  esac
+done
+
+if [ -n "$dir" ]; then
+  cd "$dir" 2>/dev/null || { echo "index-audit: cannot cd to $dir" >&2; exit 12; }
+fi
+
+if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  echo "index-audit: not inside a git work tree ($(pwd))" >&2
+  exit 12
+fi
+
+# Paths that have no business in a commit. Matched against each staged
+# path (added, copied, modified, renamed). Extend here, not per repo.
+never_commit() {
+  case "$1" in
+    .env|.env.*|*/.env|*/.env.*) echo "environment file" ;;
+    *.pem|*.key|*.p12|*.pfx) echo "private key material" ;;
+    *.log) echo "log file" ;;
+    coverage/*|*/coverage/*) echo "coverage output" ;;
+    tmp/*|*/tmp/*) echo "temp file" ;;
+    node_modules/*|*/node_modules/*) echo "vendored node_modules" ;;
+    .DS_Store|*/.DS_Store) echo "Finder metadata" ;;
+    *.resultset.json) echo "SimpleCov resultset" ;;
+    *) return 1 ;;
+  esac
+}
+
+staged=$(git diff --cached --name-only --diff-filter=ACMRD)
+
+# Changes that are not in the index: second status column non-blank,
+# or untracked. These are what the commit will leave behind.
+outside=$(git status --short | grep -E '^.[^ ]' || true)
+
+if [ -z "$staged" ]; then
+  echo "Index: nothing staged"
+  if [ -n "$outside" ]; then
+    echo
+    echo "Outside the index:"
+    printf '%s\n' "$outside"
+  fi
+  exit 3
+fi
+
+echo "Staged:"
+git diff --cached --stat
+
+warned=0
+while IFS= read -r path; do
+  [ -n "$path" ] || continue
+  if reason=$(never_commit "$path"); then
+    echo "WARN: staged $path ($reason)"
+    warned=1
+  fi
+done < <(git diff --cached --name-only --diff-filter=ACMR)
+
+echo
+if [ -n "$outside" ]; then
+  echo "Outside the index:"
+  printf '%s\n' "$outside"
+else
+  echo "Outside the index: (nothing)"
+fi
+
+if [ "$warned" -eq 1 ] && [ -n "$strict" ]; then
+  exit 4
+fi
+exit 0

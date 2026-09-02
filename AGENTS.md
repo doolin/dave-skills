@@ -130,6 +130,11 @@ Present a recommendation to the human before starting work.
   full-form `.development` repo it updates the ticket's `## Next` in
   place (read back by `hooks/session-resume.sh`); in the light form it
   writes a `threads/` file plus the `next.md` index.
+- **index-audit** — One-shot audit of the git index before a commit:
+  staged diffstat, warnings for never-commit paths (env files, keys,
+  logs, coverage, tmp), and the changes left outside the index. Runs
+  in place of the `git diff --cached --stat` + `git status --short`
+  pair, in any repo, `-C DIR` for a sibling.
 - **rspec-summary** — Digest a full rspec run into the lines that
   decide the pre-commit gate: example tally, SimpleCov line and branch
   totals, coverage-floor breach, failures grouped by spec directory.
