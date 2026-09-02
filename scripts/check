@@ -1,0 +1,81 @@
+#!/usr/bin/env bash
+#
+# check -- run this repo's local checks from anywhere, as one command:
+# markdownlint at the version CI pins, shellcheck on every shell file
+# under hooks/, test/, and skills/*/, and bats on every test directory.
+# Self-locating, so `~/src/dave-skills/scripts/check` works from another
+# repo's cwd with no `cd` chain.
+#
+# Usage:
+#   scripts/check            # everything
+#   scripts/check --list     # print the steps
+#   scripts/check -h|--help
+#
+# Exit codes: 0 all passed · 1 a step failed · 10 bad arguments
+
+set -uo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT" || exit 10
+
+MARKDOWNLINT_VERSION="0.17.2"   # matches .github/workflows
+
+usage() {
+  sed -n '3,13p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+}
+
+# Shell by shebang, not by name: skill scripts are extensionless and
+# some are Ruby (json-diff), which shellcheck refuses to read.
+shell_files() {
+  find hooks test skills -type f \( -name '*.sh' -o -name '*.bash' -o ! -name '*.*' \) -print0 2>/dev/null \
+    | xargs -0 grep -lE '^#!(/usr/bin/env |/bin/|/usr/bin/)(ba)?sh\b' 2>/dev/null
+}
+
+bats_dirs() {
+  find hooks skills -type d -name test 2>/dev/null | sort
+}
+
+case "${1:-}" in
+  -h|--help) usage; exit 0 ;;
+  --list)
+    echo "markdown    npx --yes markdownlint-cli2@$MARKDOWNLINT_VERSION '**/*.md'"
+    echo "shellcheck  $(shell_files | tr '\n' ' ')"
+    echo "bats        $(bats_dirs | tr '\n' ' ')"
+    exit 0 ;;
+  "") ;;
+  *) echo "check: unknown argument: $1" >&2; usage >&2; exit 10 ;;
+esac
+
+failed=()
+
+run_step() {
+  local name="$1"; shift
+  if "$@"; then
+    echo "PASS  $name"
+  else
+    echo "FAIL  $name (exit $?)"
+    failed+=("$name")
+  fi
+}
+
+run_step markdown npx --yes "markdownlint-cli2@$MARKDOWNLINT_VERSION" '**/*.md'
+
+files=$(shell_files)
+if [ -n "$files" ]; then
+  # shellcheck disable=SC2086  # word-split the file list on purpose
+  run_step shellcheck shellcheck $files
+fi
+
+dirs=$(bats_dirs)
+if [ -n "$dirs" ]; then
+  # shellcheck disable=SC2086
+  run_step bats bats $dirs
+fi
+
+echo
+if [ "${#failed[@]}" -eq 0 ]; then
+  echo "check: all passed"
+  exit 0
+fi
+echo "check: failed: ${failed[*]}"
+exit 1

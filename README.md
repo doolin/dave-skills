@@ -52,10 +52,13 @@ their own `SKILL.md`.
 ## Local checks
 
 ```bash
-npx markdownlint-cli2 "**/*.md"
+scripts/check        # markdownlint (CI-pinned), shellcheck, every bats suite
 terraform -chdir=terraform fmt -check -diff
 terraform -chdir=terraform validate
 ```
+
+`scripts/check` is self-locating, so `~/src/dave-skills/scripts/check`
+runs from any other repo's working directory.
 
 ## Conventions
 

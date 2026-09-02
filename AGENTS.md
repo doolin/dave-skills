@@ -183,7 +183,9 @@ Present a recommendation to the human before starting work.
 - Commit messages follow [tasteful-commits](https://gist.github.com/doolin/32d0430388405765e508c150831c4ac8):
   imperative mood, 52–57 char summary, body explains the *why*, co-author
   credit when an agent contributed.
-- Lint before committing: `npx markdownlint-cli2 "**/*.md"`.
+- Check before committing: `scripts/check` (markdownlint at the
+  CI-pinned version, shellcheck, every bats suite). Self-locating, so
+  it runs from another repo's cwd without a `cd` chain.
 
 ## Related repos to investigate
 
