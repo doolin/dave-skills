@@ -139,6 +139,12 @@ Present a recommendation to the human before starting work.
   decide the pre-commit gate: example tally, SimpleCov line and branch
   totals, coverage-floor breach, failures grouped by spec directory.
   `--run` runs the suite through it. Any rspec + SimpleCov repo.
+- **tool-call-ledger** — Turn permission prompts into a queue of
+  tools: cluster the Bash calls the `hooks/tool-call-ledger.sh` hook
+  records (or Bash calls read straight from transcripts) by shape,
+  and propose per recurring shape an allowlist entry, an existing
+  skill, a new tool, or keep prompting. The skill proposes; nothing
+  is granted by running it.
 - **self-host-development-light** — Lightweight self-hosted project
   management using markdown files in `.development/` — one file per
   concern (roadmap, backlog, todo, changelog, decisions, requirements,
@@ -183,6 +189,14 @@ Present a recommendation to the human before starting work.
 - Commit messages follow [tasteful-commits](https://gist.github.com/doolin/32d0430388405765e508c150831c4ac8):
   imperative mood, 52–57 char summary, body explains the *why*, co-author
   credit when an agent contributed.
+- Ruby tools keep their judgment out of the engine. Anything an
+  operator might want to read or change (which verbs change state,
+  which shapes a tool answers, what counts as a subcommand) lives in
+  a policy file written in a small internal DSL whose verbs read as
+  English (`keep_prompting_for`, `reach_for … when_it_looks_like:`).
+  The engine reads the policy and knows nothing else. Reference:
+  `skills/tool-call-ledger/policy.rb`. Small on purpose; a DSL that
+  grows past a handful of verbs has become a second engine.
 - Check before committing: `scripts/check` (markdownlint at the
   CI-pinned version, shellcheck, every bats suite). Self-locating, so
   it runs from another repo's cwd without a `cd` chain.

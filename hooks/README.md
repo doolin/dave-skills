@@ -32,6 +32,12 @@ public API.
   full-form `.development` repos, where the ticket file is the pause
   and there is no `next.md`. Always exits 0.
 
+- **tool-call-ledger.sh** — `PreToolUse`, matcher `Bash`, no `if`.
+  Appends `{ts, cwd, session, command}` for every Bash tool call to
+  `<repo>/.claude/tool-calls.jsonl`. Commands only. Read by the
+  `tool-call-ledger` skill, which clusters the shapes and proposes an
+  allowlist entry, an existing skill, or a new tool. Always exits 0.
+
 ## Tests
 
 ```bash
