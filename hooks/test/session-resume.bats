@@ -74,6 +74,33 @@ EOF
   [ "$first_line" -lt "$second_line" ]
 }
 
+@test "stewardship ticket listed only while it carries ## Next" {
+  fixture_dev_tree
+  fixture_ticket 19 stewardship "Gem stewardship"
+  fixture_ticket 113 stewardship "Agent tooling"
+  {
+    echo
+    echo "## Next"
+    echo
+    echo "Teach commit-message-precommit to reject the session trailer."
+  } >> "$TEST_TMPDIR/.development/stewardship/DBB-0113-test.md"
+  run "$(hook)"
+  [ "$status" -eq 0 ]
+  assert_output_contains "resume: DBB-0113  Agent tooling"
+  assert_output_contains "  Teach commit-message-precommit to reject the session trailer."
+  [[ "$output" != *"DBB-0019"* ]]
+}
+
+@test "paused stewardship ticket shows even when active/ is empty" {
+  fixture_dev_tree
+  fixture_ticket 113 stewardship "Agent tooling"
+  printf '\n## Next\n\nDo the thing.\n' >> "$TEST_TMPDIR/.development/stewardship/DBB-0113-test.md"
+  run "$(hook)"
+  [ "$status" -eq 0 ]
+  assert_output_contains "resume: DBB-0113"
+  [[ "$output" != *"no active tickets"* ]]
+}
+
 @test "CLAUDE_ACTIVE_DIR overrides the default location" {
   mkdir -p "$TEST_TMPDIR/elsewhere"
   cat > "$TEST_TMPDIR/elsewhere/OC-0007-thing.md" <<'EOF'

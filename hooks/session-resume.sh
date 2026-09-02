@@ -3,13 +3,16 @@
 #
 # Prints the resume anchors for a full-form .development repo: one line
 # per ticket in .development/active/ (id, title, last update), followed
-# by that ticket's `## Next` section when it has one. This is the read
-# half of the pause/resume contract. The write half is the pause-session
-# skill, which in a full-form repo updates the active ticket's `## Next`
-# in place; there is no next.md in that form. Sessions open from
-# AGENTS.md and memory, neither of which points at active/, so without
-# this banner a pause has no reader: "if you don't recall it, it
-# failed." Vigilance decays; a reflexive banner does not.
+# by that ticket's `## Next` section when it has one. Stewardship
+# tickets are standing work and would flood the banner, so they are
+# listed only while they carry a `## Next` — that is, while a session
+# paused on one. This is the read half of the pause/resume contract.
+# The write half is the pause-session skill, which in a full-form repo
+# updates the ticket's `## Next` in place; there is no next.md in that
+# form. Sessions open from AGENTS.md and memory, neither of which
+# points at active/, so without this banner a pause has no reader:
+# "if you don't recall it, it failed." Vigilance decays; a reflexive
+# banner does not.
 #
 # Canonical copy lives in dave-skills. Consuming repos symlink it as
 # <repo>/.claude/hooks/session-resume.sh and register it under
@@ -18,13 +21,15 @@
 # Always exits 0 — a broken banner must never block a session.
 #
 # Env overrides:
-#   REPO_ROOT           default: git toplevel of the cwd, else the cwd
-#   CLAUDE_ACTIVE_DIR   default: $REPO_ROOT/.development/active
+#   REPO_ROOT                default: git toplevel of the cwd, else the cwd
+#   CLAUDE_ACTIVE_DIR        default: $REPO_ROOT/.development/active
+#   CLAUDE_STEWARDSHIP_DIR   default: $REPO_ROOT/.development/stewardship
 
 set -u
 
 REPO_ROOT="${REPO_ROOT:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
 ACTIVE_DIR="${CLAUDE_ACTIVE_DIR:-$REPO_ROOT/.development/active}"
+STEWARDSHIP_DIR="${CLAUDE_STEWARDSHIP_DIR:-$REPO_ROOT/.development/stewardship}"
 
 # First value of a frontmatter field, trailing comment and space stripped.
 field() {
@@ -34,12 +39,24 @@ field() {
     | sed -E "s/^$2:[[:space:]]*//; s/[[:space:]]+#.*$//; s/[[:space:]]+$//"
 }
 
-if [ ! -d "$ACTIVE_DIR" ]; then
+files=""
+if [ -d "$ACTIVE_DIR" ]; then
+  files=$(find "$ACTIVE_DIR" -maxdepth 1 -name '*.md' 2>/dev/null | sort)
+fi
+
+if [ -d "$STEWARDSHIP_DIR" ]; then
+  paused=$(grep -lE '^## Next[[:space:]]*$' "$STEWARDSHIP_DIR"/*.md 2>/dev/null | sort)
+  if [ -n "$paused" ]; then
+    files="${files:+$files
+}$paused"
+  fi
+fi
+
+if [ ! -d "$ACTIVE_DIR" ] && [ -z "$files" ]; then
   echo "resume: no active/ directory ($ACTIVE_DIR)"
   exit 0
 fi
 
-files=$(find "$ACTIVE_DIR" -maxdepth 1 -name '*.md' 2>/dev/null | sort)
 if [ -z "$files" ]; then
   echo "resume: no active tickets"
   exit 0

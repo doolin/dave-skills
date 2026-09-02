@@ -27,9 +27,10 @@ public API.
 
 - **session-resume.sh** — `SessionStart`. Prints one line per ticket in
   `.development/active/` (id, title, `updated`) and its `## Next`
-  section. The read half of the `pause-session` contract for full-form
-  `.development` repos, where the active ticket file is the pause and
-  there is no `next.md`. Always exits 0.
+  section; stewardship tickets appear only while they carry a
+  `## Next`. The read half of the `pause-session` contract for
+  full-form `.development` repos, where the ticket file is the pause
+  and there is no `next.md`. Always exits 0.
 
 ## Tests
 

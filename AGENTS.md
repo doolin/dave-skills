@@ -126,7 +126,10 @@ Present a recommendation to the human before starting work.
 - **linear-walkthrough** — Create a structured code walkthrough using
   Showboat. Reads source, plans a linear explanation, builds the document.
 - **pause-session** — Capture session context and next steps before
-  stepping away. Writes a resume brief to `.development/next.md`.
+  stepping away, keyed to the ticket or thread the work advanced. In a
+  full-form `.development` repo it updates the ticket's `## Next` in
+  place (read back by `hooks/session-resume.sh`); in the light form it
+  writes a `threads/` file plus the `next.md` index.
 - **self-host-development-light** — Lightweight self-hosted project
   management using markdown files in `.development/` — one file per
   concern (roadmap, backlog, todo, changelog, decisions, requirements,
