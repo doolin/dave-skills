@@ -3,6 +3,8 @@ name: new-gem
 description: Bootstrap a new Ruby gem with RSpec, RuboCop, rubocop-rspec, SimpleCov, CI, and standard metadata.
 ---
 
+# New gem
+
 Bootstrap a new Ruby gem using the arguments provided: $ARGUMENTS
 
 The arguments should be parsed as: GEM_NAME followed by an optional summary in quotes.
@@ -31,11 +33,13 @@ if something fails unexpectedly or falls outside the scope of these steps.
 2. **Add `rubocop-rspec`, `rubocop-performance`, and `simplecov`** to the Gemfile and update `.rubocop.yml` to load the RuboCop plugins (not `require`, which is deprecated in newer RuboCop):
 
    Add to the Gemfile:
+
    ```ruby
    gem "simplecov", require: false
    ```
 
    Update `.rubocop.yml`:
+
    ```yaml
    plugins:
      - rubocop-rspec
@@ -47,6 +51,7 @@ if something fails unexpectedly or falls outside the scope of these steps.
    ```
 
    Add SimpleCov to the top of `spec/spec_helper.rb` (before any other requires):
+
    ```ruby
    require "simplecov"
    SimpleCov.start
@@ -60,6 +65,7 @@ if something fails unexpectedly or falls outside the scope of these steps.
    - Ensure `spec.required_ruby_version` is set to `>= 3.2`.
 
 4. **Create a smoke spec** at `spec/<gem_name>_spec.rb`:
+
    ```ruby
    # frozen_string_literal: true
 
@@ -71,14 +77,16 @@ if something fails unexpectedly or falls outside the scope of these steps.
    ```
 
 5. **Create `.rspec`** with:
-   ```
+
+   ```text
    --require spec_helper
    --format documentation
    --color
    ```
 
 6. **Create `.gitignore`** (`bundle gem` omits it under `--no-git`) with the standard gem ignores — the generated artifacts (`coverage/` from SimpleCov, `.rspec_status`, build output) plus `Gemfile.lock`, which a gem ignores because it is a library, not an app:
-   ```
+
+   ```text
    /.bundle/
    /.yardoc
    /_yardoc/
@@ -120,6 +128,7 @@ Run this section only when the user asks to push the gem to GitHub. These steps 
 4. **Confirm `.gitignore` covers build artifacts** — `coverage/`, `pkg/`, `.rspec_status` are already in the step 6 set, so nothing SimpleCov or `gem build` produces gets committed. (The gemspec's `git ls-files` file list also needs a real git repo — this section's `git init` is what makes `spec.files` populate.)
 
 5. **Init and commit**:
+
    ```bash
    git init -b main
    git add <explicit list of files — do NOT use "git add ." since coverage/ may exist>
@@ -127,6 +136,7 @@ Run this section only when the user asks to push the gem to GitHub. These steps 
    ```
 
 6. **Create the repo and push**:
+
    ```bash
    gh repo create <owner>/<gem> \
      --private \                        # or --public per user choice
