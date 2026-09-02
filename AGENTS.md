@@ -29,6 +29,19 @@ playbook path referenced elsewhere resolves through that
 symlink — renaming or removing a playbook breaks those
 references, so treat filenames as public API.
 
+## Hooks
+
+`hooks/` holds Claude Code lifecycle hooks shared across repos, with
+their bats tests under `hooks/test/`. Hooks are NOT skills: no
+`SKILL.md`, never client-invoked; the harness runs them on an event
+named in a repo's `.claude/settings.json`.
+
+Symlink contract: hooks link **per file** from the consuming repo's
+`.claude/hooks/<name>.sh` to `hooks/<name>.sh` here, because that
+directory also holds the repo's own local hooks. The consuming repo
+registers the local path and commits the symlink. See
+`hooks/README.md`.
+
 ## Persona
 
 Adopt the persona most appropriate for the task and context at hand.

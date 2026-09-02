@@ -12,6 +12,9 @@ stay portable and easy to extract into other repos.
 - `skills/` — one directory per skill, each with a `SKILL.md` (YAML
   frontmatter and body) plus any supporting scripts, workflows, or
   reference material.
+- `hooks/` — Claude Code lifecycle hooks shared across repos, each
+  symlinked per file into a consuming repo's `.claude/hooks/`. Tests in
+  `hooks/test/`. See `hooks/README.md`.
 - `scripts/` — repo-level scripts. Currently just `attest.mjs`, the dogfooded
   copy of the `solana-cicd-hash` attestation pipeline that runs in this repo's
   own CI.
