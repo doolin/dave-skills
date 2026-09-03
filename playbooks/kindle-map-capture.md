@@ -69,7 +69,48 @@ primitives, `capture_map.sh` one-shot, `book.sh` per-book table,
    map's caption sits above the figure. Check the convention per
    book.
 
-## The one-shot
+## Status of this playbook: read before trusting it
+
+The reference run (bong-son, 2026-09-02) was judged by its
+operator mostly a failure. What is proven: the native-capture
+path, the layout facts above, and the offline filter's reading
+of pages. What is not: unattended operation. The per-map one-shot
+broke at a different GUI hop on most runs; the whole-book sweep
+ran once and died because a display capture takes whatever is in
+front of the reader and keystrokes go there too. The operator
+finished by hand and found it faster. Budget accordingly: if the
+manual path is under an hour, take it, and spend tooling effort
+on the offline half.
+
+## Sweep, then filter (designed, not yet proven)
+
+Capture every page once, then find the maps offline. Two scripts,
+one GUI session, no per-map navigation, and the filter reruns
+without the reader. Precondition the first run missed: the sweep
+is a display capture, so the machine must be idle and nothing
+may sit in front of the reader for the whole run.
+
+1. `sweep_book.sh`: TOC → first entry; loop { native display
+   capture → crop window → save `page_NNNN.png`; md5 against the
+   previous page; on a repeat retry the turn (key, then the on-screen
+   right arrow); three repeats = end of book; else right arrow, short
+   sleep }. About 2.5 s a page, Kindle frontmost throughout.
+2. `find_maps.sh DIR`: pass 1 in parallel over the pages: OCR a 1x
+   copy for `Map N.` captions and their y; locate a framed figure by
+   ink profile (binarise at 60%, erode with a 25 px kernel along the
+   axis measured so only continuous lines survive, then row/column
+   profiles); write `index.tsv`. Pass 2: for each map number, the
+   caption page; figure there if its frame top is above the caption
+   y, else the page before; cut the frame from the native page.
+
+Why it should beat per-map navigation: every failure in the
+one-shot below came from a GUI hop (toolbar reveal, sidebar timing,
+post-jump reflow, a click that does not do what the AX press does).
+The sweep has one hop, the page turn. Guard it with a stall check on
+a true window capture, not on the display crop, or an overlay that
+changes between captures will pass for a page turn.
+
+## The one-shot (secondary)
 
 `capture_map.sh N`, from wherever the reader is:
 
