@@ -1,8 +1,7 @@
 # Digitizing a scanned board-game map → clean SVG + game graph
 
-Proven end-to-end on *Sabotage* (1943) in `~/src/sabotage-1942` (rename to
-`-1943` pending). The reference implementation and full write-ups live
-there: `docs/jpeg-to-svg.md` (scan→geometry pipeline) and
+Proven end-to-end on *Sabotage* (1943) in `~/src/sabotage-1943`. The
+reference implementation and full write-ups live there: `docs/jpeg-to-svg.md` (scan→geometry pipeline) and
 `docs/refining-art.md` (art iteration loop, guardrails, auditing tips).
 Read both before starting a new map; this page is the cross-project
 distillation with model-class assignments.
