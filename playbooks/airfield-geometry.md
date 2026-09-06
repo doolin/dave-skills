@@ -113,9 +113,12 @@ the rung used.
 Sizing the decision: an angular error ε moves a symbol's tip
 by L·sin ε. Kép's runway symbol is 0.44 in long; at ±5°
 that is 0.44 × 0.087 ≈ 0.04 in, one millimetre — invisible on
-the sheet but not nothing in a register. Kép's recorded
-"heading 070°" is rung 1 (designator 07/25) and should be
-read as 070 ± 5 magnetic until measured.
+the sheet but not nothing in a register. Kép's first symbol
+used rung 1 — the 07/25 designator, recorded as "heading
+070°"; the rung-3 measurement from OpenStreetMap runway
+endpoints gave 067.2°, a 2.8° change that moved the tip
+0.02 in. Invisible on the sheet; the register now states
+what was established rather than what was assumed.
 
 ## Sign conventions — where the errors hide
 
@@ -128,8 +131,8 @@ read as 070 ± 5 magnetic until measured.
 | TikZ polar `(α:len)` | y up | α counter-clockwise from +x; map bearing *m* is at α = 90 − *m*; the north arrow at α = 90 + θ |
 | Runway endpoints at map bearing *m*, half-length *h* | y up | (± *h* sin *m*, ± *h* cos *m*) |
 
-Kép: `map_bearing(70)` = 70 − 52.7 = 17.3°; *h* = 0.21 in
-gives endpoints (±0.065, ±0.210) in, which is what the
+Kép: `map_bearing(67.2)` = 67.2 − 52.7 = 14.5°; *h* = 0.21 in
+gives endpoints (±0.053, ±0.203) in, which is what the
 symbol file draws. The north arrow is at TikZ angle
 90 + 52.7 = 142.7°.
 
@@ -257,3 +260,56 @@ audit the claim without the session that produced it.
   tool with a spec that emits every mark's offset; hand-copied
   numbers are how a rounding error becomes a misplaced
   airfield.
+
+## Reference run: the other nine (September 2026)
+
+One session took the remaining nine Linebacker 2 airfields
+through the chain with nine Sonnet research agents and three
+tools, all in `~/src/sgp-linebacker-2/tools/`:
+`runway_bearing.rb` (Overpass fetch → archive → bearing and
+length per runway way), `airfield_symbol.rb` (label + bearing
++ optional strip side → the TikZ fragment, placement included),
+`axis_angle.rb` (thresholded crop → drawn angle). What the run
+taught, beyond the pipeline above:
+
+- **Stage 1 earns its place.** Three of nine print labels had
+  no drawable referent: one named a district with no airfield,
+  one was a heavily bombed town with no airfield, one was the
+  already-drawn field counted twice under its province. Two
+  more resolved only by name-to-district reasoning ("Kim Anh"
+  is the district Phúc Yên was built in; "Yen Dai" garbles the
+  district next to Thọ Xuân). Heading research on any of those
+  before the referent was settled would have been wasted or
+  wrong.
+- **The handedness feature can come from OSM.** Project the
+  centroid of an `aeroway=taxiway` way onto the runway's
+  normal; the sign gives the real-world side. Period-correct
+  only when a period source attests the taxiway (Kiến An's 1966
+  NPIC report does); otherwise draw the runway alone.
+- **Two patches, not one.** White out the printed star and its
+  printed numeral with separate rectangles. The union's corner
+  nicked a city square the print draws touching the star. Size
+  the star patch for the mitered stroke: a five-point star's
+  stroke reaches `half_stroke / sin 18°` past each tip — about
+  0.02 in here, enough to leave specks under a patch cut to the
+  vertex.
+- **The verifier can lie by 2°.** A crop that clips a parallel
+  taxiway at its edge, or a numeral mask large enough to chop
+  the taxiway's end, biases the principal axis; both showed as
+  a 1.8–2.6° error that vanished when the crop took the whole
+  taxiway and the mask covered only the glyph. When a
+  measurement disagrees with the derivation, suspect the crop
+  before the drawing — and re-measure before touching the
+  symbol.
+- **Today's runway is not 1972's.** Rung 3 from OSM measures
+  the present axis. Three fields had been lengthened (Kép,
+  Kiến An, Vinh), one built over (Bạch Mai, rung 1 only), and
+  two carried period descriptions that fit today's axis poorly
+  (Thọ Xuân, Vinh). State "rung 3 for today's runway" and log
+  the period axis as a gap; the upgrade is a georeferenced
+  period frame.
+- **Referent conflicts are the operator's.** Star 10 is
+  labeled for one city and drawn beside another. The run drew
+  the position's field so the result could be seen, entered
+  the conflict in the discrepancies register, and left the
+  decision in the resume brief — one `\input` line to remove.
