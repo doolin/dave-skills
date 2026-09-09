@@ -18,8 +18,10 @@ who owns it: **Developer**, **Claude**, or **Together**.
 ## 2. Branch — Claude
 
 - Create a feature branch from the default branch
-- Use a descriptive branch name: `<type>/<short-description>`
-  - Types: `feat/`, `fix/`, `refactor/`, `chore/`, `docs/`
+- Use a short descriptive branch name. No type prefixes
+  (`feat/`, `fix/`, …): they add ceremony without signal, and a
+  taxonomy never captures the actual change — taste dictates the
+  name (decision of 2026-05-11)
 - Never commit or push to the default branch — all work happens on feature branches
 
 ## 3. Make changes — Together
