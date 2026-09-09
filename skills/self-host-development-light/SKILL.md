@@ -278,6 +278,12 @@ Move the item from `backlog.md` to the **Active** section of
 `todo.md`. Don't copy — move. The item should exist in
 exactly one place.
 
+When the item spans more than one session, give it sub-checkboxes
+in `todo.md` and tick each one in the same commit that lands it,
+not at the end. The next session, cold-started, reads the item to
+learn where the last one stopped; a pause note only covers the
+pauses that were planned.
+
 ### Completing work
 
 Remove the item from `todo.md`. If it's worth recording, add
