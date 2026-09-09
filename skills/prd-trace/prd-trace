@@ -1,0 +1,203 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# prd-trace -- derive the PRD -> requirement -> ticket map from ticket
+# frontmatter. Nothing is maintained by hand: a ticket cites the
+# requirement it serves in its `links:` ("PRD-0001 FR-004"), and this
+# reads every ticket and prints, per PRD, each requirement with the
+# tickets against it, the requirements with no ticket yet, and the
+# tickets that cite the PRD without naming a requirement.
+#
+# Usage:
+#   prd-trace                  # every PRD under .development/prd/
+#   prd-trace PRD-0001         # one PRD
+#   prd-trace -C DIR           # another repo, no cd chain
+#   prd-trace --table          # Appendix D markdown table per PRD
+#   prd-trace --json           # machine-readable edges (graph-ingestible)
+#   prd-trace -h | --help
+#
+# Requirements are the `- **FR-001:** ...` lines in a PRD (any
+# `XX-NNN` id in that shape counts, so BR-/AC- ids trace too). Tickets
+# are `<PREFIX>-NNNN-*.md` files anywhere under .development/ whose
+# prefix is not a document class (ADR PRD DES RFC SPIKE).
+#
+# Exit codes: 0 report printed · 3 no PRDs found ·
+#             12 no .development/ tree or bad arguments
+
+require "optparse"
+require "yaml"
+require "json"
+
+DOC_PREFIXES = %w[ADR PRD DES RFC SPIKE].freeze
+REQ_ID = /[A-Z]{2,4}-\d{3}/
+PRD_ID = /PRD-\d{4}/
+
+options = { root: Dir.pwd, format: :text }
+parser = OptionParser.new do |o|
+  o.banner = "usage: prd-trace [-C DIR] [--table | --json] [PRD-NNNN]"
+  o.on("-C DIR", "run against the repo at DIR") { |d| options[:root] = d }
+  o.on("--table", "Appendix D markdown table per PRD") { options[:format] = :table }
+  o.on("--json", "machine-readable output") { options[:format] = :json }
+  o.on("-h", "--help") { puts o; exit 0 }
+end
+begin
+  parser.parse!
+rescue OptionParser::ParseError => e
+  warn "prd-trace: #{e.message}"
+  warn parser
+  exit 12
+end
+if ARGV.length > 1 || (ARGV[0] && ARGV[0] !~ /\A#{PRD_ID}\z/)
+  warn "prd-trace: expected at most one PRD id (PRD-NNNN)"
+  exit 12
+end
+only = ARGV[0]
+
+dev = File.join(File.expand_path(options[:root]), ".development")
+unless File.directory?(dev)
+  warn "prd-trace: no .development/ in #{options[:root]}"
+  exit 12
+end
+
+# --- frontmatter -----------------------------------------------------
+
+def frontmatter(text)
+  return {} unless text.start_with?("---\n")
+
+  close = text.index("\n---", 4)
+  return {} unless close
+
+  YAML.safe_load(text[4...close], permitted_classes: [Date], aliases: true) || {}
+rescue Psych::Exception
+  {}
+end
+
+# --- PRDs ------------------------------------------------------------
+
+prd_files = Dir.glob(File.join(dev, "prd", "PRD-[0-9][0-9][0-9][0-9]-*.md"))
+                .reject { |f| File.basename(f).start_with?("PRD-0000-") }
+                .sort
+prd_files.select! { |f| File.basename(f).start_with?("#{only}-") } if only
+if prd_files.empty?
+  warn "prd-trace: no PRDs found under #{dev}/prd/#{only ? " matching #{only}" : ""}"
+  exit 3
+end
+
+prds = prd_files.map do |file|
+  text = File.read(file)
+  fm = frontmatter(text)
+  id = File.basename(file)[PRD_ID]
+  title = fm["prd_title"].to_s.strip
+  if title.empty?
+    h1 = text[/^# .*$/]
+    title = h1.to_s.sub(/^#\s*/, "").sub(/^#{PRD_ID}:?\s*/, "").strip
+  end
+  section = ""
+  requirements = []
+  text.each_line do |line|
+    if (m = line.match(/^\#{2,3}\s+(\d+(?:\.\d+)*)/))
+      section = m[1]
+    elsif (m = line.match(/^\s*-\s+\*\*(#{REQ_ID}):?\*\*:?\s*(.*)$/))
+      requirements << { id: m[1], section: section, text: m[2].strip, tickets: [] }
+    end
+  end
+  { id: id, title: title, file: file, requirements: requirements,
+    unassigned: [], unknown: [] }
+end
+by_id = prds.to_h { |p| [p[:id], p] }
+
+# --- tickets ---------------------------------------------------------
+
+tickets = Dir.glob(File.join(dev, "**", "*-[0-9][0-9][0-9][0-9]-*.md")).sort.filter_map do |file|
+  base = File.basename(file)
+  prefix = base[/\A[A-Z]+/]
+  next if prefix.nil? || DOC_PREFIXES.include?(prefix) || base.include?("-0000-")
+
+  fm = frontmatter(File.read(file))
+  links = Array(fm["links"]).map(&:to_s)
+  { id: fm["id"] || base[/\A[A-Z]+-\d{4}/], status: fm["status"].to_s,
+    title: fm["title"].to_s, file: file, links: links }
+end
+tickets.sort_by! { |t| t[:id].to_s }
+
+tickets.each do |t|
+  t[:links].each do |link|
+    prd_id = link[PRD_ID]
+    next unless prd_id && (prd = by_id[prd_id])
+
+    reqs = link.scan(REQ_ID).reject { |r| r.start_with?("PRD-") }
+    ref = { id: t[:id], status: t[:status], title: t[:title], file: t[:file] }
+    if reqs.empty?
+      prd[:unassigned] << ref unless prd[:unassigned].any? { |u| u[:id] == t[:id] }
+    end
+    reqs.each do |r|
+      req = prd[:requirements].find { |q| q[:id] == r }
+      if req
+        req[:tickets] << ref unless req[:tickets].any? { |x| x[:id] == t[:id] }
+      else
+        prd[:unknown] << { ticket: t[:id], requirement: r }
+      end
+    end
+  end
+end
+
+def rollup(refs)
+  statuses = refs.map { |r| r[:status] }
+  return "none" if statuses.empty?
+  return "done" if statuses.all? { |s| s == "done" }
+  return "blocked" if statuses.include?("blocked")
+  return "in_progress" if statuses.include?("in_progress")
+
+  "planned"
+end
+
+prds.each { |p| p[:requirements].each { |r| r[:status] = rollup(r[:tickets]) } }
+
+# --- output ----------------------------------------------------------
+
+def rel(path)
+  path.sub("#{Dir.pwd}/", "")
+end
+
+case options[:format]
+when :json
+  puts JSON.pretty_generate(prds.map do |p|
+    p.merge(file: rel(p[:file]),
+            requirements: p[:requirements].map { |r| r.merge(tickets: r[:tickets].map { |t| t.merge(file: rel(t[:file])) }) },
+            unassigned: p[:unassigned].map { |t| t.merge(file: rel(t[:file])) })
+  end)
+when :table
+  prds.each_with_index do |p, i|
+    puts unless i.zero?
+    puts "### #{p[:id]}: #{p[:title]}"
+    puts
+    puts "| Requirement ID | Section | Related Story / Ticket | Test Coverage | Owner | Status |"
+    puts "|----------------|---------|------------------------|---------------|-------|--------|"
+    p[:requirements].each do |r|
+      puts "| #{r[:id]} | #{r[:section]} | #{r[:tickets].map { |t| t[:id] }.join(', ')} |  |  | #{r[:status]} |"
+    end
+  end
+else
+  prds.each_with_index do |p, i|
+    puts unless i.zero?
+    puts "#{p[:id]}  #{p[:title]}"
+    if p[:requirements].empty?
+      puts "  (no requirement ids found in #{rel(p[:file])})"
+    end
+    p[:requirements].each do |r|
+      text = r[:text].length > 52 ? "#{r[:text][0, 49]}..." : r[:text]
+      refs = r[:tickets].map { |t| "#{t[:id]} #{t[:status]}" }.join(", ")
+      refs = "(no ticket yet)" if refs.empty?
+      puts format("  %-7s %-52s %s", r[:id], text, refs)
+    end
+    uncovered = p[:requirements].select { |r| r[:tickets].empty? }.map { |r| r[:id] }
+    puts "  No ticket yet: #{uncovered.join(', ')}" unless uncovered.empty?
+    unless p[:unassigned].empty?
+      puts "  Cites the PRD, no requirement: #{p[:unassigned].map { |t| "#{t[:id]} #{t[:status]}" }.join(', ')}"
+    end
+    p[:unknown].each do |u|
+      puts "  Unknown requirement: #{u[:ticket]} -> #{u[:requirement]} (not in the PRD)"
+    end
+  end
+end
+exit 0

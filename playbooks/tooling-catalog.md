@@ -110,6 +110,11 @@ the class doesn't matter for.
 - **next-ticket** (dave-skill) → next available ticket id for the current
   repo; auto-detects the prefix (DBB/CSL/OC/...) from `.development/`, so
   one skill serves every Straylight repo. → any
+- **prd-trace** (dave-skill) → derived PRD → requirement → ticket map
+  from ticket `links:` (`PRD-0001 FR-004`); shows requirements with no
+  ticket yet (the next-ticket pointer) and tickets citing a PRD with
+  no requirement. `--table` for Appendix D, `--json` for the graph.
+  Full-form `.development` repos. → any
 - **gem-update** (dave-skill) → Ruby gem stewardship pass: buckets
   outdated gems patch/minor/major, batch-applies patch bumps, runs the
   bundler-audit/brakeman/rubocop/rspec gauntlet. Any Ruby/Rails repo. → any

@@ -135,6 +135,12 @@ Present a recommendation to the human before starting work.
   logs, coverage, tmp), and the changes left outside the index. Runs
   in place of the `git diff --cached --stat` + `git status --short`
   pair, in any repo, `-C DIR` for a sibling.
+- **prd-trace** — Derive the PRD → requirement → ticket map from
+  ticket `links:` citations (`PRD-0001 FR-004`): each requirement
+  with its tickets, the requirements with no ticket yet, the tickets
+  citing a PRD without a requirement. `--table` emits the
+  traceability appendix, `--json` the edges. Run before proposing
+  the next ticket against a PRD. Any full-form `.development` repo.
 - **rspec-summary** — Digest a full rspec run into the lines that
   decide the pre-commit gate: example tally, SimpleCov line and branch
   totals, coverage-floor breach, failures grouped by spec directory.
