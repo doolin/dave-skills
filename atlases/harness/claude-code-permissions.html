@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claude Code permissions — harness atlas</title>
+<style>
+  :root {
+    --bg: #f4f4f2; --surface: #ffffff; --surface-2: #eceeea;
+    --ink: #1a1c1f; --muted: #5a626b; --faint: #8a929a;
+    --line: #d5d9dc; --line-strong: #b8bec4;
+    --allow: #1f6f4f; --allow-bg: #e3f0e8;
+    --ask: #9a6414; --ask-bg: #f6ecd6;
+    --deny: #a8352b; --deny-bg: #f5e1de;
+    --note: #2f4d6e; --note-bg: #e4eaf1;
+    --obs: #5a3c8a; --obs-bg: #ece5f5;
+    --unv: #6d6d6d; --unv-bg: #ececec;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #15181b; --surface: #1d2126; --surface-2: #262b31;
+      --ink: #eaecee; --muted: #9ba4ad; --faint: #6f7882;
+      --line: #30363d; --line-strong: #3f4750;
+      --allow: #58bd8c; --allow-bg: #17281f;
+      --ask: #d9a44f; --ask-bg: #2a2114;
+      --deny: #e07364; --deny-bg: #2c1917;
+      --note: #86accf; --note-bg: #18242f;
+      --obs: #b79ae0; --obs-bg: #241b30;
+      --unv: #a0a0a0; --unv-bg: #26292c;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+    font-size: 16px; line-height: 1.55;
+  }
+  code, .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 0.92em; }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 0 22px; }
+  a { color: var(--note); }
+  header { padding: 44px 0 26px; border-bottom: 1px solid var(--line); }
+  .kicker { font-family: ui-monospace, Menlo, monospace; font-size: 12.5px; color: var(--muted); letter-spacing: .02em; margin: 0 0 12px; }
+  h1 { font-size: clamp(28px, 5vw, 42px); line-height: 1.08; font-weight: 650; margin: 0 0 14px; letter-spacing: -.02em; }
+  .lede { font-size: 18px; color: var(--muted); max-width: 64ch; margin: 0 0 18px; }
+  .observed { border: 1px solid var(--line-strong); background: var(--surface); border-radius: 6px; padding: 12px 16px; font-size: 14px; }
+  .observed dl { display: grid; grid-template-columns: max-content 1fr; gap: 4px 16px; margin: 0; }
+  .observed dt { color: var(--muted); font-family: ui-monospace, Menlo, monospace; font-size: 12.5px; }
+  .observed dd { margin: 0; }
+  .law { margin-top: 18px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-family: ui-monospace, Menlo, monospace; font-size: 14px; }
+  .chip { padding: 4px 10px; border-radius: 6px; border: 1px solid var(--line-strong); background: var(--surface); white-space: nowrap; }
+  .chip.d { color: var(--deny); border-color: var(--deny); }
+  .chip.a { color: var(--ask); border-color: var(--ask); }
+  .chip.l { color: var(--allow); border-color: var(--allow); }
+  .gt { color: var(--faint); font-weight: 600; }
+  nav.toc { padding: 18px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+  nav.toc ol { columns: 2; gap: 28px; margin: 0; padding-left: 20px; }
+  nav.toc li { margin: 2px 0; }
+  section { padding: 38px 0; border-bottom: 1px solid var(--line); }
+  h2 { font-size: 13px; font-family: ui-monospace, Menlo, monospace; color: var(--muted); font-weight: 500; margin: 0 0 6px; }
+  .h2big { font-size: 25px; font-weight: 650; margin: 0 0 10px; letter-spacing: -.01em; }
+  h3 { font-size: 17px; font-weight: 650; margin: 26px 0 8px; }
+  .sub { color: var(--muted); max-width: 68ch; margin: 0 0 20px; }
+  p { max-width: 74ch; }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-family: ui-monospace, Menlo, monospace; font-size: 11.5px; color: var(--muted); font-weight: 500; }
+  td code { background: var(--surface-2); padding: 1px 5px; border-radius: 4px; white-space: nowrap; }
+  .tbl { overflow-x: auto; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); margin: 12px 0 18px; }
+  tr:last-child td { border-bottom: none; }
+  .src { font-family: ui-monospace, Menlo, monospace; font-size: 11.5px; color: var(--faint); white-space: nowrap; }
+  .kind { font-family: ui-monospace, Menlo, monospace; font-size: 11px; padding: 1px 6px; border-radius: 4px; white-space: nowrap; }
+  .kind.doc { background: var(--allow-bg); color: var(--allow); }
+  .kind.obs { background: var(--obs-bg); color: var(--obs); }
+  .kind.unv { background: var(--unv-bg); color: var(--unv); }
+  .note { background: var(--note-bg); border-left: 3px solid var(--note); border-radius: 0 6px 6px 0; padding: 12px 15px; font-size: 14px; margin: 16px 0; max-width: 78ch; }
+  .note strong { color: var(--note); }
+  .verdict { font-weight: 650; }
+  .verdict.allow { color: var(--allow); } .verdict.prompt { color: var(--ask); } .verdict.deny { color: var(--deny); }
+  .ladder { border: 1px solid var(--line); border-radius: 6px; background: var(--surface); margin: 12px 0 18px; }
+  .rung { display: flex; gap: 14px; align-items: baseline; padding: 11px 15px; border-top: 1px solid var(--line); }
+  .rung:first-child { border-top: none; }
+  .rung .rk { font-family: ui-monospace, Menlo, monospace; font-size: 11.5px; color: var(--faint); min-width: 62px; flex-shrink: 0; }
+  .rung .rname { font-family: ui-monospace, Menlo, monospace; font-size: 13.5px; font-weight: 600; min-width: 250px; flex-shrink: 0; }
+  .rung .rdesc { font-size: 13px; color: var(--muted); }
+  @media (max-width: 640px) { .rung { flex-wrap: wrap; } .rung .rname { min-width: 0; } nav.toc ol { columns: 1; } }
+  footer { padding: 30px 0 60px; color: var(--muted); font-size: 13px; }
+  @media print {
+    body { background: #fff; color: #000; font-size: 11pt; }
+    .tbl { overflow: visible; }
+    a { color: #000; text-decoration: none; }
+    a[href^="http"]::after { content: " (" attr(href) ")"; font-size: 9pt; color: #444; }
+    section { page-break-inside: auto; }
+    h2, .h2big { page-break-after: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <p class="kicker">Harness atlas · Claude Code · permissions</p>
+    <h1>How Claude Code decides whether a tool call runs</h1>
+    <p class="lede">Every Bash command, file edit, web fetch, and MCP call passes through one ordered evaluation before it executes. This page is that evaluation, then the rule syntax, then how permissions relate to modes, hooks, the sandbox, and the settings files they live in.</p>
+    <div class="observed">
+      <dl>
+        <dt>client</dt><dd>Claude Code (CLI). Where the VS Code extension, desktop app, or web sessions differ, the row says so.</dd>
+        <dt>version observed</dt><dd><code>2.1.268</code>, from <code>claude --version</code> on the author's machine, 2026-09-11</dd>
+        <dt>sources</dt><dd><a href="#sources">D1 Configure permissions</a>, <a href="#sources">D2 Choose a permission mode</a>, <a href="#sources">D3 Settings files and precedence</a>, all read 2026-09-11 as the vendor served them that day. A row's source mark names the document and its section.</dd>
+        <dt>source kinds</dt><dd><span class="kind doc">documented</span> stated in the vendor documentation · <span class="kind obs">observed</span> seen in a test the family ran, with its date · <span class="kind unv">unverified</span> a claim the author could not confirm at this version. A fact with no mark is documented.</dd>
+        <dt>change record</dt><dd><a href="#changes">§14</a>. Facts this page carries at other versions keep their version range there.</dd>
+      </dl>
+    </div>
+    <div class="law">
+      <span class="chip d">deny</span><span class="gt">&gt;</span>
+      <span class="chip a">ask</span><span class="gt">&gt;</span>
+      <span class="chip l">allow</span>
+      <span style="color:var(--muted)">— first match wins; rule specificity never reorders it. <span class="src">D1 · Manage permissions</span></span>
+    </div>
+  </div>
+</header>
+
+<nav class="toc">
+  <div class="wrap">
+    <ol>
+      <li><a href="#order">The evaluation order</a></li>
+      <li><a href="#worked">Worked resolutions</a></li>
+      <li><a href="#rules">The three rule types</a></li>
+      <li><a href="#modes">Permission modes, in brief</a></li>
+      <li><a href="#syntax">Rule syntax and wildcards</a></li>
+      <li><a href="#bash">Bash rules in depth</a></li>
+      <li><a href="#tools">Per-tool specifiers</a></li>
+      <li><a href="#scopes">Settings scopes and precedence</a></li>
+      <li><a href="#layers">The layers around the rules</a></li>
+      <li><a href="#safety">Protected and critical paths</a></li>
+      <li><a href="#relations">Relationships</a></li>
+      <li><a href="#observed">Observed by the family</a></li>
+      <li><a href="#gaps">Gaps and unverified claims</a></li>
+      <li><a href="#changes">Change record</a></li>
+      <li><a href="#sources">Sources</a></li>
+    </ol>
+  </div>
+</nav>
+
+<!-- 1 ORDER -->
+<section id="order">
+  <div class="wrap">
+    <h2>1 · the evaluation order</h2>
+    <p class="h2big">Seven gates, top to bottom, first decision wins</p>
+    <p class="sub">The documentation states the order of the rule gates in one sentence and the position of hooks, safety checks, and modes in separate sections. This table joins them. A gate that does not decide passes the call down.</p>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>#</th><th>Gate</th><th>What it can do</th><th>Source</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td><strong>PreToolUse hooks</strong></td><td>Run before the permission prompt for every tool except <code>EndConversation</code>. Exit code 2 stops the call "before permission rules are evaluated", so a hook can block what an allow rule would pass. A hook that returns allow does not skip gates 2 and 3.</td><td class="src">D1 · Extend permissions with hooks</td></tr>
+          <tr><td>2</td><td><strong>Deny rules</strong></td><td>A match blocks the call in every mode, including <code>bypassPermissions</code>, and from any settings scope. A bare tool name removes the tool from Claude's context before anything is evaluated.</td><td class="src">D1 · Manage permissions; D2 · Available modes</td></tr>
+          <tr><td>3</td><td><strong>Ask rules</strong></td><td>A match prompts, even when a narrower allow rule also matches, and in every mode. In <code>dontAsk</code> the prompt becomes a denial.</td><td class="src">D1 · Manage permissions; D2 · Actions no mode auto-approves</td></tr>
+          <tr><td>4</td><td><strong>Safety checks no allow rule pre-approves</strong></td><td>Writes to a <a href="#safety">protected path</a> and <code>rm</code>/<code>rmdir</code> of a <a href="#safety">critical path</a> are routed by mode (prompt, classifier, or deny) before allow rules from settings are consulted. The critical-path check also overrides a hook's allow.</td><td class="src">D2 · Protected paths; D2 · Critical paths</td></tr>
+          <tr><td>5</td><td><strong>Allow rules</strong></td><td>A match runs the tool with no prompt. Allow rules "have no effect in <code>bypassPermissions</code>" (everything is approved there anyway), and on entering <code>auto</code> mode the broad ones are dropped (see <a href="#modes">§4</a>).</td><td class="src">D1 · Manage permissions; D2 · Available modes; D2 · How the classifier evaluates actions</td></tr>
+          <tr><td>6</td><td><strong>Built-in approvals</strong></td><td>Reads inside the working directories and the built-in read-only Bash set run without a prompt in every mode.</td><td class="src">D1 · Permission system; D1 · Read-only commands</td></tr>
+          <tr><td>7</td><td><strong>The mode's baseline</strong></td><td>What is left is settled by the permission mode: <code>default</code> prompts; <code>acceptEdits</code> approves in-scope edits and a fixed set of filesystem commands, prompts the rest; <code>plan</code> blocks edits until a plan is approved and sends commands to the classifier when auto mode is available, otherwise prompts; <code>auto</code> sends it to the classifier; <code>dontAsk</code> denies; <code>bypassPermissions</code> approves.</td><td class="src">D2 · Available modes; D1 · Permission modes</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note">
+      <strong>Enforced by Claude Code, not by the model.</strong> "Instructions in your prompt or <code>CLAUDE.md</code> shape what Claude tries to do, but they don't change what Claude Code allows." To grant or revoke access you change rules, a mode, or a hook, never wording. <span class="src">D1 · Manage permissions (note)</span>
+    </div>
+    <div class="note">
+      <strong>Where gate 4 sits is a reading, not a quotation.</strong> The documentation says the protected-path check "runs before Claude Code evaluates allow rules from settings" and that in auto mode allow rules resolve first except for those two checks. It does not state where the checks sit relative to ask rules. The table places them after ask because an ask rule prompts in every mode and nothing on either check would change that outcome. <span class="kind unv">unverified</span> as to exact position; the outcomes in the worked table below hold either way.
+    </div>
+  </div>
+</section>
+
+<!-- 2 WORKED -->
+<section id="worked">
+  <div class="wrap">
+    <h2>2 · worked resolutions</h2>
+    <p class="h2big">The same call, under each combination that matters</p>
+    <p class="sub">Each row is one tool call walked through the gates above. The deciding gate and the verdict follow from the documented facts cited in §1; the row's own source marks the sentence that settles it.</p>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Call</th><th>Matching rule</th><th>Mode</th><th>Hook</th><th>Decides at</th><th>Verdict</th><th>Why</th></tr></thead>
+        <tbody>
+          <tr><td>any</td><td>any</td><td>any</td><td>exit 2</td><td>1 hook</td><td class="verdict deny">blocked</td><td>Exit 2 stops the call before rules are evaluated. <span class="src">D1 · Extend permissions with hooks</span></td></tr>
+          <tr><td>any</td><td><code>"deny": ["Bash"]</code></td><td>any</td><td>none</td><td>2 deny</td><td class="verdict deny">tool absent</td><td>A bare-name deny removes the tool from context; Claude never sees it. <span class="src">D1 · Manage permissions</span></td></tr>
+          <tr><td><code>rm -rf build</code></td><td><code>"deny": ["Bash(rm *)"]</code></td><td>bypass</td><td>none</td><td>2 deny</td><td class="verdict deny">blocked</td><td>"Deny rules block in every mode, including <code>bypassPermissions</code>." <span class="src">D2 · Available modes</span></td></tr>
+          <tr><td><code>git push origin main</code></td><td><code>"ask": ["Bash(git push *)"]</code> and <code>"allow": ["Bash(git push origin main)"]</code></td><td>default</td><td>none</td><td>3 ask</td><td class="verdict prompt">prompts</td><td>"A matching ask rule prompts even when a more specific allow rule also matches." <span class="src">D1 · Manage permissions</span></td></tr>
+          <tr><td><code>git push origin main</code></td><td><code>"ask": ["Bash(git push *)"]</code></td><td>auto</td><td>none</td><td>3 ask</td><td class="verdict prompt">prompts</td><td>"Explicit ask rules still force a prompt" in auto mode; content-scoped ask rules fall back to a permission prompt rather than the classifier. <span class="src">D2 · Eliminate prompts with auto mode; D2 · How the classifier evaluates actions</span></td></tr>
+          <tr><td><code>git push origin main</code></td><td><code>"ask": ["Bash(git push *)"]</code></td><td>bypass</td><td>none</td><td>3 ask</td><td class="verdict prompt">prompts</td><td>Tools matched by an explicit ask rule are among the "actions no mode auto-approves". <span class="src">D2 · Actions no mode auto-approves</span></td></tr>
+          <tr><td><code>git push origin main</code></td><td><code>"ask": ["Bash(git push *)"]</code></td><td>dontAsk</td><td>none</td><td>3 ask</td><td class="verdict deny">denied</td><td>dontAsk "denies calls matching your explicit ask rules rather than prompting". <span class="src">D2 · dontAsk mode</span></td></tr>
+          <tr><td><code>git push origin main</code></td><td><code>"ask": ["Bash(git push *)"]</code></td><td>default</td><td>returns allow</td><td>3 ask</td><td class="verdict prompt">prompts</td><td>"A matching ask rule still prompts even when the hook returned <code>"allow"</code>." <span class="src">D1 · Extend permissions with hooks</span></td></tr>
+          <tr><td>edit <code>.claude/settings.json</code></td><td><code>"allow": ["Edit(.claude/**)"]</code></td><td>default</td><td>none</td><td>4 safety</td><td class="verdict prompt">prompts</td><td>Allow rules "do not pre-approve protected-path writes"; in prompting modes the prompt offers a session-wide grant for <code>.claude/</code>. <span class="src">D2 · Protected paths</span></td></tr>
+          <tr><td>edit <code>.claude/settings.json</code></td><td>none</td><td>bypass</td><td>none</td><td>7 mode</td><td class="verdict allow">runs</td><td>bypassPermissions "skips permission prompts, including for writes to protected paths". <span class="src">D1 · Permission modes (warning); D2 · Protected paths</span></td></tr>
+          <tr><td><code>rm -rf ~</code></td><td><code>"allow": ["Bash(rm *)"]</code></td><td>bypass</td><td>returns allow</td><td>4 safety</td><td class="verdict prompt">prompts</td><td>Neither an allow rule nor a hook's allow approves a critical-path removal; bypass "asks you to approve it". <span class="src">D2 · Critical paths</span></td></tr>
+          <tr><td><code>npm test</code></td><td><code>"allow": ["Bash(npm test)"]</code></td><td>default</td><td>none</td><td>5 allow</td><td class="verdict allow">runs</td><td>A narrow allow rule runs with no prompt. <span class="src">D1 · Manage permissions</span></td></tr>
+          <tr><td><code>python3 script.py</code></td><td><code>"allow": ["Bash(python*)"]</code></td><td>auto</td><td>none</td><td>7 classifier</td><td class="verdict allow">classifier decides</td><td>On entering auto mode, wildcarded interpreter rules are dropped; the call goes to the classifier. Restored on leaving auto. <span class="src">D2 · How the classifier evaluates actions</span></td></tr>
+          <tr><td>edit <code>src/app.rb</code></td><td>none</td><td>acceptEdits</td><td>none</td><td>7 mode</td><td class="verdict allow">runs</td><td>acceptEdits approves edits to paths inside the working directory or <code>additionalDirectories</code>. <span class="src">D2 · acceptEdits mode</span></td></tr>
+          <tr><td><code>cargo build</code></td><td>none</td><td>acceptEdits</td><td>none</td><td>7 mode</td><td class="verdict prompt">prompts</td><td>"All other Bash commands except the built-in read-only set still prompt." <span class="src">D2 · acceptEdits mode</span></td></tr>
+          <tr><td>edit <code>src/app.rb</code></td><td>none</td><td>plan</td><td>none</td><td>7 mode</td><td class="verdict deny">blocked</td><td>"Edits stay blocked until you approve the plan", except in sessions with bypass available. <span class="src">D2 · Plan mode</span></td></tr>
+          <tr><td><code>cargo build</code></td><td>none</td><td>dontAsk</td><td>none</td><td>7 mode</td><td class="verdict deny">denied</td><td>dontAsk "auto-denies every tool call that would otherwise prompt you". <span class="src">D2 · dontAsk mode</span></td></tr>
+          <tr><td><code>ls -la</code></td><td>none</td><td>any</td><td>none</td><td>6 built-in</td><td class="verdict allow">runs</td><td>The read-only set "runs without a permission prompt in every mode". <span class="src">D1 · Read-only commands</span></td></tr>
+          <tr><td><code>cargo build</code></td><td>none</td><td>default</td><td>none</td><td>7 mode</td><td class="verdict prompt">prompts</td><td>Manual mode "prompts for permission on first use of each tool". <span class="src">D1 · Permission modes</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- 3 RULES -->
+<section id="rules">
+  <div class="wrap">
+    <h2>3 · the three rule types</h2>
+    <p class="h2big">allow, ask, deny</p>
+    <p class="sub">All three live under the <code>permissions</code> key of a settings file, each an array of <code>Tool</code> or <code>Tool(specifier)</code> strings. <span class="src">D1 · Permission rule syntax</span></p>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Rule</th><th>Effect</th><th>Detail</th><th>Source</th></tr></thead>
+        <tbody>
+          <tr><td><strong>allow</strong></td><td>"Let Claude Code use the specified tool without manual approval."</td><td>Checked last. Uses each tool's own specifier syntax; parameter matching (<code>Tool(param:value)</code>) is not accepted for allow. No effect in <code>bypassPermissions</code>. Project-file allow rules wait for workspace trust (<a href="#scopes">§8</a>).</td><td class="src">D1 · Manage permissions; D1 · Match by input parameter; D2 · Available modes</td></tr>
+          <tr><td><strong>ask</strong></td><td>"Prompt for confirmation whenever Claude Code tries to use the specified tool."</td><td>Beats a narrower allow. Prompts in every mode; denied in <code>dontAsk</code>. A deny or ask rule whose tool name matches no known tool warns at startup (names with <code>_</code> or <code>*</code> exempt).</td><td class="src">D1 · Manage permissions; D1 · Tool name wildcards</td></tr>
+          <tr><td><strong>deny</strong></td><td>"Prevent Claude Code from using the specified tool."</td><td>Beats everything from any scope. Bare name (<code>Bash</code>, or the equivalent <code>Bash(*)</code>) removes the tool from context; scoped (<code>Bash(rm *)</code>) leaves the tool and blocks matching calls. Exception: no deny or ask rule can remove or prompt for <code>EndConversation</code> "while any other tool remains".</td><td class="src">D1 · Manage permissions; D1 · Match all uses of a tool</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note">
+      <strong>A broad deny cannot carry allowlist exceptions.</strong> "A broad deny rule like <code>Bash(aws *)</code> blocks every matching call, including calls that also match a narrower allow rule like <code>Bash(aws s3 ls)</code>." Write the deny narrower, or move the exception to a hook. <span class="src">D1 · Manage permissions</span>
+    </div>
+    <p>The <code>/permissions</code> dialog lists every rule and the settings file it came from, and a change made there applies from Claude's next tool call in the same turn (before v2.1.234 it waited for the turn to end). <span class="src">D1 · Manage permissions</span></p>
+  </div>
+</section>
+
+<!-- 4 MODES -->
+<section id="modes">
+  <div class="wrap">
+    <h2>4 · permission modes, in brief</h2>
+    <p class="h2big">Six baselines for whatever the rules did not settle</p>
+    <p class="sub">A mode "sets which actions Claude can take in a session without asking you first". Rules layer on top. This section carries what a permissions reader needs; the modes page of this atlas, when written, carries the rest (start-up selection per surface, the classifier's rule lists, the mode cycle).</p>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Mode</th><th>Runs without asking</th><th>Protected-path writes</th><th>Notes</th><th>Source</th></tr></thead>
+        <tbody>
+          <tr><td><code>default</code></td><td>Reads only (plus the read-only Bash set and allow rules)</td><td>Prompted</td><td>Labelled <em>Manual</em> in the CLI, extensions, and desktop app; <code>manual</code> accepted as an alias from v2.1.200.</td><td class="src">D2 · Available modes</td></tr>
+          <tr><td><code>acceptEdits</code></td><td>Reads, file edits, and <code>mkdir</code>, <code>touch</code>, <code>rm</code>, <code>rmdir</code>, <code>mv</code>, <code>cp</code>, <code>sed</code> on in-scope paths, also when prefixed by safe env assignments or wrappers like <code>timeout</code></td><td>Prompted</td><td>Paths outside the working directories, critical-path removals, and all other Bash commands still prompt.</td><td class="src">D2 · acceptEdits mode</td></tr>
+          <tr><td><code>plan</code></td><td>Reads; shell commands go to the classifier when auto mode is available and <code>useAutoModeDuringPlan</code> is on (the default), otherwise prompt</td><td>Classifier when available, else prompted; allowed when bypass is available</td><td>Edits blocked until a plan is approved, except in sessions with bypass available. In v2.1.212 to v2.1.217 every non-read-only command prompted.</td><td class="src">D2 · Plan mode; D2 · Protected paths</td></tr>
+          <tr><td><code>auto</code></td><td>Everything, after a classifier model reviews the action</td><td>Routed to the classifier</td><td>Built-in starting mode on Pro, Max, and Team from v2.1.228 (v2.1.233 on Windows). Requires a supported model. Broad allow rules are dropped on entry (blanket <code>Bash(*)</code>, wildcarded interpreters, package-manager run commands, <code>Agent</code> and <code>Monitor</code> allow rules) and restored on exit.</td><td class="src">D2 · Which mode a session starts in; D2 · Eliminate prompts with auto mode; D2 · How the classifier evaluates actions</td></tr>
+          <tr><td><code>dontAsk</code></td><td>Reads, the read-only set, allow rules, hook-approved calls</td><td>Denied</td><td>Everything that would prompt is denied, including matching ask rules and <code>AskUserQuestion</code> even when allowed. Never in the Shift+Tab cycle. Ignored by cloud sessions.</td><td class="src">D2 · dontAsk mode</td></tr>
+          <tr><td><code>bypassPermissions</code></td><td>Everything, including protected-path writes</td><td>Allowed</td><td>Still prompts for the actions no mode auto-approves: ask-rule matches, tools needing user interaction, critical-path removals, the cross-session safeguards. Cannot be entered from a session started without it enabled; refused as root; refused under <code>--restricted</code> (v2.1.248+). Ignored by cloud sessions.</td><td class="src">D2 · bypassPermissions mode; D2 · Actions no mode auto-approves</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h3>Where a session's starting mode comes from</h3>
+    <p>First match wins: the <code>--permission-mode</code> flag or <code>--dangerously-skip-permissions</code>; then <code>permissions.defaultMode</code> in a settings file; then the built-in default. A project's <code>.claude/settings.json</code> or <code>settings.local.json</code> cannot set <code>auto</code> (the value is ignored and the built-in default is used, not the user file's value) or <code>bypassPermissions</code> (ignored; the session starts in Manual). The built-in default is <code>auto</code> on Pro, Max, and Team in a terminal or VS Code, and <code>default</code> for <code>claude -p</code>, the SDK, Enterprise, API keys, cloud providers, a first session after install or upgrade, or when any settings file sets <code>disableAutoMode</code> to <code>"disable"</code>. <span class="src">D2 · Which mode a session starts in</span></p>
+    <div class="note">
+      <strong>Locking a mode out.</strong> <code>permissions.disableBypassPermissionsMode</code> and <code>permissions.disableAutoMode</code> set to <code>"disable"</code> work from any settings file; in managed settings they cannot be overridden. A running auto-mode session leaves auto when the managed setting reaches it (from v2.1.251; before, it kept auto until the session ended). <span class="src">D1 · Permission modes; D2 · Auto mode on Bedrock, Agent Platform, or Foundry</span>
+    </div>
+  </div>
+</section>
+
+<!-- 5 SYNTAX -->
+<section id="syntax">
+  <div class="wrap">
+    <h2>5 · rule syntax and wildcards</h2>
+    <p class="h2big">Matching, wildcards, and the traps</p>
+    <p class="sub">Rules are <code>Tool</code> or <code>Tool(specifier)</code>. Parentheses inside the specifier are literal. A bare tool name matches every use; <code>Bash(*)</code> is equivalent to <code>Bash</code>. <span class="src">D1 · Permission rule syntax</span></p>
+    <h3>Bash wildcards</h3>
+    <p>"A <code>*</code> in a Bash rule matches any text, including spaces." The vendor's own table, reproduced in full:</p>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>You write</th><th>Matches</th><th>Doesn't match</th></tr></thead>
+        <tbody>
+          <tr><td><code>Bash(npm run build)</code></td><td><code>npm run build</code></td><td><code>npm run build --watch</code></td></tr>
+          <tr><td><code>Bash(npm run *)</code></td><td><code>npm run build</code>, <code>npm run test --watch</code>, <code>npm run</code></td><td><code>npm install</code></td></tr>
+          <tr><td><code>Bash(git log * main)</code></td><td><code>git log --oneline main</code>, <code>git log -5 main</code>, <code>git log --output=&lt;file&gt; main</code></td><td><code>git log main</code>, <code>git push origin main</code></td></tr>
+          <tr><td><code>Bash(git * main)</code></td><td><code>git merge main</code>, <code>git push origin main</code>, <code>git -c core.fsmonitor=&lt;script&gt; diff main</code></td><td><code>git log</code></td></tr>
+          <tr><td><code>Bash(* --version)</code></td><td><code>node --version</code>, <code>bash -c 'echo hi' --version</code></td><td><code>node -v</code></td></tr>
+          <tr><td><code>Bash(ls *)</code></td><td><code>ls -la</code>, <code>ls</code></td><td><code>lsof</code></td></tr>
+          <tr><td><code>Bash(ls*)</code></td><td><code>ls -la</code>, <code>lsof</code></td><td></td></tr>
+          <tr><td><code>Bash(* --help *)</code></td><td><code>npm --help x</code></td><td><code>npm --help</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="src">D1 · Wildcard patterns, table reproduced verbatim</p>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Rule of thumb</th><th>What the documentation says</th><th>Source</th></tr></thead>
+        <tbody>
+          <tr><td>Put the <code>*</code> after the subcommand</td><td>Everything before the first <code>*</code> is matched as written, so those words limit the rule: <code>Bash(git log *)</code> allows only <code>git log</code>; <code>Bash(git *)</code> allows every git command. An allow rule with a <code>*</code> before the subcommand, such as <code>Bash(git * main)</code>, warns at startup; it also matches <code>-c</code>, which makes git run a program you name.</td><td class="src">D1 · Wildcard patterns (warning)</td></tr>
+          <tr><td>A trailing <code>*</code> after a space also matches the bare command</td><td><code>Bash(ls *)</code> matches <code>ls</code>. Only when the trailing <code>*</code> is the rule's sole wildcard: <code>Bash(* --help *)</code> does not match <code>npm --help</code>.</td><td class="src">D1 · Wildcard patterns</td></tr>
+          <tr><td>The space before a trailing <code>*</code> is part of the rule</td><td><code>Bash(ls *)</code> requires a space, so <code>lsof</code> does not match; <code>Bash(ls*)</code> matches <code>lsof</code> too.</td><td class="src">D1 · Wildcard patterns</td></tr>
+          <tr><td>The <code>:*</code> suffix</td><td>Equivalent to a trailing <code> *</code>; recognised only at the end of a pattern. In <code>Bash(git:* push)</code> the colon is literal. The permission dialog writes the space-separated form when you choose "don't ask again" for a prefix.</td><td class="src">D1 · Wildcard patterns</td></tr>
+          <tr><td>Tool-name globs</td><td>Deny and ask rules accept globs in the tool-name position, matching the full name: <code>"*"</code> every tool, <code>"mcp__*"</code> every MCP tool. A bare-name glob deny removes the matched tools from context (EndConversation exception applies). Allow rules accept globs only after a literal <code>mcp__&lt;server&gt;__</code> prefix; an unanchored allow glob is skipped with a warning.</td><td class="src">D1 · Tool name wildcards</td></tr>
+          <tr><td>Canonical names, not labels</td><td>Rules match the canonical tool name; the transcript label can differ (<code>Stop Task</code> is <code>TaskStop</code>). A deny or ask rule naming an unknown tool warns at startup.</td><td class="src">D1 · Tool name wildcards</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h3>Match a parameter, not the content</h3>
+    <p>Deny and ask rules can match a top-level input parameter on any built-in tool with <code>Tool(param:value)</code>: <code>Agent(model:opus)</code>, <code>Agent(isolation:worktree)</code>, <code>Bash(run_in_background:true)</code>. One parameter per rule; <code>*</code> allowed in the value; an omitted parameter never matches; the value is compared before normalisation. A tool's primary content field cannot be matched this way (<code>command</code>, <code>file_path</code>, <code>path</code>, <code>notebook_path</code>, <code>url</code>); <code>Bash(command:rm *)</code> is ignored with a startup warning. MCP parameter rules go through <code>--disallowedTools</code>; a settings-file <code>mcp__</code> rule with parentheses is skipped and listed in the invalid-settings dialog. <span class="src">D1 · Match by input parameter</span></p>
+  </div>
+</section>
+
+<!-- 6 BASH -->
+<section id="bash">
+  <div class="wrap">
+    <h2>6 · bash rules in depth</h2>
+    <p class="h2big">Compound commands, wrappers, what a rule does not match</p>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Behaviour</th><th>What the documentation says</th><th>Source</th></tr></thead>
+        <tbody>
+          <tr><td>Compound commands are split</td><td>Separators <code>&amp;&amp;</code>, <code>||</code>, <code>;</code>, <code>|</code>, <code>|&amp;</code>, <code>&amp;</code>, and newlines. An allow rule must match each subcommand on its own. Deny and ask rules fire if any subcommand matches, including inside a subshell, a command substitution, or a loop body, even in auto mode. A dangling <code>&amp;&amp;</code> makes the command unparseable, so no allow rule approves it. "Don't ask again" on a compound saves one rule per subcommand needing approval, up to five.</td><td class="src">D1 · Compound commands</td></tr>
+          <tr><td>Wrappers are stripped</td><td><code>timeout</code>, <code>time</code>, <code>nice</code>, <code>nohup</code>, <code>stdbuf</code>, the builtins <code>command</code> and <code>builtin</code>, zsh <code>noglob</code>, and bare <code>xargs</code> (not <code>xargs -n1</code>). Not stripped: <code>command -v</code>, <code>nocorrect</code>. A leading assignment of a known-safe environment variable is stripped for allow rules; deny and ask rules match past any leading assignment. The list is not configurable.</td><td class="src">D1 · Wrappers</td></tr>
+          <tr><td>Environment runners are not wrappers</td><td><code>npx</code>, <code>docker exec</code>, <code>devbox run</code>, <code>direnv exec</code>, <code>mise exec</code>: <code>Bash(devbox run *)</code> matches whatever follows <code>run</code>, including <code>devbox run rm -rf .</code>. Write one rule per inner command, such as <code>Bash(devbox run npm test)</code>.</td><td class="src">D1 · Wrappers</td></tr>
+          <tr><td>Exec wrappers cannot be prefix-approved</td><td><code>watch</code>, <code>setsid</code>, <code>ionice</code>, <code>flock</code>, and <code>find</code> with <code>-exec</code> or <code>-delete</code> always prompt in Manual mode under a prefix rule; an exact-match rule for the full command approves one invocation.</td><td class="src">D1 · Wrappers</td></tr>
+          <tr><td>A rule matches the text, not the program</td><td><code>Bash(git push *)</code> in deny stops <code>git push origin main</code> and not <code>git -C . push origin main</code>, <code>git -c push.default=current push origin main</code>, or <code>git 'push' origin main</code>. <code>Bash(rm *)</code> does not stop <code>/bin/rm</code> or <code>bash -c 'rm …'</code>. "A deny or ask rule covers the invocation Claude usually produces and isn't a security boundary around the program." Use the sandbox or a PreToolUse hook for a boundary.</td><td class="src">D1 · What a Bash rule doesn't match</td></tr>
+          <tr><td>Argument-constraining rules are fragile</td><td><code>Bash(curl http://github.com/ *)</code> misses options before the URL, <code>https://</code>, redirects, and <code>URL=… &amp;&amp; curl $URL</code>. The documented alternatives: deny <code>curl</code> and <code>wget</code> and route through <code>WebFetch(domain:…)</code> paired with the sandbox network allowlist; a PreToolUse hook that validates URLs; <code>CLAUDE.md</code> guidance as a nudge only.</td><td class="src">D1 · Read-only commands (warning)</td></tr>
+          <tr><td>Read-only commands never prompt</td><td>Built in, not configurable: <code>ls</code>, <code>cat</code>, <code>echo</code>, <code>pwd</code>, <code>head</code>, <code>tail</code>, <code>grep</code>, <code>find</code>, <code>wc</code>, <code>which</code>, <code>diff</code>, <code>stat</code>, <code>du</code>, <code>cd</code>, and read-only forms of <code>git</code>. Exceptions that still prompt in Manual mode: unquoted globs on commands with write-capable flags (<code>find</code>, <code>sort</code>, <code>sed</code>, <code>git</code>); <code>docker</code> aimed at another daemon; <code>file</code> with path-opening flags; Windows UNC paths; anything the parser cannot fully parse, and any command over 10,000 characters. <code>cd</code> into a working directory is read-only, but <code>cd</code> then <code>git</code> into a different directory prompts (that directory's hooks could run), as does <code>cd</code> with a redirect whose target cannot be resolved. An ask or deny rule forces a prompt for any of these.</td><td class="src">D1 · Read-only commands</td></tr>
+          <tr><td>Redirections are checked as file access</td><td><code>&gt; file</code>, <code>&gt;&gt; file</code>, <code>2&gt; file</code> are checked against <code>Edit</code> rules, protected paths, and the working directories; a target starting with <code>~</code> or containing a glob needs approval. <code>&lt; file</code> is checked against <code>Read</code> rules and the working directories (from v2.1.257). <code>/dev/null</code>, descriptor forms like <code>2&gt;&amp;1</code>, here-docs and here-strings are not checked. A rule such as <code>Bash(git commit *)</code> allows the command, not the target.</td><td class="src">D1 · Redirections</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- 7 TOOLS -->
+<section id="tools">
+  <div class="wrap">
+    <h2>7 · per-tool specifiers</h2>
+    <p class="h2big">Each tool reads its specifier differently</p>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Tool</th><th>Specifier</th><th>What the documentation says</th><th>Source</th></tr></thead>
+        <tbody>
+          <tr><td><code>PowerShell</code></td><td>command text, as Bash</td><td>Same shape as Bash rules. Aliases are canonicalised before matching (<code>PowerShell(Get-ChildItem *)</code> matches <code>gci</code>, <code>ls</code>, <code>dir</code>); matching is case-insensitive; the AST is parsed and each subcommand across <code>|</code>, <code>;</code>, and on PowerShell 7+ <code>&amp;&amp;</code> and <code>||</code> must match.</td><td class="src">D1 · PowerShell</td></tr>
+          <tr><td><code>Read</code> / <code>Edit</code></td><td>gitignore-style path pattern</td><td>A <code>Read</code> deny also blocks <code>Edit</code> and <code>Write</code> on the path, including creating a file there (edits from v2.1.208, writes from v2.1.228); <code>NotebookEdit</code> is not covered, so add an <code>Edit</code> deny for paths no tool may change. Only <code>Edit(path)</code> and <code>Read(path)</code> are consulted: a path rule on <code>Write</code>, <code>NotebookEdit</code>, <code>Glob</code>, or <code>MultiEdit</code> is accepted, never used, and warns at startup (from v2.1.210; a <code>Glob</code> rule in <code>--allowedTools</code> is exempt). Read and Edit deny rules also apply to file commands Claude Code recognises in Bash (<code>cat</code>, <code>head</code>, <code>tail</code>, <code>sed</code>) and to redirect targets, but not to a program that opens files itself.</td><td class="src">D1 · Read and Edit</td></tr>
+          <tr><td></td><td>anchors</td><td><code>//path</code> filesystem root; <code>~/path</code> home; <code>/path</code> relative to the settings source (project file: the primary working directory; user file: <code>~/.claude/</code>; <code>--settings</code> file: its directory); <code>path</code> or <code>./path</code> the current directory. So <code>Read(/secrets/**)</code> in user settings blocks <code>~/.claude/secrets/**</code>, not a project directory. Windows paths are normalised to <code>/c/…</code>.</td><td class="src">D1 · Read and Edit</td></tr>
+          <tr><td></td><td>depth</td><td>A bare filename matches at any depth (<code>Read(.env)</code> equals <code>Read(**/.env)</code>). A single-segment directory pattern differs by rule type: as an allow rule <code>Edit(src/**)</code> matches only <code>&lt;cwd&gt;/src</code>; as a deny or ask rule it matches a <code>src</code> at any depth. Other shapes match at the same depth in every type. Generated rules from the dialog escape <code>[</code>, <code>]</code>, and <code>*</code> (from v2.1.202); hand-written rules are not escaped.</td><td class="src">D1 · Read and Edit</td></tr>
+          <tr><td></td><td>symlinks</td><td>Both the link and its target are checked. Allow rules apply only when both match (otherwise a prompt); deny rules apply when either matches. A deny or ask rule written through a symlinked directory (<code>Read(//etc/**)</code> on macOS, where <code>/etc</code> is <code>/private/etc</code>) also applies at the real location from v2.1.268.</td><td class="src">D1 · Read and Edit</td></tr>
+          <tr><td><code>WebFetch</code></td><td><code>domain:host</code></td><td>Case-insensitive, trailing dot stripped. <code>domain:*.example.com</code> matches any subdomain depth, not the apex; elsewhere a <code>*</code> matches only between two dots. Wildcards need v2.1.172 or later. A bare <code>WebFetch</code> deny removes the tool; <code>WebFetch(domain:*)</code> in deny keeps the tool, refuses each fetch, and empties the sandbox host list; only the <code>domain:</code> form touches the sandbox allowlist. Artifact reads on claude.ai are not covered by a bare rule from v2.1.268 (before, a bare deny blocked every artifact read).</td><td class="src">D1 · WebFetch</td></tr>
+          <tr><td>MCP</td><td><code>mcp__server</code>, <code>mcp__server__tool</code></td><td><code>mcp__puppeteer__*</code> matches all tools on the server. A connector tool the organisation set to <em>ask</em> prompts on every call in every mode, allow rules notwithstanding, and is denied in <code>dontAsk</code>. In Cowork sessions, deny rules naming the whole <code>Bash</code> or <code>WebFetch</code> tool also stop <code>mcp__workspace__bash</code> and <code>mcp__workspace__web_fetch</code>; allow rules do not carry over.</td><td class="src">D1 · MCP</td></tr>
+          <tr><td><code>Agent</code></td><td><code>Agent(Name)</code></td><td>Controls which subagents Claude may use: <code>Agent(Explore)</code>, <code>Agent(Plan)</code>, <code>Agent(my-custom-agent)</code>. Documented for deny and <code>--disallowedTools</code>; parameter form <code>Agent(model:opus)</code> for deny and ask.</td><td class="src">D1 · Agent (subagents); D1 · Match by input parameter</td></tr>
+          <tr><td><code>Cd</code></td><td><code>Cd(path-pattern)</code></td><td>Governs the operator's <code>/cd</code> command only; Claude cannot call it. A bare <code>Cd</code> deny disables <code>/cd</code>; any <code>Cd</code> allow rule switches <code>/cd</code> to allowlist mode. Whole-directory matching: <code>*</code> one segment, <code>**</code> across segments; a trailing <code>/**</code> also matches its root. Deny rules check every spelling of the target through each symlink hop.</td><td class="src">D1 · Cd</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- 8 SCOPES -->
+<section id="scopes">
+  <div class="wrap">
+    <h2>8 · settings scopes and precedence</h2>
+    <p class="h2big">Where rules live, and who wins</p>
+    <p class="sub">Permission rules follow the same precedence as every other setting, with one rule stacked on top: a deny at any level wins. <span class="src">D1 · Settings precedence; D3 · Settings files and precedence</span></p>
+    <div class="ladder">
+      <div class="rung"><span class="rk">highest</span><span class="rname">Managed settings</span><span class="rdesc"><code>managed-settings.json</code>, MDM, or the claude.ai console. "No other level, including command line arguments, can override a managed permission rule." Home of <code>allowManagedPermissionRulesOnly</code>, which makes managed settings the only source of rules.</span></div>
+      <div class="rung"><span class="rk">↓</span><span class="rname">Command line</span><span class="rdesc"><code>claude --settings</code>, <code>--allowedTools</code>, <code>--disallowedTools</code>. Can add restrictions beyond managed settings; cannot lift a managed deny.</span></div>
+      <div class="rung"><span class="rk">↓</span><span class="rname">.claude/settings.local.json</span><span class="rdesc">Your own project overrides, where "don't ask again" approvals are saved. Stored at the git repository root from v2.1.211 (resolved through worktrees to the main checkout); before, in the starting directory.</span></div>
+      <div class="rung"><span class="rk">↓</span><span class="rname">.claude/settings.json</span><span class="rdesc">Shared project settings, checked in. Its allow rules and <code>additionalDirectories</code> wait for workspace trust.</span></div>
+      <div class="rung"><span class="rk">lowest</span><span class="rname">~/.claude/settings.json</span><span class="rdesc">Your user settings, every project. <code>/path</code> rules here anchor at <code>~/.claude/</code>.</span></div>
+    </div>
+    <p class="src">D3 · Settings precedence (the five levels, verbatim order); D1 · Settings precedence; D1 · Permission system</p>
+    <p>"If a tool is denied at any level, no other level can allow it": a managed deny is not overridden by <code>--allowedTools</code>; a user-level deny blocks a project-level allow and a project-level deny blocks a user-level allow, "because deny rules from any scope are evaluated before allow rules". Allow rules are merged across scopes unless <code>allowManagedPermissionRulesOnly</code> is set. <span class="src">D1 · Settings precedence; D3 · line 722</span></p>
+    <h3>Workspace trust</h3>
+    <p>"<code>permissions.allow</code> rules and <code>permissions.additionalDirectories</code> entries in a project's <code>.claude/settings.json</code> grant capability, so Claude Code applies them only after you accept the workspace trust dialog." Deny and ask rules are not gated. Trust is keyed on the git repository root (the main checkout for a worktree), or the starting directory outside a repository, and is session-only when started in the home directory. A <code>claude -p</code> or SDK run never shows the dialog: project allow rules are not used there and a warning goes to stderr. <span class="src">D1 · Project allow rules and workspace trust; D1 · What runs before you trust a folder</span></p>
+    <p><code>.claude/settings.local.json</code> normally needs no trust step. When it is tracked in git, or <code>.claude</code> is a symlink, it is treated as repository-supplied and held until trust; the git check runs only after trust, so before that the file's rules are applied at once only in your configuration home. From v2.1.207; in v2.1.196 to v2.1.199 the rules were held in the configuration home too. <span class="src">D1 · When your local settings file needs trust</span></p>
+  </div>
+</section>
+
+<!-- 9 LAYERS -->
+<section id="layers">
+  <div class="wrap">
+    <h2>9 · the layers around the rules</h2>
+    <p class="h2big">Hooks and the sandbox</p>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Layer</th><th>What the documentation says about its relation to permissions</th><th>Source</th></tr></thead>
+        <tbody>
+          <tr><td><strong>PreToolUse hooks</strong></td><td>Run "before the permission prompt, for every tool except <code>EndConversation</code>". Output can deny, force a prompt, or skip the prompt. Exit code 2 stops the call before rules are evaluated, so it beats an allow rule. A hook's allow does not skip deny or ask rules, nor the prompt for an MCP tool marked <code>requiresUserInteraction</code>, nor a critical-path removal. The documented pattern for "everything but a few": <code>"Bash"</code> in allow plus a hook that rejects the few.</td><td class="src">D1 · Extend permissions with hooks; D2 · Critical paths</td></tr>
+          <tr><td><strong>PermissionRequest hooks</strong></td><td>In modes that ask, a PermissionRequest hook "can answer the prompt the way it answers any other", including the critical-path prompt.</td><td class="src">D2 · Critical paths</td></tr>
+          <tr><td><strong>Sandbox</strong></td><td>"OS-level enforcement that restricts the Bash tool's filesystem and network access", child processes included; permissions decide what Claude attempts, the sandbox what the OS permits, so the two are complementary. Paths and domains from permission rules are merged into the sandbox configuration. With sandboxing on and <code>autoAllowBashIfSandboxed</code> at its default <code>true</code>, sandboxed commands run without prompting even under a bare <code>Bash</code> ask rule; content-scoped ask rules (<code>Bash(git push *)</code>), deny rules, and critical-path removals still apply. Plan mode skips that substitution from v2.1.212.</td><td class="src">D1 · How permissions interact with sandboxing</td></tr>
+          <tr><td><strong>The auto-mode classifier</strong></td><td>Fixed order: rules first (allow, ask, deny resolve immediately, except protected-path writes and critical-path removals, which go to the classifier, and tools needing user interaction, which prompt); then read-only actions and working-directory edits auto-approved; then everything else to the classifier. The classifier sees user messages, non-read-only tool calls, and <code>CLAUDE.md</code>; tool results are stripped. A boundary stated in conversation ("don't push") is a block signal re-read from the transcript on each check, not a rule, and can be lost to compaction: "for a hard guarantee, add a deny rule instead."</td><td class="src">D2 · How the classifier evaluates actions; D2 · Boundaries you state in conversation</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- 10 SAFETY -->
+<section id="safety">
+  <div class="wrap">
+    <h2>10 · protected and critical paths</h2>
+    <p class="h2big">Two checks that outrank allow rules and hooks</p>
+    <h3>Protected paths</h3>
+    <p>"Writes to a small set of paths are never auto-approved, except in <code>bypassPermissions</code> mode and in planning sessions with bypass permissions available." Allow rules in settings do not pre-approve them; the check runs before allow rules from settings. In modes that prompt, the prompt for a <code>.claude/</code> write offers a session-wide grant for later <code>.claude/</code> writes. Under <code>--restricted</code> (v2.1.248+) the classifier cannot approve them. <span class="src">D2 · Protected paths</span></p>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Mode</th><th>Protected-path write</th></tr></thead>
+        <tbody>
+          <tr><td><code>default</code>, <code>acceptEdits</code></td><td>Prompted</td></tr>
+          <tr><td><code>plan</code></td><td>Allowed with bypass available; else classifier when auto mode is available during planning; else prompted</td></tr>
+          <tr><td><code>auto</code></td><td>Routed to the classifier</td></tr>
+          <tr><td><code>dontAsk</code></td><td>Denied</td></tr>
+          <tr><td><code>bypassPermissions</code></td><td>Allowed</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="src">D2 · Protected paths, table reproduced verbatim</p>
+    <p>Protected directories: <code>.git</code>, <code>.config/git</code>, <code>.vscode</code>, <code>.idea</code>, <code>.husky</code>, <code>.cargo</code>, <code>.devcontainer</code>, <code>.yarn</code>, <code>.mvn</code>, and <code>.claude</code> except <code>.claude/worktrees</code>. Protected files: <code>.gitconfig</code>, <code>.gitmodules</code>; the shell startup files (<code>.bashrc</code>, <code>.bash_profile</code>, <code>.bash_login</code>, <code>.bash_aliases</code>, <code>.bash_logout</code>, <code>.zshrc</code>, <code>.zprofile</code>, <code>.zshenv</code>, <code>.zlogin</code>, <code>.zlogout</code>, <code>.profile</code>, <code>.envrc</code>); package-manager files (<code>.npmrc</code>, <code>.yarnrc</code>, <code>.yarnrc.yml</code>, <code>.pnp.cjs</code>, <code>.pnp.loader.mjs</code>, <code>.pnpmfile.cjs</code>, <code>bunfig.toml</code>, <code>.bunfig.toml</code>); <code>.bazelrc</code>, <code>.bazelversion</code>, <code>.bazeliskrc</code>; <code>.pre-commit-config.yaml</code> and the lefthook files; the gradle and maven wrapper properties; <code>.devcontainer.json</code>; <code>.ripgreprc</code>, <code>pyrightconfig.json</code>; <code>.mcp.json</code>, <code>.claude.json</code>. <span class="src">D2 · Protected paths</span></p>
+    <h3>Critical paths</h3>
+    <p>"Claude Code never lets a <code>permissions.allow</code> rule or a <code>PreToolUse</code> hook that returns <code>"allow"</code> approve an <code>rm</code> or <code>rmdir</code> command that targets a critical path, even in modes that skip other prompts." A matching deny still blocks outright. Critical: the filesystem root and its direct children, the home directory, Windows drive roots and their top-level directories, the working directory and its parents, and additional directories and their parents when the removal is a glob under them. A glob or trailing slash directly under a shell variable (<code>rm -rf "$DIR"/*</code>) counts, since an empty variable makes it a root removal; hiding the removal in <code>$(…)</code> or <code>&lt;(…)</code> does not skip the check. <span class="src">D2 · Critical paths</span></p>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Mode</th><th>Critical-path removal</th></tr></thead>
+        <tbody>
+          <tr><td><code>default</code>, <code>acceptEdits</code></td><td>Asks you to approve it</td></tr>
+          <tr><td><code>plan</code></td><td>Asks; with auto mode available during planning and no bypass, sends it to the classifier</td></tr>
+          <tr><td><code>auto</code></td><td>Sends it to the classifier</td></tr>
+          <tr><td><code>dontAsk</code></td><td>Denies it</td></tr>
+          <tr><td><code>bypassPermissions</code></td><td>Asks you to approve it</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="src">D2 · Critical paths, table reproduced verbatim</p>
+    <p>PowerShell's <code>Remove-Item</code> has its own check: system paths and wildcard targets (<code>*</code>, <code>/*</code>, <code>\*</code>) are denied in every mode without asking; a recursive removal of the working directory or a parent follows the mode. <span class="src">D2 · Remove-Item in PowerShell</span></p>
+  </div>
+</section>
+
+<!-- 11 RELATIONS -->
+<section id="relations">
+  <div class="wrap">
+    <h2>11 · relationships</h2>
+    <p class="h2big">How permissions connect to the other subjects of this atlas</p>
+    <p class="sub">Each row states one relation in the direction the documentation gives it. Pages named in the right-hand column that do not yet exist are marked; this page does not lean on them.</p>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Permissions and …</th><th>The relation</th><th>Source</th><th>Atlas page</th></tr></thead>
+        <tbody>
+          <tr><td><strong>permission modes</strong></td><td>Modes set the baseline for calls no rule settled; rules layer on top. Deny wins in every mode; ask prompts in every mode and is denied in <code>dontAsk</code>; allow has no effect in <code>bypassPermissions</code> and its broad forms are suspended in <code>auto</code>. Entering auto or bypass is itself gated by settings (<code>disableAutoMode</code>, <code>disableBypassPermissionsMode</code>) and by which file may set <code>defaultMode</code>.</td><td class="src">D2 · Available modes; D2 · Which mode a session starts in</td><td>modes (not yet written)</td></tr>
+          <tr><td><strong>hooks</strong></td><td>A PreToolUse hook runs before the prompt and can block ahead of any rule (exit 2) or ask for a prompt; it cannot lift a deny, skip an ask, or approve a critical-path removal. A PermissionRequest hook answers prompts. Hooks in a project's settings run before trust; project allow rules do not.</td><td class="src">D1 · Extend permissions with hooks; D1 · What runs before you trust a folder</td><td>hooks (not yet written)</td></tr>
+          <tr><td><strong>gates</strong></td><td>A gate the family builds is assembled from these primitives: a deny or ask rule (matches the command as written), a hook (sees the full text and can block), the sandbox (OS boundary), a mode (baseline), and the two safety checks (outrank allow and hook). Which primitive holds against which evasion is the gates page's subject.</td><td class="src">D1 · What a Bash rule doesn't match; D1 · How permissions interact with sandboxing</td><td>gates (not yet written)</td></tr>
+          <tr><td><strong>the sandbox</strong></td><td>Complementary: permissions bound what Claude attempts, the sandbox bounds what the OS lets a Bash command and its children do. Permission paths and domains feed the sandbox configuration; a sandbox in auto-allow mode replaces the bare <code>Bash</code> ask prompt but not content-scoped asks or denies.</td><td class="src">D1 · How permissions interact with sandboxing</td><td>sandbox (future subject)</td></tr>
+          <tr><td><strong>settings files</strong></td><td>Rules live under <code>permissions</code> in five scopes with fixed precedence; a deny anywhere wins; project allow rules and additional directories wait for trust; project files cannot start a session in auto or bypass.</td><td class="src">D1 · Settings precedence; D3 · Settings precedence</td><td>this page, §8</td></tr>
+          <tr><td><strong>working directories</strong></td><td>Reads inside the working directory and <code>additionalDirectories</code> need no prompt; edits there follow the mode; a directory added by flag or command also loads some configuration, one listed in settings grants file access only. <code>permissions.blockReadsOutsideWorkingDirectories</code> makes the file tools refuse outside paths in every mode.</td><td class="src">D1 · Working directories; D1 · Additional directories grant file access, not configuration</td><td>this page</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- 12 OBSERVED -->
+<section id="observed">
+  <div class="wrap">
+    <h2>12 · observed by the family</h2>
+    <p class="h2big">Behaviour seen in the family's own tests</p>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Kind</th><th>Observation</th><th>When, where</th><th>Documentation now</th></tr></thead>
+        <tbody>
+          <tr><td><span class="kind obs">observed</span></td><td>A PreToolUse hook returning <code>permissionDecision: "ask"</code> produced a consent prompt while the session ran in auto mode. The hook layer held regardless of the mode default.</td><td>2026-08-29, verified by the operator, clubstraylight.com commit-confirm hook; Claude Code version not recorded.</td><td>Consistent with D2, which says auto mode still shows prompts forced by an ask rule or a hook, and with D1's statement that hook decisions do not bypass rules.</td></tr>
+          <tr><td><span class="kind obs">observed</span></td><td>A gate keyed on the command prefix <code>git commit</code> was bypassed by <code>git -C &lt;dir&gt; commit</code>. The fix was a content-aware matcher in the hook.</td><td>2026-08-29, clubstraylight.com, hardening recorded under ticket CSL-0051; version not recorded.</td><td>Now documented at D1 · What a Bash rule doesn't match, which lists <code>git -C . push</code> as a form a <code>Bash(git push *)</code> rule does not stop.</td></tr>
+          <tr><td><span class="kind obs">observed</span></td><td>An agent acting under the auto-mode default pushed to the main branch of a family repository; the family's rule was that the operator pushes. Remediation pinned Manual mode account-wide and disabled auto and bypass.</td><td>2026-08-17 incident, fix 2026-08-29; version not recorded.</td><td>D2 lists "pushing to any branch of the repository you're working in, including the default branch" as allowed by default in auto mode from v2.1.211, and names an ask rule as the way to require a human checkpoint while staying in auto.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- 13 GAPS -->
+<section id="gaps">
+  <div class="wrap">
+    <h2>13 · gaps and unverified claims</h2>
+    <p class="h2big">What this page does not know</p>
+    <ul>
+      <li><span class="kind unv">unverified</span> The exact position of the protected-path and critical-path checks relative to ask rules (§1 note). Outcomes are documented per mode; ordering against ask is inferred.</li>
+      <li><span class="kind unv">unverified</span> Whether an allow rule can override plan mode's block on edits. D2 says edits "stay blocked until you approve the plan" and does not mention allow rules there. The operator's draft asserted "regardless of allow rules"; this page does not.</li>
+      <li><strong>Not covered here:</strong> the hooks contract itself (events, input JSON, output fields, exit codes), the auto-mode classifier's block and allow lists in full, sandbox configuration, the Agent SDK's permission options, managed-settings delivery and the managed-only keys, and the behaviour of Cowork, cloud, and Remote Control sessions beyond the rows that name them. Each is a page of its own.</li>
+      <li><strong>Not tested by the family at this version:</strong> none of the facts above were re-run against v2.1.268; the three observations in §12 predate it. The documented and observed marks are therefore about sources, not about a fresh test.</li>
+      <li><strong>Version-gated facts</strong> keep their version on the row. A reader on an older client should check each such row before relying on it.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 14 CHANGES -->
+<section id="changes">
+  <div class="wrap">
+    <h2>14 · change record</h2>
+    <p class="h2big">Versions checked, and what changed on this page</p>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Date</th><th>Client version checked</th><th>Change</th></tr></thead>
+        <tbody>
+          <tr><td>2026-09-11</td><td><code>2.1.268</code></td><td>First version. Built from the operator's draft of the same day (a walkthrough page produced in the Claude app, with an interactive simulator) by checking each of its claims against D1, D2, and D3 and replacing the simulator with the worked table in §2. Corrections to the draft: (1) it said <code>bypassPermissions</code> made protected-path writes an exception; D1 and D2 say bypass skips those prompts, and the exceptions are the "actions no mode auto-approves". (2) It listed <code>acceptEdits</code> as approving <code>mkdir</code>, <code>touch</code>, <code>mv</code>, <code>cp</code>; D2 also lists <code>rm</code>, <code>rmdir</code>, and <code>sed</code>. (3) It placed the mode gate before allow rules for every mode; D2 has allow rules resolve first in auto mode, with the broad ones suspended. (4) It omitted the safety checks, critical paths, the environment-variable stripping, the exec wrappers that cannot be prefix-approved, the read-only exceptions, input redirections, symlink handling, and workspace trust for local files. (5) Its wildcard table was a subset; the vendor's full table is reproduced. (6) It cited only two documents; the settings document is added for precedence.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- 15 SOURCES -->
+<section id="sources">
+  <div class="wrap">
+    <h2>15 · sources</h2>
+    <p class="h2big">What each mark on this page points to</p>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Mark</th><th>Document</th><th>Address</th><th>Read</th><th>Note</th></tr></thead>
+        <tbody>
+          <tr><td><strong>D1</strong></td><td>Configure permissions</td><td><a href="https://code.claude.com/docs/en/permissions">code.claude.com/docs/en/permissions</a></td><td>2026-09-11</td><td>Fetched as markdown with <code>Accept: text/markdown</code>. Section names on this page are the document's own headings.</td></tr>
+          <tr><td><strong>D2</strong></td><td>Choose a permission mode</td><td><a href="https://code.claude.com/docs/en/permission-modes">code.claude.com/docs/en/permission-modes</a></td><td>2026-09-11</td><td>Same fetch. Includes the protected-path and critical-path sections.</td></tr>
+          <tr><td><strong>D3</strong></td><td>Settings files and precedence</td><td><a href="https://code.claude.com/docs/en/settings">code.claude.com/docs/en/settings</a></td><td>2026-09-11</td><td>Same fetch. Used for the five-level precedence order and the note that allow rules merge across scopes.</td></tr>
+          <tr><td><strong>family</strong></td><td>Observations in §12</td><td>clubstraylight.com repository: ADR-0002, ticket CSL-0051, and the auto-mode remediation record of 2026-08-29</td><td>2026-09-11</td><td>Private repository; cited for provenance, not reproduced.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>The vendor documentation describes the current release with no version marker of its own. The version on this page is the client installed where the page was written on the day the documents were read; a fact that the documents themselves gate by version carries that version on its row.</p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    Harness atlas, Straylight family. Hand-written HTML, no script, no external assets; opens from the file system and prints. The pattern this page follows will be stated on the atlas's pattern page once written.
+  </div>
+</footer>
+
+</body>
+</html>

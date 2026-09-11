@@ -29,6 +29,23 @@ playbook path referenced elsewhere resolves through that
 symlink — renaming or removing a playbook breaks those
 references, so treat filenames as public API.
 
+## Atlases
+
+`atlases/` holds the family's atlases: cited reference pages on a
+subject the family does not control and must keep current, one
+directory per atlas, one hand-written HTML page per feature of the
+subject. Every fact on a page carries the client, the version it
+was read or observed in, the source, and the date; observed and
+unverified facts are marked; each page keeps a change record and
+draws its relationships to the other pages. No script, no external
+asset, no build step: a page opens from the file system and prints.
+Atlases are NOT skills and NOT playbooks: they state what a vendor's
+tool does, not how the family works. The first is
+`atlases/harness/`, on how agent clients construct and manage a
+session, opened with `claude-code-permissions.html`. The pattern is
+defined by PRD-0004 in clubstraylight.com, which also owns the
+tickets; commits here cite the ticket in the body.
+
 ## Hooks
 
 `hooks/` holds Claude Code lifecycle hooks shared across repos, with
