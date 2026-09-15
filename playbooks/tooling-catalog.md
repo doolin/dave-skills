@@ -27,6 +27,12 @@ the class doesn't matter for.
 - **EnterWorktree / ExitWorktree** → isolate file-mutating work in a
   throwaway git worktree so parallel agents don't collide. Costly setup;
   use only when something actually writes in parallel. → any
+- **playbooks/parallel-worktree-dispatch.md** → read BEFORE dispatching
+  two or more worktree agents at once: the ten facts that lose work
+  (agents can't commit, absolute paths bypass the worktree, creation
+  fails silently above ~5, bases lag main, same-EOF appends collide),
+  the brief's standard block, and the verify-then-integrate cycle.
+  → Fable-class orchestrates; the agents it briefs are Sonnet/Haiku
 - **EnterPlanMode / ExitPlanMode** → enter read-only planning, then
   present a plan for approval before editing. Use for non-trivial changes
   the user should sign off on first. → Sonnet+
