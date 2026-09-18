@@ -68,10 +68,8 @@ All of them fail with `bad interpreter: ... no such file or directory`,
 which takes down every gate that shells through them. Recreate rather
 than patch:
 
-```sh
-python3 -m venv --clear .venv          # use the SAME interpreter it was built from
-.venv/bin/pip install -r requirements-dev.txt
-```
+    python3 -m venv --clear .venv          # use the SAME interpreter it was built from
+    .venv/bin/pip install -r requirements-dev.txt
 
 Check `pyvenv.cfg`'s `home =` line for the original interpreter before
 you start. The venv is gitignored, so nothing is committed.

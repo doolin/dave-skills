@@ -101,6 +101,12 @@ the class doesn't matter for.
 - **software-development-workflow** (dave-skill) → the collaborative
   dev cycle from requirements to CI-green PR; shared dev/Claude
   responsibilities. → reference, any
+- **hooks/bash-policy.sh** (dave-skills hook) → stop a command shape the
+  operator has ruled out BEFORE it runs: `git commit -F`, python
+  one-liners, heredoc writes, `--amend` on a pushed HEAD, `db:` tasks.
+  Register it on `PreToolUse`/`Bash` and write the rules in the repo's
+  `.claude/bash-policy.rb`; reach for it when a rule is living in agent
+  memory as "never do X". → Sonnet to add a rule, any to run
 - **fewer-permission-prompts** (skill) / **update-config** (skill) →
   mine transcripts for a safe allowlist / edit settings.json (perms,
   hooks, env, automated behaviors). Reach for "from now on when X". → any

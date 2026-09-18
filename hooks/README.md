@@ -38,11 +38,29 @@ public API.
   `tool-call-ledger` skill, which clusters the shapes and proposes an
   allowlist entry, an existing skill, or a new tool. Always exits 0.
 
+- **bash-policy.sh** — `PreToolUse`, matcher `Bash`, no `if`. Register it
+  after `tool-call-ledger.sh` and before any consent gate. Reads
+  `.tool_input.command` and prints a `deny`, an `ask`, or nothing, per the
+  policy: the consuming repo's `.claude/bash-policy.rb` when it has one,
+  otherwise `bash-policy/policy.rb` here. The engine (`bash-policy.rb`,
+  stdlib Ruby) is only the mechanism; the rules read as English
+  (`refuse`, `ask_when`, `allow_when`, `guard`), the same shape as
+  `skills/tool-call-ledger/policy.rb`. Quoted spans are stripped before
+  matching, so a commit message that mentions a refused command does not
+  trip its rule. Refuse beats ask; a `CLAUDE_POLICY_OVERRIDE=1` prefix
+  turns a refusal into an ask that names the rule, never into a silent
+  allow. Rules that need a check rather than a match name a script in
+  `bash-policy/guards/` (exit 0 allow, 1 refuse, 2 ask). Every deny and
+  ask appends `{ts, session, decision, rule, command}` to
+  `<repo>/.claude/policy-decisions.jsonl`. Missing `jq` or `ruby`,
+  unreadable stdin, or a broken policy: one line to stderr and no
+  decision. Always exits 0.
+
 ## Tests
 
 ```bash
 bats hooks/test/
-shellcheck hooks/*.sh test/test_helper.bash
+shellcheck hooks/*.sh hooks/bash-policy/guards/*.sh test/test_helper.bash
 ```
 
 Fixtures come from the repo-level `test/test_helper.bash`, shared with

@@ -267,8 +267,8 @@ One session took the remaining nine Linebacker 2 airfields
 through the chain with nine Sonnet research agents and three
 tools, all in `~/src/sgp-linebacker-2/tools/`:
 `runway_bearing.rb` (Overpass fetch → archive → bearing and
-length per runway way), `airfield_symbol.rb` (label + bearing
-+ optional strip side → the TikZ fragment, placement included),
+length per runway way), `airfield_symbol.rb` (label + bearing +
+optional strip side → the TikZ fragment, placement included),
 `axis_angle.rb` (thresholded crop → drawn angle). What the run
 taught, beyond the pipeline above:
 

@@ -151,6 +151,13 @@ Every worktree brief carries, in this order:
   source of truth and the brief copies it rather than paraphrasing.
   Include the repo's known traps in the same block — for dbb, never pass
   `.erb` files to `bin/rubocop`.
+- **One command per Bash call.** No `&&`, `;`, or `cd x && …`
+  sequences, no pipe wrapping an allowlisted tool. Files through the
+  Read/Grep/Edit/Write tools, never `cat`/`sed`/`tail`. A chain matches
+  no allowlist prefix, so every chain is a prompt the operator has to
+  answer while the wave runs; three agents chaining at once is a wall
+  of them (2026-09-16, operator: "Stop chaining."). Say it in the brief;
+  the agent's own shell habits are not the repo's.
 - **What to do with checks:** run them, include the output in the final
   report (fact 8).
 - **The ending:** "stage everything and stop; put the suggested commit
@@ -168,6 +175,17 @@ Send the whole wave in one message — one `Agent` call per ticket, all
 message run concurrently; calls in successive messages serialize. Keep a
 wave at five or fewer unless you accept the leak risk in fact 3 and will
 check for it.
+
+Immediately after the dispatch message returns, run `git worktree list`
+and compare each worktree's base against `git rev-parse HEAD`. Fact 4 is
+not rare: on 2026-09-16 a commit landed, the dispatch went out in the
+very next message, and both worktrees were still created one commit
+behind it, so neither agent could find the ticket file its brief named.
+When the base lags, message every affected agent with the absolute
+read-only path of what it is missing, and have it write anything it
+would have appended to a lagging file into a new file instead, for the
+orchestrator to fold in on main. A cherry-pick of a file that exists on
+main but not in the base is an add/add conflict; a new file is not.
 
 ### Stage 3 — Verify before integrating
 
