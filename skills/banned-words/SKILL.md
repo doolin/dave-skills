@@ -104,16 +104,22 @@ Ground rules:
 
 ### settles
 
-- **Banned:** as a claim that a question has been closed — "that
-  settles it", "one call settles it", "the matter is settled",
-  "this settles whether X".
-- **Why:** it announces a conclusion in place of the evidence that
-  reached one. The reader learns that the writer considers the
-  question closed, not what closed it — and a question the writer
-  has closed is the one a reader most needs shown.
-- **Instead:** state the finding and let it do the closing — "the
-  command ran without a prompt, so the allowlist is not the cause".
+- **Banned:** where the agent is the one doing the settling — "that
+  settles it", "one call settles it", "this settles whether X".
+- **Why:** closing a question is the operator's act. An agent that
+  reports a matter settled has put its own satisfaction where his
+  decision belongs, and the report is what stops anyone looking
+  again. The word is not the problem; the unilateral claim is.
+- **Instead:** report the finding and leave the closing to him —
+  "the command ran without a prompt, so the allowlist is not the
+  cause" — or name who closed it: "you ruled X on 19 September".
 - **Carve-outs:**
+  - **Settlement by the operator, or reached together.** This is
+    the main one, and it is what the ban is for. "Nothing changes
+    until the proposal is settled" is right where only he can
+    settle it. "We settled on Marp" is right where the choice was
+    joint. Naming a real act of his is accurate; claiming the act
+    is what the ban catches.
   - The physical and legal senses: a foundation settles, a claim is
     settled out of court, a settlement is a place.
   - `settle` as an identifier in code. The ban covers prose; a
