@@ -102,6 +102,23 @@ Ground rules:
 - **Carve-out:** literal structural and rock mechanics — walls,
   beams, pillars, abutments.
 
+### settles
+
+- **Banned:** as a claim that a question has been closed — "that
+  settles it", "one call settles it", "the matter is settled",
+  "this settles whether X".
+- **Why:** it announces a conclusion in place of the evidence that
+  reached one. The reader learns that the writer considers the
+  question closed, not what closed it — and a question the writer
+  has closed is the one a reader most needs shown.
+- **Instead:** state the finding and let it do the closing — "the
+  command ran without a prompt, so the allowlist is not the cause".
+- **Carve-outs:**
+  - The physical and legal senses: a foundation settles, a claim is
+    settled out of court, a settlement is a place.
+  - `settle` as an identifier in code. The ban covers prose; a
+    method name is a name, not a claim.
+
 ## Banned rhetorical devices
 
 A device is a *move*, not a word, so no phrase list catches it.
