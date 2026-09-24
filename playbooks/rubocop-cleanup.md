@@ -207,6 +207,23 @@ When the last entry goes, delete `.rubocop_todo.yml` and the
 (`bundle exec rake`). Record the work in the project's changelog,
 naming any interface change a caller of the gem would meet.
 
+Then lock the coverage in with a floor: `SimpleCov.minimum_coverage(line:
+100, branch: 100)`, set in an `after(:suite)` hook **only when every
+example in every spec file ran**. A single-file, `-e`, or focused run
+covers part of `lib/` by design; an unconditional floor fails all of
+them. "Every file" is `config.files_to_run` against a glob of
+`spec/**/*_spec.rb`; "every example" is `RSpec.world.example_count`
+(counted after filtering) against the sum of each group's `examples`
+(counted before). The rake task's `--pattern` run counts as full.
+
+Prove the floor trips before trusting it: add an uncovered method to a
+file SimpleCov measures, run the full suite, expect exit 2 and a
+`minimum coverage` message, then restore the file. The probe method
+needs a body on its own line: a one-line `def m = :x` counts as
+covered when the method is defined. And a file loaded before
+`SimpleCov.start` is never measured: the gemspec's `require_relative`
+of `version.rb` loads it first, so a probe placed there proves nothing.
+
 ## Configured rules worth reusing
 
 Each carries its reason as a comment in `.rubocop.yml`:
@@ -276,5 +293,10 @@ was one shared builder, not two smaller copies.
 - `~/.claude/skills/index-audit/index-audit` — staged files and leftovers
   before every commit; checks a refactor commit holds only `lib/` or
   only `spec/`.
-- The before/after output comparison was a scratch script in the
-  reference run and is not kept in any repo; its design is in Stage 6.
+- `scripts/compare-output [REV]` in highlight-extractor (added at
+  `a62d8e8`) — the Stage 6 output comparison as a tool: checks REV out
+  into a temporary worktree, runs a fixed command list through both
+  trees against real data, and reports the first differing line.
+  Adapt its command list to another repo's CLI.
+- `spec/support/coverage_floor.rb` in highlight-extractor (added at
+  `0cf046e`) — the Stage 7 floor.
