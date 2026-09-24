@@ -76,6 +76,12 @@ the class doesn't matter for.
 - **pr-watch-check** (skill) → watch ALL checks on the branch's PR, then
   keep watching until it merges/closes — one background task covers the
   checks→merge arc; prefer over watch-ci whenever a PR is open. → any
+- **playbooks/rubocop-cleanup.md** → read BEFORE adding RuboCop to a
+  Ruby repo or working down a `.rubocop_todo.yml`: config first, one
+  commit per cop, 100% line+branch coverage before any Metrics
+  refactor, specs and code in separate commits, before/after output
+  compared from a baseline worktree. → Sonnet executes; Fable-class
+  for the config policy and refactor design
 - **mece-review** (skill) → check a doc/category set for overlap and gaps
   (Mutually Exclusive, Collectively Exhaustive). → Sonnet+
 - **document-drift** (dave-skill) → audit a repo for stale docs: broken
