@@ -1,7 +1,8 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# CI/CD Attestation: zip artifacts, SHA-256, Solana memo, optional S3 upload.
+# CI/CD Attestation: zip artifacts, SHA-256, Solana memo,
+# attestation.json, optional S3 upload.
 # Solana and S3 steps are fault-tolerant: failures are logged, the run
 # completes. Standalone (no Rails); see dbb for the Rails-integrated variant.
 #
@@ -42,6 +43,8 @@ MEMO_PROGRAM = [
 ].pack("C*").freeze
 
 ZIP_FILENAME = "ci-artifacts.zip"
+JSON_FILENAME = "attestation.json"
+ATTESTATION_SCHEMA_VERSION = 1
 
 def artifact_dir
   ENV.fetch("ARTIFACT_DIR", ".")
@@ -204,6 +207,34 @@ def s3_upload(bucket, prefix, files)
   end
 end
 
+def ci_run_url
+  server = ENV.fetch("GITHUB_SERVER_URL", "")
+  run_id = ENV.fetch("GITHUB_RUN_ID", "")
+  repo = ENV.fetch("GITHUB_REPOSITORY", "")
+  return nil if server.empty? || run_id.empty?
+
+  "#{server}/#{repo}/actions/runs/#{run_id}"
+end
+
+# One line of JSON (Athena's JSON SerDe reads one record per line).
+# Same fields as the Node variant's attestation.json, which mirrors its
+# PDF; this variant renders no PDF and records no step timeline.
+# Uploaded beside the zip, never inside it: it carries the zip's
+# checksum.
+def write_attestation_json(fields)
+  record = {
+    schema_version: ATTESTATION_SCHEMA_VERSION,
+    repository: (ENV["GITHUB_REPOSITORY"] || "repo").split("/").last,
+    commit_sha: commit_sha,
+    branch: ENV.fetch("GITHUB_REF_NAME", nil),
+    ci_run_url: ci_run_url,
+    origin: ENV["GITHUB_ACTIONS"] == "true" ? "ci" : "local",
+    completed_at: Time.now.utc.iso8601,
+    steps: nil
+  }.merge(fields)
+  File.write(JSON_FILENAME, "#{record.to_json}\n")
+end
+
 short = commit_sha[0, 7]
 puts "==> Attesting build #{short}..."
 
@@ -215,6 +246,7 @@ prefix = evidence_prefix(short)
 keypair_path = ENV.fetch("SOLANA_KEYPAIR_PATH", nil)
 network = ENV.fetch("SOLANA_NETWORK", "devnet")
 signature = nil
+solana_error = nil
 
 if keypair_path && File.exist?(keypair_path)
   memo = {
@@ -231,16 +263,26 @@ if keypair_path && File.exist?(keypair_path)
     signature = submit_memo(memo, keypair_path, network)
     puts "Solana memo: #{signature}"
   rescue StandardError => e
+    solana_error = e.message
     warn "Solana memo failed (non-fatal): #{e.message}"
   end
 else
   puts "Skipping Solana memo (no keypair)"
 end
 
+write_attestation_json(
+  s3_key: "#{prefix}/#{ZIP_FILENAME}",
+  artifact_checksum: "sha256:#{checksum}",
+  included_files: included,
+  solana_network: network,
+  solana_tx_signature: signature,
+  solana_error: solana_error
+)
+
 bucket = ENV.fetch("S3_COMPLIANCE_BUCKET", nil)
 if bucket && !bucket.empty?
   included_paths = included.map { |f| File.join(artifact_dir, f) }
-  s3_upload(bucket, prefix, [*included_paths, ZIP_FILENAME])
+  s3_upload(bucket, prefix, [*included_paths, ZIP_FILENAME, JSON_FILENAME])
 else
   puts "Skipping S3 upload (no bucket)"
 end

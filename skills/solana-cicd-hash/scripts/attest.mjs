@@ -4,8 +4,9 @@
  * CI/CD Attestation Pipeline
  *
  * Zips CI artifacts, SHA-256s the archive, anchors the checksum on Solana
- * via a memo transaction, generates a PDF attestation report, and uploads
- * everything to S3. Solana and S3 steps are fault-tolerant: failures are
+ * via a memo transaction, generates a PDF attestation report and the
+ * same content as one-line attestation.json, and uploads everything to
+ * S3. Solana and S3 steps are fault-tolerant: failures are
  * logged, the run completes.
  *
  * Environment variables:
@@ -31,6 +32,7 @@
 
 import {
   readFileSync,
+  writeFileSync,
   createWriteStream,
   existsSync,
   mkdirSync,
@@ -60,6 +62,8 @@ const MEMO_PROGRAM_ID = new PublicKey(
 );
 const ZIP_FILENAME = "ci-artifacts.zip";
 const PDF_FILENAME = "attestation.pdf";
+const JSON_FILENAME = "attestation.json";
+const ATTESTATION_SCHEMA_VERSION = 1;
 
 function getCommitSha() {
   if (process.env.GITHUB_SHA) return process.env.GITHUB_SHA;
@@ -243,6 +247,29 @@ async function generatePdf(evidence, outputPath) {
   });
 }
 
+// The PDF's content as one line of JSON, so Athena can query it (its
+// JSON SerDe reads one record per line). Written from the same
+// evidence the PDF renders; it sits beside the zip, never inside it,
+// because it carries the zip's checksum.
+function attestationRecord(evidence) {
+  return {
+    schema_version: ATTESTATION_SCHEMA_VERSION,
+    repository: evidence.repository,
+    commit_sha: evidence.commitSha,
+    branch: evidence.branch || null,
+    ci_run_url: evidence.ciRunUrl || null,
+    origin: evidence.origin,
+    s3_key: evidence.s3Key,
+    artifact_checksum: `sha256:${evidence.artifactChecksum}`,
+    included_files: evidence.includedFiles,
+    solana_network: evidence.solanaNetwork,
+    solana_tx_signature: evidence.solanaTxSignature,
+    solana_error: evidence.solanaError,
+    completed_at: evidence.completedAt,
+    steps: evidence.steps,
+  };
+}
+
 function uploadToS3(bucket, prefix, files, region) {
   for (const f of files) {
     execSync(
@@ -331,9 +358,11 @@ async function main() {
     step("Solana memo", "skipped (SOLANA_KEYPAIR_PATH not set)");
   }
 
+  const jsonPath = `${outputDir}/${JSON_FILENAME}`;
+  writeFileSync(jsonPath, `${JSON.stringify(attestationRecord(evidence))}\n`);
   const pdfPath = `${outputDir}/${PDF_FILENAME}`;
   await generatePdf(evidence, pdfPath);
-  step("PDF generated", PDF_FILENAME);
+  step("PDF generated", `${PDF_FILENAME} + ${JSON_FILENAME}`);
 
   if (bucket) {
     try {
@@ -347,6 +376,7 @@ async function main() {
           })),
           { path: zipPath, name: ZIP_FILENAME },
           { path: pdfPath, name: PDF_FILENAME },
+          { path: jsonPath, name: JSON_FILENAME },
         ],
         region,
       );

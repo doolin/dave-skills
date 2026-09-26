@@ -1,6 +1,6 @@
 ---
 name: solana-cicd-hash
-description: Attest a CI/CD run on Solana. Zips CI artifacts, SHA-256s the archive, posts the hash as a JSON memo on Solana, generates a PDF attestation report, and uploads everything to S3.
+description: Attest a CI/CD run on Solana. Zips CI artifacts, SHA-256s the archive, posts the hash as a JSON memo on Solana, generates a PDF attestation report plus the same content as queryable attestation.json, and uploads everything to S3.
 disable-model-invocation: true
 ---
 
@@ -82,6 +82,10 @@ The script derives the S3 key as:
 s3://<S3_COMPLIANCE_BUCKET>/<prefix>/YYYY/MM/DD/HHMMSS-<shortsha>/ci-artifacts.zip
 ```
 
+Beside the zip, in the same folder: each artifact file,
+`attestation.pdf` (Node variant), and `attestation.json`. The date and
+time are UTC.
+
 Where `<prefix>` is:
 
 - `EVIDENCE_BUNDLE` env var if set (e.g. `slacronym/ci`); or
@@ -117,6 +121,40 @@ it lives. `origin` is `ci` when `GITHUB_ACTIONS` is `"true"`, and
 `local` otherwise. Memos posted before 2026-09-26 carry neither
 field. For those, check the `s3_key`: a local run uploads nothing,
 so a memo whose `s3_key` has no object in S3 was a local post.
+
+## attestation.json
+
+The PDF is for people; Athena cannot read it. `attestation.json` is
+the same content as data, so CI evidence can be queried with Glue +
+Athena across every repo, whatever its stack. The Node variant writes
+it from the same evidence object the PDF renders, just before
+rendering, so the two always agree. The Ruby variant renders no PDF
+and writes the same fields with `steps: null`.
+
+One JSON object on **one line**: Athena's JSON SerDe reads one record
+per line, so a pretty-printed file cannot be queried. It is uploaded
+**beside** the zip, never inside it, because it carries the zip's
+checksum.
+
+| Field | Notes |
+| --- | --- |
+| `schema_version` | `1` |
+| `repository` | Short repo name |
+| `commit_sha` | Full SHA attested |
+| `branch` | `GITHUB_REF_NAME`, or `null` |
+| `ci_run_url` | Actions run URL, or `null` locally |
+| `origin` | `ci` or `local`, as in the memo |
+| `s3_key` | Key of `ci-artifacts.zip`, as in the memo |
+| `artifact_checksum` | `sha256:<hex>` of the zip |
+| `included_files` | Files in the zip |
+| `solana_network` | `devnet` or `mainnet-beta` |
+| `solana_tx_signature` | Memo transaction, or `null` |
+| `solana_error` | Why the memo failed, or `null` |
+| `completed_at` | ISO-8601 UTC |
+| `steps` | Timeline `[{name, result}]` as in the PDF; `null` in Ruby |
+
+It records what was attested, not whether the checks passed: pass/fail
+lives in each tool's own output file.
 
 ## Local runs
 
@@ -228,7 +266,7 @@ To verify any past attestation from the on-chain record alone:
 
 1. Find the transaction on Solana Explorer (add `?cluster=devnet` for
    devnet). The attest script prints a direct link when Solana
-   submission succeeds.
+   submission succeeds; `attestation.json` records its signature.
 2. Extract `s3_key` and `artifact_checksum` from the memo JSON.
 3. Download the zip from S3 using the `s3_key`.
 4. `sha256sum ci-artifacts.zip` — must match `artifact_checksum`.
