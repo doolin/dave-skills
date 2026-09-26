@@ -222,6 +222,10 @@ if keypair_path && File.exist?(keypair_path)
     artifact_checksum: "sha256:#{checksum}",
     commit: commit_sha,
     timestamp: Time.now.utc.iso8601,
+    network: network,
+    # Local runs may post to devnet; this keeps a test post from
+    # being mistaken for CI evidence.
+    origin: ENV["GITHUB_ACTIONS"] == "true" ? "ci" : "local",
   }
   begin
     signature = submit_memo(memo, keypair_path, network)

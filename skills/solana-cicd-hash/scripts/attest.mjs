@@ -267,6 +267,9 @@ async function main() {
   const branch = process.env.GITHUB_REF_NAME || "";
   const serverUrl = process.env.GITHUB_SERVER_URL || "";
   const runId = process.env.GITHUB_RUN_ID || "";
+  // Local runs may post to devnet; the memo says so, so a test post
+  // can never be mistaken for CI evidence.
+  const origin = process.env.GITHUB_ACTIONS === "true" ? "ci" : "local";
   const ciRunUrl =
     serverUrl && runId
       ? `${serverUrl}/${repository}/actions/runs/${runId}`
@@ -295,6 +298,7 @@ async function main() {
     s3Key,
     artifactChecksum: checksum,
     includedFiles,
+    origin,
     solanaNetwork: network,
     solanaTxSignature: null,
     solanaError: null,
@@ -310,6 +314,8 @@ async function main() {
           artifact_checksum: `sha256:${checksum}`,
           commit: commitSha,
           timestamp: evidence.completedAt,
+          network,
+          origin,
         },
         keypairPath,
         network,

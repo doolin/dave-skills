@@ -101,13 +101,38 @@ JSON posted to the Solana Memo v2 program:
   "s3_key": "slacronym/ci/2026/04/17/120000-abc1234/ci-artifacts.zip",
   "artifact_checksum": "sha256:<hex>",
   "commit": "<full-sha>",
-  "timestamp": "2026-04-17T12:00:00.000Z"
+  "timestamp": "2026-04-17T12:00:00.000Z",
+  "network": "devnet",
+  "origin": "ci"
 }
 ```
 
 `s3_key` makes the memo self-contained: anyone with S3 access can
 retrieve and re-verify the exact artifact bundle from the on-chain
 record alone.
+
+`network` is the cluster the memo was posted to (`devnet` or
+`mainnet-beta`), so a memo copied out of its cluster still says where
+it lives. `origin` is `ci` when `GITHUB_ACTIONS` is `"true"`, and
+`local` otherwise. Memos posted before 2026-09-26 carry neither
+field. For those, check the `s3_key`: a local run uploads nothing,
+so a memo whose `s3_key` has no object in S3 was a local post.
+
+## Local runs
+
+Running the attest script locally is allowed, and it may post a real
+memo to **devnet**: the script posts whenever `SOLANA_KEYPAIR_PATH`
+is set, and on the operator's machine it is set in the shell. A local
+post is expected, not an incident. Its memo carries
+`"origin": "local"`, which is what keeps it apart from CI evidence:
+an audit counts only `origin: ci` memos.
+
+- Never post locally to `mainnet-beta`; it costs real fees and a
+  local run is not evidence.
+- For a dry run with no memo at all, clear the variable for the one
+  command: `SOLANA_KEYPAIR_PATH= node scripts/attest.mjs`.
+- A local run with `S3_COMPLIANCE_BUCKET` unset uploads nothing, so a
+  local memo's `s3_key` names an object that does not exist.
 
 ## IAM role
 
