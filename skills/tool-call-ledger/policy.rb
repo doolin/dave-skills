@@ -41,6 +41,7 @@ keep_paths_starting_with '~/.claude/skills/', 'scripts/', 'bin/', '~/src/', './'
 reach_for 'git-orient',    when_it_looks_like: /\Agit (rev-parse|status|log|branch)\b/
 reach_for 'index-audit',   when_it_looks_like: /\Agit diff --cached\b|\Agit status --short\b/
 reach_for 'rspec-summary', when_it_looks_like: /\Agrep .*(examples,|coverage|rspec).*\.log\b/i
+reach_for 'cargo-summary', when_it_looks_like: /\Acargo (build|test|clippy|check)\b.*\|/
 reach_for 'watch-ci',      when_it_looks_like: /\Agh run (watch|list|view)\b/
 reach_for 'the Read tool', when_it_looks_like: /\A(sed -n|head|tail|cat) /
 reach_for 'gate',          when_it_looks_like: %r{\A(bundle exec |bin/)(rspec|rubocop|brakeman|bundle-audit)\b}

@@ -162,6 +162,10 @@ Present a recommendation to the human before starting work.
   decide the pre-commit gate: example tally, SimpleCov line and branch
   totals, coverage-floor breach, failures grouped by spec directory.
   `--run` runs the suite through it. Any rspec + SimpleCov repo.
+- **cargo-summary** — Run cargo (build, test, clippy, check) and print
+  each distinct error and warning, each panic, the failed tests, and
+  one tally of the test results, keeping the full output in a log.
+  Replaces the `cargo … 2>&1 | grep | head` pipeline. Any Rust repo.
 - **tool-call-ledger** — Turn permission prompts into a queue of
   tools: cluster the Bash calls the `hooks/tool-call-ledger.sh` hook
   records (or Bash calls read straight from transcripts) by shape,
