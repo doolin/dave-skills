@@ -1,0 +1,536 @@
+/* Mirrored from clubstraylight.com graph/templates/style.css by ruby site/build (ADR-0007); edit the source, not this copy. */
+/* Straylight KB (CSL-0088).
+ *
+ * A catalog, not a console. The page is a finding aid: a description in
+ * ink, its apparatus in the margin, and rules that mark levels rather
+ * than decorate. Three commitments hold the design together.
+ *
+ * 1. A reading never dresses as a fact. Everything a model wrote carries
+ *    the ochre rule and names its model and date; everything the files
+ *    assert does not. This is the one place the design raises its voice,
+ *    and it is the project's whole epistemics (ADR-0004 I4).
+ * 2. Nothing external. No font downloads, no scripts, no network. The
+ *    page renders the same offline, on a plane, in ten years.
+ * 3. Density is a feature. This is a catalog of four thousand documents;
+ *    a reader scanning them needs tight, aligned, quiet tables, and a
+ *    header that stays put while they scroll.
+ *
+ * Light by default, dark when the reader's system asks for it. Both
+ * palettes are the same design; neither is a terminal.
+ */
+
+:root {
+  --leaf: #e9ebe8;   /* the page: cool bond, green-grey */
+  --panel: #dfe3df;  /* sunk blocks: pre, thead */
+  --ink: #17201e;    /* description */
+  --quiet: #566360;  /* apparatus: labels, counts, paths */
+  --rule: #c2c9c4;   /* hairlines */
+  --cite: #1f3f6b;   /* links: accession-stamp indigo */
+  --read: #8a6413;   /* a model's reading, and nothing else */
+  --wash: #dde1dc;   /* row under the pointer */
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --leaf: #161d1b;
+    --panel: #1e2725;
+    --ink: #d8ddd6;
+    --quiet: #8a9a94;
+    --rule: #2f3d39;
+    --cite: #8fb3e0;
+    --read: #d3a24a;
+    --wash: #1f2825;
+  }
+}
+
+* { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--leaf);
+  color: var(--ink);
+  font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+  font-size: 16px;
+  line-height: 1.55;
+}
+
+/* Identifiers, paths, triples, and every table of data. The catalog's
+ * working face: what a machine wrote and a person reads back. */
+code, pre, table, .mono {
+  font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+/* ---- navigation ------------------------------------------------- */
+
+/* Two rows in one block that stays put: the site row every page of
+ * every section carries (DES-0001 §4), then the section's own row. */
+.chrome {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--leaf);
+  border-bottom: 1px solid var(--rule);
+}
+
+nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 1.1rem;
+  padding: .55rem 1.5rem;
+  font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .82rem;
+}
+
+nav a { color: var(--quiet); }
+nav .home { color: var(--ink); font-weight: 600; }
+nav a:hover, nav a:focus-visible { color: var(--cite); }
+
+/* The site row: smaller, quieter, on the sunk ground, the site's name
+ * in ink and the section the reader is in underlined in ink. It is
+ * the one element every page shares, so it is the one that says which
+ * site this is. */
+nav.site {
+  padding: .3rem 1.5rem;
+  background: var(--panel);
+  border-bottom: 1px solid var(--rule);
+  font-size: .74rem;
+}
+
+nav.site a[aria-current] {
+  color: var(--ink);
+  box-shadow: inset 0 -1px 0 var(--ink);
+}
+
+/* Four groups: the way in, the vocabularies, the records, the apparatus.
+ * A rule between them, because thirteen flat links is a list, not a
+ * structure. */
+nav .group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 1.1rem;
+  padding-left: 1.1rem;
+  border-left: 1px solid var(--rule);
+}
+
+/* Reachable by keyboard, invisible until it is wanted. */
+.skip {
+  position: absolute;
+  left: -100vw;
+  top: 0;
+  background: var(--leaf);
+  padding: .5rem 1rem;
+  z-index: 3;
+}
+.skip:focus { left: 0; }
+
+a { color: var(--cite); text-decoration: none; }
+a:hover { text-decoration: underline; text-underline-offset: 2px; }
+a:focus-visible { outline: 2px solid var(--cite); outline-offset: 2px; }
+
+/* Generous, because the catalog's tables are wide. Prose is held to a
+ * measure at the paragraph, not at the container, so the two do not
+ * have to fight over one number. */
+main { max-width: 76rem; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+
+/* ---- headings --------------------------------------------------- */
+
+h1, h2, h3 { font-weight: 600; line-height: 1.25; }
+
+h1 {
+  font-size: 1.8rem;
+  margin: 0 0 .25rem;
+  letter-spacing: -.01em;
+}
+
+h1 .muted { font-size: .95rem; font-weight: 400; }
+
+h2 {
+  font-size: 1.2rem;
+  margin: 2.4rem 0 .6rem;
+  padding-top: .5rem;
+  border-top: 1px solid var(--rule);
+}
+
+h3 { font-size: 1.02rem; margin: 1.6rem 0 .4rem; }
+
+/* Prose wants a measure; tables and data do not. */
+p, li { max-width: 36rem; }
+p { margin: .7rem 0; }
+
+/* ---- tables ----------------------------------------------------- */
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1rem 0;
+  font-size: .82rem;
+}
+
+th, td {
+  text-align: left;
+  padding: .34rem .7rem .34rem 0;
+  border-bottom: 1px solid var(--rule);
+  vertical-align: top;
+}
+
+/* A 64-character checksum wraps rather than widening the whole table. */
+td { overflow-wrap: anywhere; }
+
+/* Below the two rows of the chrome. */
+th {
+  position: sticky;
+  top: 3.9rem;
+  background: var(--leaf);
+  color: var(--quiet);
+  font-family: inherit;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: inset 0 -1px 0 var(--rule);
+}
+
+/* Only rows carrying data; the header row is th-only and stays put. */
+tr:hover > td { background: var(--wash); }
+
+/* ---- blocks ----------------------------------------------------- */
+
+pre {
+  background: var(--panel);
+  padding: .8rem 1rem;
+  overflow-x: auto;
+  font-size: .78rem;
+  line-height: 1.5;
+  border-left: 2px solid var(--rule);
+}
+
+code { font-size: .86em; }
+p code, li code, dd code, td code { color: inherit; }
+
+.muted { color: var(--quiet); }
+
+/* A block wider than the measure -- the taxonomy tree -- scrolls inside
+ * its own box rather than widening the page. */
+.scroll-x { overflow-x: auto; }
+
+/* A run of facet links is a list of destinations, not prose, so it
+ * takes the page's width rather than a reading measure. */
+.facets { max-width: none; font-size: .86rem; line-height: 1.9; }
+
+dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: .3rem 1.2rem;
+  margin: 1rem 0;
+  font-size: .9rem;
+}
+dt { color: var(--quiet); }
+dd { margin: 0; }
+
+ol, ul { padding-left: 1.2rem; }
+li { margin: .3rem 0; }
+
+svg text { font-family: inherit; }
+
+/* ---- the seam --------------------------------------------------- */
+
+/* The one property joining the two vocabularies, stated as the edge it
+ * is. The index opens with it because it is the architecture. */
+
+.diagram {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin: 2rem 0 1.5rem;
+  text-align: center;
+}
+
+.diagram p { margin: 0; max-width: none; }
+
+.diagram .node {
+  font-size: 1.35rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.diagram .node span {
+  display: block;
+  font-size: .78rem;
+  font-weight: 400;
+  color: var(--quiet);
+  font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, monospace;
+}
+
+.diagram .edge {
+  flex: 1 1 6rem;
+  max-width: 16rem;
+  position: relative;
+  color: var(--quiet);
+  font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, monospace;
+  font-size: .74rem;
+  padding-bottom: .45rem;
+}
+
+.diagram .edge::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-bottom: 1px solid var(--ink);
+}
+
+/* The arrowhead, drawn rather than typed. */
+.diagram .edge::before {
+  content: "";
+  position: absolute;
+  right: -1px;
+  bottom: -3.5px;
+  border-left: 6px solid var(--ink);
+  border-top: 3.5px solid transparent;
+  border-bottom: 3.5px solid transparent;
+}
+
+.seam {
+  margin: 1.5rem 0;
+  padding-left: 1rem;
+  border-left: 2px solid var(--cite);
+}
+.seam p { margin: .4rem 0; }
+
+/* ---- the register ----------------------------------------------- */
+
+/* The three layers as a finding aid's entries: a hanging label, a count,
+ * and the scope note. Not three cards. */
+
+.register { margin: 1.5rem 0; }
+
+.register > div {
+  display: grid;
+  grid-template-columns: 9rem 1fr;
+  gap: 0 1.5rem;
+  padding: .9rem 0;
+  border-top: 1px solid var(--rule);
+}
+
+.register h2 {
+  margin: 0;
+  padding: 0;
+  border: none;
+  font-size: 1.05rem;
+}
+
+.register .count {
+  grid-column: 1;
+  font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, monospace;
+  font-size: .76rem;
+  color: var(--quiet);
+  margin: .15rem 0 0;
+  max-width: none;
+}
+
+.register .note { grid-column: 2; margin: 0; }
+
+/* ---- the catalog sheet ------------------------------------------ */
+
+/* A record: apparatus in the left rail, description in the main column.
+ * What kind of thing this is and where the claim came from belong beside
+ * the claim, not buried under it. */
+
+.sheet {
+  display: grid;
+  grid-template-columns: 11rem 1fr;
+  gap: 0 2rem;
+  margin-top: .5rem;
+}
+
+.apparatus {
+  font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, monospace;
+  font-size: .74rem;
+  line-height: 1.45;
+  color: var(--quiet);
+  border-right: 1px solid var(--rule);
+  padding-right: 1rem;
+}
+
+.apparatus div { margin-bottom: .9rem; }
+.apparatus dt, .apparatus b { display: block; font-weight: 400; color: var(--quiet); }
+.apparatus .value { color: var(--ink); word-break: break-word; }
+
+.description { min-width: 0; }
+.description > h2:first-of-type { margin-top: 1.4rem; }
+
+/* ---- a reading -------------------------------------------------- */
+
+/* Everything below here was written by a model. The rule says so before
+ * the reader has parsed a word of it, and the label names the model and
+ * the date, because a reading is only as good as its provenance. */
+
+.reading {
+  border-left: 3px solid var(--read);
+  padding: .2rem 0 .2rem 1rem;
+  margin: 1.4rem 0;
+}
+
+.reading > h2 {
+  margin: 0 0 .4rem;
+  padding: 0;
+  border: none;
+  color: var(--read);
+  font-size: 1.02rem;
+}
+
+.reading .provenance {
+  font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, monospace;
+  font-size: .74rem;
+  color: var(--quiet);
+  font-weight: 400;
+}
+
+.reading dl { margin-top: .8rem; }
+
+footer {
+  max-width: 76rem;
+  margin: 0 auto;
+  padding: 1rem 1.5rem 2.5rem;
+  color: var(--quiet);
+  border-top: 1px solid var(--rule);
+  font-size: .74rem;
+  line-height: 1.5;
+}
+
+footer code { font-size: .95em; }
+
+/* ---- search (CSL-0130) ------------------------------------------ */
+
+.criteria {
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  padding: .6rem 0;
+  margin: 1rem 0 1.5rem;
+}
+.criteria p { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; margin: .5rem 0; }
+.criteria label { color: var(--quiet); }
+.criteria .words input { flex: 1 1 18rem; }
+.criteria input, .criteria select, .criteria button {
+  font: inherit;
+  color: var(--ink);
+  background: var(--leaf);
+  border: 1px solid var(--rule);
+  padding: .25rem .4rem;
+}
+.criteria input[type="number"] { width: 5.5rem; }
+.criteria button { color: var(--cite); border-color: var(--cite); cursor: pointer; }
+.criteria input:focus-visible, .criteria select:focus-visible, .criteria button:focus-visible {
+  outline: 2px solid var(--cite);
+  outline-offset: 1px;
+}
+
+.dropped { color: var(--read); }
+
+.conversation { list-style: none; padding: 0; margin: 0 0 1rem; }
+.conversation > li { border-left: 2px solid var(--rule); padding: .1rem 0 .1rem .8rem; margin: 0 0 .7rem; }
+.conversation p { margin: .15rem 0; }
+.conversation .who { color: var(--quiet); font-size: .85rem; margin-right: .4rem; }
+.conversation .answered .who { color: var(--read); }
+.conversation .failed { color: var(--read); }
+/* CSL-0142: earlier turns folded; each turn removable. */
+.earlier { margin: 0 0 .7rem; }
+.earlier summary { color: var(--quiet); font-size: .9rem; cursor: pointer; margin: 0 0 .5rem; }
+/* CSL-0143: Edit and Remove side by side; an open Edit takes the full width. */
+.turn-actions { display: flex; flex-wrap: wrap; align-items: flex-start; gap: .4rem; margin: .2rem 0 0; }
+.turn-actions .edit[open] { flex-basis: 100%; order: 1; }
+.conversation .edit summary { list-style: none; display: inline-block; }
+.conversation .edit summary::-webkit-details-marker { display: none; }
+.conversation .edit summary,
+.conversation .remove button {
+  font: inherit; font-size: .8rem; color: var(--quiet); background: none;
+  border: 1px solid var(--rule); border-radius: 3px; padding: .05rem .5rem; cursor: pointer;
+}
+.conversation .edit summary:hover, .conversation .edit summary:focus-visible,
+.conversation .remove button:hover, .conversation .remove button:focus-visible { color: var(--cite); border-color: var(--cite); }
+.conversation .edit form.ask { margin: .4rem 0 0; }
+.restart { font-size: .9rem; margin: 0 0 1rem; }
+/* CSL-0145: recent searches folded under the form, each a link, a time and its counts, and Forget. */
+details.recent { margin: 0 0 1rem; }
+details.recent summary { color: var(--quiet); font-size: .9rem; cursor: pointer; margin: 0 0 .5rem; }
+ol.recent { list-style: none; padding: 0; margin: 0; font-size: .92rem; }
+ol.recent li { display: flex; flex-wrap: wrap; align-items: baseline; gap: .3rem .8rem; margin: 0 0 .35rem; max-width: none; }
+ol.recent .forget { display: inline; }
+ol.recent .forget button {
+  font: inherit; font-size: .8rem; color: var(--quiet); background: none;
+  border: 1px solid var(--rule); border-radius: 3px; padding: .05rem .5rem; cursor: pointer;
+}
+ol.recent .forget button:hover, ol.recent .forget button:focus-visible { color: var(--cite); border-color: var(--cite); }
+
+.ask p { display: flex; flex-wrap: wrap; align-items: flex-start; gap: .5rem 1rem; margin: .5rem 0; }
+.ask textarea {
+  flex: 1 1 20rem;
+  font: inherit;
+  color: var(--ink);
+  background: var(--leaf);
+  border: 1px solid var(--rule);
+  padding: .3rem .4rem;
+  resize: vertical;
+}
+.ask button {
+  font: inherit;
+  color: var(--cite);
+  background: var(--leaf);
+  border: 1px solid var(--cite);
+  padding: .25rem .6rem;
+  cursor: pointer;
+}
+.ask textarea:focus-visible, .ask button:focus-visible { outline: 2px solid var(--cite); outline-offset: 1px; }
+.ask .muted { font-size: .88rem; }
+.count { color: var(--quiet); }
+
+.results { padding-left: 1.5rem; }
+.results > li { margin: 0 0 1.25rem; }
+.results p { margin: .15rem 0; }
+.results .title { font-weight: 600; }
+.results .byline, .results .where { color: var(--quiet); font-size: .92rem; }
+.results .where .mono { word-break: break-all; }
+.results .snippet { font-size: .95rem; }
+/* A note the reader typed beside a mark (CSL-0140): their words, set apart from the page's. */
+.results .note { font-style: italic; color: var(--quiet); }
+.results .note::before { content: "note: "; font-style: normal; }
+.results .cmd { margin: .35rem 0 0; font-size: .82rem; }
+/* Code hits (CSL-0141): matching lines as written, line numbers in the margin. */
+.results .lines { margin: .25rem 0 0; font-size: .85rem; overflow-x: auto; white-space: pre; }
+.results .lines .n { color: var(--quiet); }
+
+mark { background: var(--wash); color: var(--ink); box-shadow: inset 0 -2px 0 var(--cite); }
+
+/* ---- narrow screens --------------------------------------------- */
+
+@media (max-width: 52rem) {
+  main { padding: 1.25rem 1rem 3rem; }
+  h1 { font-size: 1.45rem; }
+
+  .sheet { grid-template-columns: 1fr; gap: 0; }
+  .apparatus {
+    border-right: none;
+    border-bottom: 1px solid var(--rule);
+    padding: 0 0 .8rem;
+    margin-bottom: 1rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 1.5rem;
+  }
+  .apparatus div { margin-bottom: .4rem; }
+
+  .register > div { grid-template-columns: 1fr; gap: .2rem; }
+  .register .count, .register .note { grid-column: 1; }
+
+  .diagram { flex-direction: column; gap: .4rem; }
+  .diagram .edge { width: 100%; max-width: 12rem; }
+
+  table { display: block; overflow-x: auto; }
+  th { position: static; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { scroll-behavior: auto; }
+}

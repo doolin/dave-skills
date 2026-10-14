@@ -1,0 +1,156 @@
+/* The atlases' own rules (DES-0001 §6, CSL-0161), on top of the site's
+ * stylesheet (style.css beside this file, mirrored from
+ * clubstraylight.com by ruby site/build). The site's sheet sets the
+ * ground, the type, the links, the tables, and the site row; this one
+ * sets the structures an atlas page has that a catalog page does not:
+ * the observation block, the table of contents, the fact tables with
+ * their kind and source marks, the notes, the map of steps, and the
+ * harness atlas's ladder and verdicts.
+ *
+ * The section's one signal is the kind mark: how a fact was
+ * established (PRD-0004 FR-003). The harness atlas's allow, ask, and
+ * deny are the subject's own vocabulary; the word is always printed
+ * and the hue only repeats it. Nothing else here is coloured. */
+
+:root {
+  --doc: #1f6f4f; --doc-bg: #e3f0e8;
+  --obs: #5a3c8a; --obs-bg: #ece5f5;
+  --unv: #6d6d6d; --unv-bg: #ececec;
+  --fam: #9a6414; --fam-bg: #f6ecd6;
+  --allow: #1f6f4f;
+  --ask: #9a6414;
+  --deny: #8f3a1e;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --doc: #58bd8c; --doc-bg: #17281f;
+    --obs: #b79ae0; --obs-bg: #241b30;
+    --unv: #a0a0a0; --unv-bg: #26292c;
+    --fam: #d9a44f; --fam-bg: #2a2114;
+    --allow: #58bd8c;
+    --ask: #d9a44f;
+    --deny: #e0916f;
+  }
+}
+
+/* ---- the page ----------------------------------------------------- */
+
+.wrap { max-width: 76rem; margin: 0 auto; padding: 0 1.5rem; }
+
+/* The hero: the page's subject, its scope, and what it was read
+ * against. The site row above it is header.chrome and keeps its own
+ * rules. */
+header:not(.chrome) { padding: 2rem 0 1.5rem; border-bottom: 1px solid var(--rule); }
+.kicker {
+  font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .78rem; color: var(--quiet); margin: 0 0 .6rem; max-width: none;
+}
+.kicker a { color: var(--quiet); }
+.lede { font-size: 1.05rem; color: var(--quiet); margin: 0 0 1rem; }
+
+/* The observation block: what the page depends on, as a grid of
+ * labelled facts on the sunk ground. */
+.observed { background: var(--panel); border-left: 2px solid var(--rule); padding: .8rem 1rem; font-size: .9rem; }
+.observed dl { margin: 0; gap: .25rem 1.2rem; }
+.observed dt { font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace; font-size: .78rem; }
+.observed dd { max-width: none; }
+
+/* The table of contents: the page's sections, in two columns, in the
+ * page's own type rather than the site row's. */
+nav.toc { display: block; padding: .8rem 0; border-bottom: 1px solid var(--rule); font-family: inherit; font-size: .92rem; }
+nav.toc ol { columns: 2; gap: 1.75rem; margin: 0; padding-left: 1.25rem; max-width: none; }
+nav.toc li { margin: .15rem 0; max-width: none; }
+nav.toc a { color: var(--cite); }
+
+/* ---- sections ----------------------------------------------------- */
+
+section { padding: 2rem 0; border-bottom: 1px solid var(--rule); }
+
+/* A section opens with its number in the apparatus face and its
+ * title set large; the site's h2 rule and margins do not apply. */
+section h2, section .h2big { margin: 0; padding: 0; border: none; }
+section h2 {
+  font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .78rem; font-weight: 400; color: var(--quiet); margin-bottom: .3rem;
+}
+.h2big { font-size: 1.35rem; font-weight: 600; line-height: 1.25; letter-spacing: -.01em; margin: 0 0 .6rem; max-width: 40rem; }
+h3 { font-size: 1.02rem; margin: 1.6rem 0 .4rem; }
+.sub { color: var(--quiet); margin: 0 0 1rem; }
+
+/* ---- facts -------------------------------------------------------- */
+
+/* A fact table: the source mark in the margin face, the kind mark as
+ * the section's one signal, and the header sitting below the site
+ * row, which is the only row of chrome an atlas page has. */
+.tbl { overflow-x: auto; margin: .75rem 0 1.25rem; }
+th { top: 1.65rem; }
+td code { white-space: nowrap; }
+.src {
+  font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .72rem; color: var(--quiet); white-space: nowrap;
+}
+.kind {
+  font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .7rem; padding: .05rem .4rem; white-space: nowrap;
+}
+.kind.doc { background: var(--doc-bg); color: var(--doc); }
+.kind.obs { background: var(--obs-bg); color: var(--obs); }
+.kind.unv { background: var(--unv-bg); color: var(--unv); }
+.kind.fam { background: var(--fam-bg); color: var(--fam); }
+
+/* A note stands beside the facts in the panel; a warning is a note
+ * with the rule in ink. Neither adds a hue. */
+.note, .warn { background: var(--panel); border-left: 2px solid var(--rule); padding: .7rem 1rem; font-size: .92rem; margin: 1rem 0; max-width: 40rem; }
+.warn { border-left-color: var(--ink); }
+.note strong, .warn strong { color: var(--ink); }
+
+/* The map of steps (the mechanism) and the ladder (the evaluation
+ * order): one row per step, the number in the margin face, the name
+ * in the working face, the gloss in the page's. */
+.map, .ladder { border-top: 1px solid var(--rule); margin: .75rem 0 1.25rem; }
+.step, .rung { display: flex; gap: .9rem; align-items: baseline; padding: .65rem 0; border-bottom: 1px solid var(--rule); }
+.step .k, .rung .rk {
+  font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .72rem; color: var(--quiet); min-width: 3.5rem; flex-shrink: 0;
+}
+.step .n, .rung .rname {
+  font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .84rem; font-weight: 600; min-width: 14rem; flex-shrink: 0;
+}
+.step .d, .rung .rdesc { font-size: .92rem; color: var(--quiet); }
+
+/* The harness atlas's law of first match: three chips and the order
+ * they are tried in. The word carries the verdict; the hue repeats it. */
+.law {
+  margin-top: 1rem; display: flex; flex-wrap: wrap; gap: .5rem; align-items: center;
+  font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace; font-size: .86rem;
+}
+.chip { padding: .2rem .6rem; border: 1px solid var(--rule); white-space: nowrap; }
+.chip.d { color: var(--deny); border-color: var(--deny); }
+.chip.a { color: var(--ask); border-color: var(--ask); }
+.chip.l { color: var(--allow); border-color: var(--allow); }
+.gt { color: var(--quiet); font-weight: 600; }
+.verdict { font-weight: 600; }
+.verdict.allow { color: var(--allow); }
+.verdict.prompt { color: var(--ask); }
+.verdict.deny { color: var(--deny); }
+
+footer { padding: 1.5rem 0 3rem; }
+footer .wrap { padding: 0; }
+
+@media (max-width: 52rem) {
+  .wrap { padding: 0 1rem; }
+  .step, .rung { flex-wrap: wrap; }
+  .step .n, .rung .rname { min-width: 0; }
+  nav.toc ol { columns: 1; }
+}
+
+@media print {
+  body { background: #fff; color: #000; font-size: 11pt; }
+  .chrome, nav.toc { display: none; }
+  .tbl { overflow: visible; }
+  a { color: #000; text-decoration: none; }
+  a[href^="http"]::after { content: " (" attr(href) ")"; font-size: 9pt; color: #444; }
+  section { page-break-inside: auto; }
+  h2, .h2big { page-break-after: avoid; }
+}

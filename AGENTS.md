@@ -39,19 +39,29 @@ was read or observed in, the source, and the date; observed and
 unverified facts are marked; each page keeps a change record and
 draws its relationships to the other pages. No script, no external
 asset, no build step: a page opens from the file system and prints.
-A stylesheet inside the atlas's own directory is allowed. Atlases
-are NOT skills and NOT playbooks: they state what a vendor's tool
-does, not how the family works; a fact taken from a family document
-is marked `family` and cited by path at a commit. `atlases/index.html`
-lists them. The first is `atlases/harness/`, on how agent clients
-construct and manage a session, opened with
+Atlases are NOT skills and NOT playbooks: they state what a vendor's
+tool does, not how the family works; a fact taken from a family
+document is marked `family` and cited by path at a commit.
+`atlases/index.html` lists them. The first is `atlases/harness/`, on
+how agent clients construct and manage a session, opened with
 `claude-code-permissions.html`. The second is `atlases/macos-apps/`,
 on what a macOS application leaves on a Mac and how it gets there,
 with dreader mapped onto it for its release (index plus places,
-arrival, gate, removal, dreader). clubstraylight's kbserve serves
-this directory at <http://127.0.0.1:65432/atlases/>. The pattern is
-defined by PRD-0004 in clubstraylight.com, which also owns the
-tickets; commits here cite the ticket in the body.
+arrival, gate, removal, dreader).
+
+The atlases are one section of clubstraylight's local site
+(DES-0001 and ADR-0007 there), served at
+<http://127.0.0.1:65432/atlases/>. Two stylesheets sit in this
+directory: `style.css` is the site's, mirrored here by
+clubstraylight's `ruby site/build` and never edited by hand (its
+first line says so); `atlas.css` is the atlases' own rules on top of
+it. Every page links both, by relative path, and opens with the
+site row, the five-link navigation every page of the site carries,
+written by hand here since the atlases have no build and checked by
+clubstraylight's `ruby graph/inspect pages --site ../dave-skills/atlases`
+(the `site-nav` rule). The pattern is defined by PRD-0004 in
+clubstraylight.com, which also owns the tickets; commits here cite
+the ticket in the body.
 
 ## Hooks
 
