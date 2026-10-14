@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>macOS applications — atlas index</title>
+<link rel="stylesheet" href="atlas.css">
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <p class="kicker"><a href="../index.html">Atlases</a> · macOS applications · index</p>
+    <h1>What a macOS application leaves on a Mac, and how it gets there</h1>
+    <p class="lede">An application arrives in one of a few ways, is registered with the system, runs under a gate, writes to a known set of places as it runs, and is removed by a procedure that reaches only some of them. This atlas is that mechanism in five pages, with one application, dreader, mapped onto it for its public release.</p>
+    <div class="observed">
+      <dl>
+        <dt>subject</dt><dd>macOS as an application platform: the file system places an app and the system write to, how an app is installed and registered, what gates its first launch and its access to files, and what uninstalling removes.</dd>
+        <dt>version observed</dt><dd>macOS <code>26.6.1</code> (build <code>25G76</code>, Apple silicon), from <code>sw_vers</code> on the author's machine, 2026-10-13. Tauri <code>2.12</code> (the crate dreader builds with) with the <code>2.12.3</code> path documentation. Homebrew documentation as served 2026-10-13. dreader at commit <code>7a13aa1</code>, 2026-10-13.</dd>
+        <dt>source kinds</dt><dd><span class="kind doc">documented</span> stated in the vendor's documentation · <span class="kind obs">observed</span> seen on the author's Mac or in a test dreader ran, with its date · <span class="kind fam">family</span> a decision or inventory in a family document, cited beside the vendor fact it rests on · <span class="kind unv">unverified</span> a claim the author could not confirm at this version. A row with no mark is documented.</dd>
+        <dt>pages</dt><dd><a href="places.html">places</a> · <a href="arrival.html">arrival</a> · <a href="gate.html">gate</a> · <a href="removal.html">removal</a> · <a href="dreader.html">dreader</a>. Each page ends with its relationships, its gaps, a change record, and its sources.</dd>
+      </dl>
+    </div>
+  </div>
+</header>
+
+<nav class="toc">
+  <div class="wrap">
+    <ol>
+      <li><a href="#mechanism">The mechanism, in five steps</a></li>
+      <li><a href="#map">The map of places</a></li>
+      <li><a href="#relations">How the pages relate</a></li>
+      <li><a href="#dreader">dreader, in one paragraph</a></li>
+      <li><a href="#reading">How to read a page</a></li>
+      <li><a href="#changes">Change record</a></li>
+    </ol>
+  </div>
+</nav>
+
+<section id="mechanism">
+  <div class="wrap">
+    <h2>§1</h2>
+    <p class="h2big">The mechanism, in five steps</p>
+    <p class="sub">Each step is one page. The arrows are the dependencies: a step can only be understood with the one before it in mind.</p>
+    <div class="map">
+      <div class="step"><span class="k">1</span><span class="n"><a href="places.html">places</a></span><span class="d">The file system's domains and the directories an app may write to. Apple's rule: an app writes nothing outside <code>~/Library</code> unless the user directs it. Everything after this page is about which of these places each actor touches.</span></div>
+      <div class="step"><span class="k">2</span><span class="n"><a href="arrival.html">arrival</a></span><span class="d">How an app bundle reaches <code>/Applications</code> (a disk image, an installer package, Homebrew, the App Store, a build from source), what a bundle contains, and how Launch Services learns what it opens.</span></div>
+      <div class="step"><span class="k">3</span><span class="n"><a href="gate.html">gate</a></span><span class="d">What stands between a downloaded bundle and its first launch (quarantine, Gatekeeper, signing, notarization) and between a running app and the user's files (the privacy permissions).</span></div>
+      <div class="step"><span class="k">4</span><span class="n"><a href="removal.html">removal</a></span><span class="d">What Apple's uninstall procedure removes, what it leaves in the places of step 1, and the order a complete uninstaller follows.</span></div>
+      <div class="step"><span class="k">5</span><span class="n"><a href="dreader.html">dreader</a></span><span class="d">One application on this map: every file it keeps and its format, every place it writes, which vendor fact each of its release decisions rests on, and what its public release still needs.</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="map">
+  <div class="wrap">
+    <h2>§2</h2>
+    <p class="h2big">The map of places</p>
+    <p class="sub">The places a non-sandboxed, Developer ID style application touches, by who writes there. The detail and the citations are on the <a href="places.html">places</a> page; this table is the overview.</p>
+    <div class="tbl"><table>
+      <tr><th>place</th><th>domain</th><th>written by</th><th>holds</th><th>reached by Apple's uninstall (drag to Trash)</th></tr>
+      <tr><td><code>/Applications/App.app</code></td><td>local</td><td>the user (a drag), an installer, Homebrew</td><td>the bundle</td><td>yes: this is all it removes</td></tr>
+      <tr><td><code>~/Applications/App.app</code></td><td>user</td><td>the user</td><td>a per-user bundle</td><td>yes, if dragged from there</td></tr>
+      <tr><td><code>~/Library/Application Support/&lt;id or name&gt;/</code></td><td>user</td><td>the app</td><td>app data and support files, user data included</td><td>no</td></tr>
+      <tr><td><code>~/Library/Preferences/&lt;bundle id&gt;.plist</code></td><td>user</td><td>the preferences system on the app's behalf</td><td>the app's preference domain</td><td>no</td></tr>
+      <tr><td><code>~/Library/Caches/&lt;bundle id&gt;/</code></td><td>user</td><td>the app; WebKit for a web view</td><td>data the app can make again</td><td>no</td></tr>
+      <tr><td><code>~/Library/Logs/&lt;name&gt;/</code></td><td>user</td><td>the app</td><td>log files</td><td>no</td></tr>
+      <tr><td><code>~/Library/WebKit/&lt;bundle id&gt;/</code>, <code>~/Library/HTTPStorages/&lt;bundle id&gt;/</code></td><td>user</td><td>WebKit, for an app with a web view</td><td>website data, HTTP storage</td><td>no</td></tr>
+      <tr><td><code>~/Library/Saved Application State/&lt;bundle id&gt;.savedState/</code></td><td>user</td><td>AppKit at quit</td><td>window state for resume</td><td>no</td></tr>
+      <tr><td><code>~/Library/Containers/&lt;bundle id&gt;/</code></td><td>user</td><td>the system, for a sandboxed app</td><td>the sandboxed app's whole home</td><td>no</td></tr>
+      <tr><td><code>~/Library/LaunchAgents/</code>, <code>/Library/LaunchAgents/</code>, <code>/Library/LaunchDaemons/</code></td><td>user, local</td><td>an installer or the app</td><td>jobs launchd runs for the user or as root</td><td>no</td></tr>
+      <tr><td>Launch Services' database</td><td>per machine</td><td>the system, when it sees the bundle</td><td>what the app opens, its URL schemes</td><td>no (the entry stays until re-registration)</td></tr>
+      <tr><td>Privacy permissions (TCC)</td><td>per user</td><td>the system, when the user grants one</td><td>the app's access to Documents, Desktop, Downloads and more</td><td>no</td></tr>
+      <tr><td>Installer receipts</td><td>local</td><td>the Installer, for a package</td><td>the file list of each installed package</td><td>no</td></tr>
+      <tr><td><code>/usr/local/bin/</code>, <code>~/.local/bin/</code></td><td>local, user</td><td>the app or the user, for a command-line tool</td><td>links or copies of a CLI</td><td>no</td></tr>
+    </table></div>
+    <div class="note"><strong>The one sentence to keep.</strong> Dragging an app to the Trash removes the bundle and nothing else in this table. Every other row is the app's own responsibility to remove, which is why a complete uninstaller is a program the app ships (<a href="removal.html">removal</a>), and why a Homebrew cask carries a <code>zap</code> stanza listing these very directories.</div>
+  </div>
+</section>
+
+<section id="relations">
+  <div class="wrap">
+    <h2>§3</h2>
+    <p class="h2big">How the pages relate</p>
+    <div class="tbl"><table>
+      <tr><th>this</th><th>depends on</th><th>because</th></tr>
+      <tr><td>arrival</td><td>places</td><td>a bundle lands in a place of the local or user domain, and registration records it in a per-machine database</td></tr>
+      <tr><td>gate</td><td>arrival</td><td>quarantine is set when the bundle arrives by download; Gatekeeper reads the signature the bundle carries; Launch Services must know the app before the privacy system can name it</td></tr>
+      <tr><td>removal</td><td>places, arrival, gate</td><td>the residue is in the places; the registration and the privacy grants are made at arrival and first launch and must be undone by name</td></tr>
+      <tr><td>dreader</td><td>all four</td><td>its data root is an Application Support decision; its bundle, file associations and sidecar are arrival facts; its ad hoc signature is a gate fact; its uninstaller is a removal design</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<section id="dreader">
+  <div class="wrap">
+    <h2>§4</h2>
+    <p class="h2big">dreader, in one paragraph</p>
+    <p>dreader is an EPUB and PDF reader built with Tauri 2, whose record (library, positions, highlights, notes) is JSON files the reader owns, indexed by a SQLite database that can be rebuilt. At commit <code>7a13aa1</code> it installs from a source checkout into <code>/Applications</code>, ad hoc signed; its data root resolves from an environment variable, then a preference, then <code>~/Library/Application Support/dreader/</code>; it keeps an inventory of every place it writes and ships an uninstaller that removes them all, asking only about the record. Its public release still needs a Developer ID signature with notarization, a disk image, a Homebrew tap, a guide, and a decision on updates. The <a href="dreader.html">dreader</a> page has every file, every format, and every one of those facts with its source.</p>
+  </div>
+</section>
+
+<section id="reading">
+  <div class="wrap">
+    <h2>§5</h2>
+    <p class="h2big">How to read a page</p>
+    <ul>
+      <li>The block under the title says what version of the subject the page was read against and when. A fact is true at that version; the change record at the end keeps the old fact when a release changes it.</li>
+      <li>A row's source mark (<span class="src">A3 · Uninstall</span>) names a document in the page's sources list and the section the fact came from. Verbatim vendor wording is quote-marked.</li>
+      <li>A row's kind mark says whether the fact is documented, observed, from a family document, or unverified. A fact the vendor does not document and the family observed is never shown as documented.</li>
+      <li>Each page's gaps section lists what the author knows to be missing, so "not on the page" can be told from "not known".</li>
+    </ul>
+  </div>
+</section>
+
+<section id="changes">
+  <div class="wrap">
+    <h2>§6</h2>
+    <p class="h2big">Change record</p>
+    <div class="tbl"><table>
+      <tr><th>date</th><th>checked against</th><th>change</th></tr>
+      <tr><td>2026-10-13</td><td>macOS 26.6.1; Tauri 2.12; dreader 7a13aa1</td><td>Atlas opened with the index and five pages (CSL-0155).</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<footer><div class="wrap">macOS applications atlas · index · built by Straylight under PRD-0004. No script, no external asset.</div></footer>
+</body>
+</html>

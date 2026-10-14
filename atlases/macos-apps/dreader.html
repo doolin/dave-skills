@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>dreader — macOS applications atlas</title>
+<link rel="stylesheet" href="atlas.css">
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <p class="kicker"><a href="../index.html">Atlases</a> · <a href="index.html">macOS applications</a> · dreader</p>
+    <h1>dreader on the map: every file it keeps, every place it writes, and what its public release still needs</h1>
+    <p class="lede">dreader is an EPUB and PDF reader built with Tauri 2 whose record belongs to the reader: JSON files, one directory per book, with a SQLite index that can be thrown away and rebuilt. This page is the record and the derived files with their formats, the data root and how it is chosen, the footprint on a Mac, which vendor fact each release decision rests on, and the state of the release requirements at one commit.</p>
+    <div class="observed">
+      <dl>
+        <dt>subject</dt><dd>dreader, at commit <code>7a13aa1</code> (2026-10-13), as described by its design documents, ADRs, PRDs and tickets, and as installed on the author's Mac from that checkout.</dd>
+        <dt>version observed</dt><dd>dreader <code>0.1.0</code> build <code>1</code> (the installed bundle's <code>Info.plist</code>); Tauri crate <code>2.12</code>, <code>tauri-build 2.5</code>; macOS <code>26.6.1</code>.</dd>
+        <dt>source kinds on this page</dt><dd>Most rows are <span class="kind fam">family</span>: dreader's own documents, cited by path at that commit. Rows marked <span class="kind obs">observed</span> were seen on the author's Mac or in dreader's tests on 2026-10-13. Vendor facts are cited to the other pages, where they carry their own sources.</dd>
+        <dt>change record</dt><dd><a href="#changes">§9</a>.</dd>
+      </dl>
+    </div>
+  </div>
+</header>
+
+<nav class="toc">
+  <div class="wrap">
+    <ol>
+      <li><a href="#root">The data root and how it is chosen</a></li>
+      <li><a href="#record">The record: files and formats</a></li>
+      <li><a href="#derived">Derived and operational files</a></li>
+      <li><a href="#places">The footprint on a Mac</a></li>
+      <li><a href="#bundle">The bundle as built</a></li>
+      <li><a href="#ga">What the public release still needs</a></li>
+      <li><a href="#relations">Which vendor fact each decision rests on</a></li>
+      <li><a href="#gaps">Gaps</a></li>
+      <li><a href="#changes">Change record</a></li>
+      <li><a href="#sources">Sources</a></li>
+    </ol>
+  </div>
+</nav>
+
+<section id="root">
+  <div class="wrap">
+    <h2>§1</h2>
+    <p class="h2big">The data root and how it is chosen</p>
+    <div class="tbl"><table>
+      <tr><th>fact</th><th>kind</th><th>source</th></tr>
+      <tr><td>The root is chosen at run time, in order: the <code>DREADER_HOME</code> environment variable (tests and scripts); the <code>DataRoot</code> key in the preferences domain <code>com.clubstraylight.dreader</code>, read through CFPreferences; then <code>~/Library/Application Support/dreader/</code>. "No path is compiled into the binaries." An empty value counts as unset; a relative one is an error naming its source. <code>dreader paths</code> prints the root in effect and what chose it.</td><td><span class="kind fam">family</span></td><td class="src">D · on-disk-layout.md; ADR-0010 as built; DR-0042</td></tr>
+      <tr><td>Why a preference and not only a variable: "An app launched from Finder does not see shell variables." Why not <code>~/Documents/dreader</code>: with "Desktop and Documents Folders" on, iCloud syncs it and may evict files, so the record would depend on Apple's service. Why Application Support: "the place macOS apps keep data the user did not create as documents. Time Machine includes it".</td><td><span class="kind fam">family</span></td><td class="src">D · ADR-0010 §1</td></tr>
+      <tr><td>When the root cannot be created or written, the app shows the path, the source, and the error, with "Choose Folder…" (a folder that passes the root check is written to <code>DataRoot</code> and used at once) and "Quit". It never runs silently without a record.</td><td><span class="kind fam">family</span></td><td class="src">D · on-disk-layout.md; PRD-0002 R-I3</td></tr>
+      <tr><td>The author's record lives in a folder of their own outside the repository, named by <code>DataRoot</code>, since 2026-10-12; <code>data/</code> left the source tree. (Its path is the author's and is not on this page.)</td><td><span class="kind fam">family</span></td><td class="src">D · ADR-0010 as built, Q1</td></tr>
+      <tr><td><code>~/Library/Application Support/dreader</code> and <code>~/Library/Preferences/com.clubstraylight.dreader.plist</code> both exist on the author's Mac.</td><td><span class="kind obs">observed</span></td><td class="src">O1 · 2026-10-13</td></tr>
+      <tr><td>The folder name is the product name, <code>dreader</code>, where Apple's convention is the bundle identifier or the company (<a href="places.html#library">places §3</a>); the frameworks' folders for the same app are under <code>com.clubstraylight.dreader</code>.</td><td><span class="kind fam">family</span></td><td class="src">D · on-disk-layout.md; A2</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<section id="record">
+  <div class="wrap">
+    <h2>§2</h2>
+    <p class="h2big">The record: files and formats</p>
+    <p class="sub">The record is "the only thing dreader holds that cannot be made again": about 1.5 MB for a library of 400 books on 2026-10-10, growing with reading rather than with the library. Every record file carries a <code>schema</code> integer.</p>
+    <div class="tbl"><table>
+      <tr><th>file</th><th>holds</th><th>format</th><th>written when</th><th>source</th></tr>
+      <tr><td><code>config.json</code></td><td>settings and library roots: <code>library.roots</code> (path, label, <code>shelves: true</code> to record the first directory level as the book's shelf), <code>reading.epub</code> (mode, font, size, line height, margin, columns, justify, hyphenate, publisher CSS), <code>reading.pdf</code> (mode, fit, scan pixel-density cap, rotation), <code>reading.theme</code>, <code>annotations</code> (palette, default colour, context length), <code>keys</code> (action → key names as <code>KeyboardEvent.key</code> spells them)</td><td>JSON, <code>schema: 1</code>; an unknown field is reported like a parse error</td><td>when a setting changes in the panel: re-read, change that field, write whole</td><td class="src">D · on-disk-layout.md § config.json</td></tr>
+      <tr><td><code>books/&lt;id&gt;/book.json</code></td><td>identity (<code>id</code>, <code>format</code>, <code>hash_method</code> file or tree), the <code>files</code> list (one entry per SHA-256 version with size, first and last seen, <code>current</code>, and every path with mtime and presence), <code>metadata</code> verbatim from the file with its <code>source</code> (<code>opf</code>, <code>pdf_info</code>, <code>first_page</code>, <code>filename</code>), the reader's <code>overrides</code> (title, creators, and the book's own reading settings as a JSON merge patch), <code>shelf</code>, <code>root</code>, <code>catalog.id</code>, <code>tags</code></td><td>JSON, <code>schema: 1</code></td><td>on open and scan, under a per-directory lock</td><td class="src">D · on-disk-layout.md § book.json</td></tr>
+      <tr><td><code>books/&lt;id&gt;/annotations.json</code></td><td>highlights, notes, bookmarks</td><td>a W3C Web Annotation <code>AnnotationSet</code> (schema in <code>.development/design/annotation-schema.json</code>), several selectors per item, quoted text kept with the item, ids, <code>modified</code> times, tombstones (<code>dreader:deleted</code>), the re-anchoring outcome in <code>dreader:anchor</code></td><td>on the first annotation; absent means none</td><td class="src">D · on-disk-layout.md; ADR-0005; PRD-0001 R11–R13</td></tr>
+      <tr><td><code>books/&lt;id&gt;/position.json</code></td><td><code>current</code> (file hash, updated, a Readium-shaped locator with href, type, title, locations such as CFI, progression, position, and text before and after) and <code>history</code> (the last 50 distinct screens), <code>finished</code></td><td>JSON, <code>schema: 1</code></td><td>at most every five seconds while reading and on close</td><td class="src">D · on-disk-layout.md § position.json; reading-position.md</td></tr>
+      <tr><td><code>trash/</code></td><td>annotations pruned by <code>dreader prune</code>, one file per prune run</td><td>JSON</td><td>on prune</td><td class="src">D · on-disk-layout.md</td></tr>
+      <tr><td><code>guide/</code> (planned)</td><td>the guide EPUB generated on first launch and after each upgrade, written for the Mac it is made on</td><td>EPUB</td><td>first launch, upgrade</td><td class="src">D · PRD-0002 R-G1 (DR-0047, open)</td></tr>
+    </table></div>
+    <h3>The book id</h3>
+    <p>The first 16 hexadecimal characters of the SHA-256 of the first file version dreader saw; <code>shasum -a 256 book.epub | cut -c1-16</code> names the directory. An unpacked EPUB directory is hashed as a tree (path, NUL, bytes, NUL, in sorted path order). A collision with different content extends the new id to 32 characters. <span class="src">D · on-disk-layout.md § Book id</span></p>
+    <h3>Writing rules, every record file</h3>
+    <ol>
+      <li>Write to <code>&lt;name&gt;.json.tmp-&lt;pid&gt;-&lt;n&gt;-&lt;random&gt;</code> in the same directory, <code>fsync</code>, rename over the target, <code>fsync</code> the directory. A read-modify-write holds an exclusive <code>flock</code> on the file's directory from read to rename; the app, the CLI and their threads all take it. Temporary files older than an hour are removed when the root is prepared.</li>
+      <li>Pretty-printed, two-space indent, keys in schema order, "so diffs are readable and <code>git</code> on the data root is a usable history".</li>
+      <li>The mtime at read is recorded; a file changed underneath is reloaded and merged by item id, newest <code>modified</code> wins.</li>
+      <li>A file that does not parse or validate is reported with path, line and message, and never overwritten.</li>
+    </ol>
+    <p>Versioning: the app reads any <code>schema</code> it knows and writes the current one; a migration keeps the original as <code>&lt;name&gt;.json.v&lt;n&gt;</code> beside it until the reader deletes it. <span class="src">D · on-disk-layout.md § Writing rules, Versioning; DR-0062</span></p>
+  </div>
+</section>
+
+<section id="derived">
+  <div class="wrap">
+    <h2>§3</h2>
+    <p class="h2big">Derived and operational files</p>
+    <p class="sub">Deleting these loses nothing; <code>dreader rebuild</code> recreates the index and the cache from the record and the books. A backup is <code>rsync -a --exclude index.sqlite* --exclude cache/ &lt;root&gt;/ &lt;dest&gt;</code>.</p>
+    <div class="tbl"><table>
+      <tr><th>file</th><th>holds</th><th>format</th><th>kind</th><th>source</th></tr>
+      <tr><td><code>index.sqlite</code> (+ <code>-wal</code>, <code>-shm</code> while open)</td><td>the index of books, text, notes and quotes, with FTS5 full text and bm25 ranking; a test asserts the rebuilt index equals the maintained one</td><td>SQLite (<code>.development/design/schema.sql</code>); no migrations, a schema mismatch is a rebuild</td><td>derived</td><td class="src">D · on-disk-layout.md; PRD-0001 R23, R25; ADR-0007</td></tr>
+      <tr><td><code>cache/text/&lt;id&gt;/&lt;file sha256&gt;/&lt;unit&gt;.txt</code></td><td>extracted text per spine item or page, keyed by file version and extractor version</td><td>plain text</td><td>derived</td><td class="src">D · on-disk-layout.md; PRD-0001 R24</td></tr>
+      <tr><td><code>cache/covers/&lt;id&gt;.jpg</code>, <code>cache/thumbs/&lt;id&gt;/&lt;sha&gt;/&lt;page&gt;.png</code></td><td>covers and page thumbnails</td><td>JPEG, PNG</td><td>derived</td><td class="src">D · on-disk-layout.md</td></tr>
+      <tr><td><code>cache/app.lock</code></td><td>held by the one app process running on this root</td><td>lock file</td><td>operational</td><td class="src">D · on-disk-layout.md; DR-0062</td></tr>
+      <tr><td><code>session.json</code></td><td>the windows and tabs open at quit, each window's frame; reopened at launch. One Mac's, so it belongs outside any synced or snapshotted set</td><td>JSON</td><td>operational</td><td class="src">D · on-disk-layout.md; ADR-0010 as built; DR-0128, DR-0035</td></tr>
+      <tr><td><code>log/</code> under the root</td><td>the app's log only when <code>DREADER_HOME</code> chose the root; otherwise logs go to <code>~/Library/Logs/dreader/</code></td><td>text</td><td>operational</td><td class="src">D · on-disk-layout.md; DR-0045</td></tr>
+      <tr><td>Planned under ADR-0010: a git repository in the root (local history, layer 2), restic-format snapshots to destinations the user chooses (layer 3), <code>log/backup.jsonl</code> and a weekly restore check (layer 4), a per-user launchd agent registered through <code>SMAppService</code>, a key in the login Keychain</td><td></td><td></td><td>planned, no tickets</td><td class="src">D · ADR-0010 §2–§4, as built</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<section id="places">
+  <div class="wrap">
+    <h2>§4</h2>
+    <p class="h2big">The footprint on a Mac</p>
+    <p class="sub">dreader's inventory (<code>footprint.md</code>) is the list its uninstaller plans from and its leftover check reads: "A new place dreader writes fails the check until it is listed here and the uninstaller takes it off." The last column is what the author's Mac showed on 2026-10-13, names only.</p>
+    <div class="tbl"><table>
+      <tr><th>place</th><th>written by</th><th>when</th><th>taken off by the uninstaller</th><th>on the author's Mac</th></tr>
+      <tr><td><code>/Applications/dreader.app</code>, <code>~/Applications/dreader.app</code></td><td>the reader (a drag), <code>bin/install</code></td><td>install</td><td>quit, unregister (<code>lsregister -u</code>), remove; only a copy whose <code>Info.plist</code> names the identifier</td><td>present in <code>/Applications</code>; absent in <code>~/Applications</code></td></tr>
+      <tr><td>Launch Services' entry</td><td>macOS; <code>bin/install</code> (<code>lsregister -f</code>)</td><td>install, first launch</td><td><code>lsregister -u</code></td><td>not dumped</td></tr>
+      <tr><td><code>~/.local/bin/dreader</code>, <code>~/.local/bin/dreader-app</code></td><td><code>bin/install</code>; "Install Command Line Tool…" (a link)</td><td>install</td><td>removed</td><td>present (both)</td></tr>
+      <tr><td><code>/usr/local/bin/dreader</code></td><td>"Install Command Line Tool…" as an administrator</td><td>when asked</td><td>removed if it links into the app; the uninstaller says when it needs an administrator</td><td>not checked</td></tr>
+      <tr><td><code>~/.local/share/zsh/site-functions/_dreader</code></td><td><code>bin/install</code>; the menu item</td><td>install</td><td>removed</td><td>present</td></tr>
+      <tr><td><code>~/Library/Logs/dreader/</code></td><td>the app</td><td>every run</td><td>removed</td><td>present</td></tr>
+      <tr><td>the data root</td><td>the app and the CLI</td><td>every open and write</td><td>the one question: keep, export, delete after a second confirmation</td><td>present at the default path</td></tr>
+      <tr><td>the preferences domain <code>com.clubstraylight.dreader</code> (<code>DataRoot</code>)</td><td>the app ("Choose Folder…"), the reader (<code>defaults write</code>)</td><td>when the root is chosen</td><td><code>defaults delete</code>, then the empty plist; kept with a kept record</td><td>plist present</td></tr>
+      <tr><td><code>~/Library/Caches/com.clubstraylight.dreader/</code></td><td>WebKit</td><td>every run</td><td>removed</td><td>present</td></tr>
+      <tr><td><code>~/Library/WebKit/com.clubstraylight.dreader/</code></td><td>WebKit</td><td>every run</td><td>removed</td><td>present</td></tr>
+      <tr><td><code>~/Library/HTTPStorages/com.clubstraylight.dreader/</code></td><td>WebKit</td><td>when it stores</td><td>removed</td><td>absent at the check</td></tr>
+      <tr><td><code>~/Library/Saved Application State/com.clubstraylight.dreader.savedState/</code></td><td>AppKit</td><td>at quit</td><td>removed</td><td>absent at the check</td></tr>
+      <tr><td>privacy permissions for the identifier</td><td>macOS, when the reader grants one</td><td>when asked</td><td><code>tccutil reset All com.clubstraylight.dreader</code></td><td>not read</td></tr>
+      <tr><td>a launchd agent and login item; Keychain items</td><td>planned (ADR-0010)</td><td></td><td>removed, deleted, once built</td><td>—</td></tr>
+    </table></div>
+    <p class="sub"><span class="src">D · footprint.md; O1 · 2026-10-13</span>. The uninstaller is <code>crates/dreader-core/src/uninstall.rs</code>, started from the app menu, <code>dreader uninstall</code>, or the <code>.command</code> file on the disk image; <code>--dry-run</code> only lists; <code>bin/uninstall-check</code> proved "nothing is left" on 2026-10-13 under a test identifier, because WebKit, the preferences daemon, Launch Services, launchd and the Keychain are per account and ignore a scratch <code>HOME</code> (<span class="src">O2 · DR-0046</span>).</p>
+  </div>
+</section>
+
+<section id="bundle">
+  <div class="wrap">
+    <h2>§5</h2>
+    <p class="h2big">The bundle as built</p>
+    <div class="tbl"><table>
+      <tr><th>fact</th><th>kind</th><th>source</th></tr>
+      <tr><td><code>tauri.conf.json</code>: <code>productName</code> dreader, <code>mainBinaryName</code> dreader-app, <code>identifier</code> <code>com.clubstraylight.dreader</code>, <code>bundle.targets</code> <code>["app"]</code>, icons <code>icon.icns</code> and <code>icon.png</code>, file associations EPUB (Viewer, Default) and PDF (Viewer, Alternate), <code>minimumSystemVersion</code> <code>15.0</code>, <code>bundleVersion</code> <code>1</code>, <code>signingIdentity</code> <code>-</code>. <code>tauri.bundle.json</code>, merged only for a bundling build, adds <code>externalBin: ["binaries/dreader"]</code>.</td><td><span class="kind fam">family</span></td><td class="src">D · src-tauri/tauri.conf.json, tauri.bundle.json; DR-0044</td></tr>
+      <tr><td>The content security policy forbids remote loads and script in book content; the webview has no file-system or SQL capability; book content is served over a <code>book://</code> scheme (PRD-0001 R30).</td><td><span class="kind fam">family</span></td><td class="src">D · tauri.conf.json <code>app.security.csp</code>; PRD-0001</td></tr>
+      <tr><td>Installed on the author's Mac: <code>Contents/MacOS/dreader-app</code> and <code>Contents/MacOS/dreader</code> (the sidecar CLI), <code>Resources/icon.icns</code>, <code>_CodeSignature</code>; <code>Info.plist</code> as listed on the <a href="arrival.html#plist">arrival</a> page; signature ad hoc with the runtime flag, team not set; Gatekeeper verdict <code>rejected</code>.</td><td><span class="kind obs">observed</span></td><td class="src">O1</td></tr>
+      <tr><td>PRD-0002 §3.1 (2026-10-13) says <code>bundle.active</code> is false and the bundle is DR-0043's; the checked-out <code>tauri.conf.json</code> at <code>7a13aa1</code> has <code>bundle.active: true</code> and DR-0043 is in <code>done/</code>. The PRD's status line is behind the ticket.</td><td><span class="kind obs">observed</span></td><td class="src">D · PRD-0002 §3.1; tauri.conf.json; done/DR-0043</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<section id="ga">
+  <div class="wrap">
+    <h2>§6</h2>
+    <p class="h2big">What the public release still needs</p>
+    <p class="sub">PRD-0002's requirement groups, with the status its own text gives at 2026-10-13 and the ticket that carries each. R0 is the alpha disk image; R1 the signed public release.</p>
+    <div class="tbl"><table>
+      <tr><th>group</th><th>requirement</th><th>status at 7a13aa1</th><th>ticket</th><th>the vendor fact it rests on</th></tr>
+      <tr><td>R-I install</td><td>drag to <code>/Applications</code>; data root at the standard place; a window when it cannot be written; CLI install from the menu; EPUBs offered from the Finder</td><td>R-I2, R-I3 built; R-I1 partial (no <code>.dmg</code>); R-I5 built (DR-0044 done); R-I4 planned</td><td>DR-0042 done, DR-0043 done, DR-0044 done, DR-0047, DR-0048</td><td><a href="places.html#library">Application Support</a>; <a href="arrival.html#documents">document types</a>; <a href="arrival.html#launchservices">Launch Services</a></td></tr>
+      <tr><td>R-U uninstall</td><td>inventory, one uninstaller with three starts, dry run, the record as the one question, unregister and reset, a leftover test</td><td>built, check passed 2026-10-13; the user document waits on DR-0058</td><td>DR-0046 done</td><td><a href="removal.html#order">removal §4</a></td></tr>
+      <tr><td>R-A alpha</td><td><code>bin/release-alpha</code>, a <code>.dmg</code> with the app, an Applications shortcut and a README; ad hoc signing allowed with the macOS 15 Open Anyway steps; version and build shown; a feedback channel</td><td>planned</td><td>DR-0048, DR-0049</td><td><a href="arrival.html#routes">the disk image</a>; <a href="gate.html#override">the override</a></td></tr>
+      <tr><td>R-G guide</td><td>a guide EPUB generated in the root on first launch and upgrade</td><td>planned</td><td>DR-0047, DR-0058</td><td>—</td></tr>
+      <tr><td>R-L diagnostics</td><td>rotating log under <code>~/Library/Logs/dreader/</code>; panic hook; Reveal Logs and Show Data Folder</td><td>the PRD says planned; the log folder exists on the author's Mac and the inventory credits the app with it</td><td>DR-0045</td><td><a href="places.html#library">Logs</a></td></tr>
+      <tr><td>R-P packaging and signing</td><td>Tauri bundler with document types, icon, version, build number; Developer ID with hardened runtime and no <code>get-task-allow</code>, notarized with <code>notarytool</code>, stapled to <code>.app</code> and <code>.dmg</code>; signed locally from a tagged clean checkout; arm64 only, macOS 15 floor; licence texts; a published <code>.dmg</code>, checksum, notes, and a cask in dreader's own tap on a host the operator controls</td><td>planned; the bundler runs (R-P1 partly met)</td><td>DR-0049, DR-0050, DR-0052</td><td><a href="gate.html#signing">signing</a>; <a href="gate.html#notarization">notarization</a>; <a href="removal.html#stanzas">the cask's zap</a></td></tr>
+      <tr><td>R-X updates</td><td>the decision first, in an ADR: an opt-in check, Homebrew and manual download only, or a CLI check; no network access conflicts with an in-app check</td><td>planned</td><td>DR-0051</td><td>—</td></tr>
+      <tr><td>Operator acts named in the tickets</td><td>join the Apple Developer Program (99 USD a year); create the Developer ID Application certificate (Account Holder only); store an App Store Connect API key with <code>notarytool store-credentials</code>; choose the primary host and mirror; check the name "dreader" (Q1, DR-0054)</td><td>open</td><td>DR-0050, DR-0052, DR-0054</td><td><a href="gate.html#signing">signing §4</a></td></tr>
+    </table></div>
+    <div class="note"><strong>What is not an Apple dependency.</strong> Notarization "gates installation, not the data: the record and its backups never pass through it" (ADR-0010). The Developer Program fee and the notary service are the two places the release touches Apple; the hosting principle (no dependence on one large company's goodwill) is dreader's own rule for the download host and the tap.</div>
+  </div>
+</section>
+
+<section id="relations">
+  <div class="wrap">
+    <h2>§7</h2>
+    <p class="h2big">Which vendor fact each decision rests on</p>
+    <div class="tbl"><table>
+      <tr><th>dreader decision</th><th>rests on</th><th>where</th></tr>
+      <tr><td>The record under <code>~/Library/Application Support/dreader/</code></td><td>Apple's rule that app data files, user data included, go in Application Support, and that an app writes outside <code>Library</code> only when the user directs it</td><td><a href="places.html#library">places §3</a>, <a href="places.html#standard">§2</a></td></tr>
+      <tr><td><code>DataRoot</code> as a preference</td><td>the application domain named by bundle identifier, readable by a command-line tool through CFPreferences; an app from the Finder has no shell environment</td><td><a href="places.html#prefs">places §4</a></td></tr>
+      <tr><td>Not sandboxed; Developer ID distribution</td><td>the App Store requires the sandbox; a sandboxed app's home is its container and its reach outside it is by user selection</td><td><a href="places.html#sandbox">places §5</a></td></tr>
+      <tr><td>Two names on disk (<code>dreader</code>, <code>com.clubstraylight.dreader</code>)</td><td>frameworks name their folders by bundle identifier</td><td><a href="places.html#unlisted">places §7</a></td></tr>
+      <tr><td>EPUB at rank Default, PDF at Alternate</td><td><code>CFBundleDocumentTypes</code> and <code>LSHandlerRank</code>, written by Tauri's <code>fileAssociations</code></td><td><a href="arrival.html#documents">arrival §4</a></td></tr>
+      <tr><td>The CLI as a sidecar, opened by bundle id</td><td><code>externalBin</code>; Launch Services' registration; <code>open -b</code></td><td><a href="arrival.html#bundle">arrival §2</a>, <a href="arrival.html#launchservices">§6</a></td></tr>
+      <tr><td>Ad hoc alpha, Developer ID and notarization for 1.0</td><td>Gatekeeper's default policy; the macOS 15 removal of the Control-click override; notarization's prerequisites; Tauri signing and notarizing inside <code>tauri build</code></td><td><a href="gate.html#gatekeeper">gate §2</a>, <a href="gate.html#override">§3</a>, <a href="gate.html#notarization">§5</a></td></tr>
+      <tr><td>The uninstaller's order and its test under a test identifier</td><td>Apple's uninstall removes the bundle only; Homebrew's residue list; the observed behaviour of the preferences daemon and WebKit</td><td><a href="removal.html#apple">removal §1</a>, <a href="removal.html#residue">§2</a>, <a href="removal.html#order">§4</a></td></tr>
+      <tr><td>The privacy prompt on the first scan of <code>~/Documents</code></td><td>Files &amp; Folders grants per app per folder</td><td><a href="gate.html#tcc">gate §6</a></td></tr>
+    </table></div>
+  </div>
+</section>
+
+<section id="gaps">
+  <div class="wrap">
+    <h2>§8</h2>
+    <p class="h2big">Gaps</p>
+    <ul>
+      <li>The annotation schema's fields are not reproduced here; the file named in §2 is the source.</li>
+      <li>The record's exact size and the library's count on the author's Mac were not measured for this page; the 1.5 MB figure is ADR-0010's on 2026-10-10.</li>
+      <li>Whether DR-0045 (the log) is built is contradicted between PRD-0002 §3.1 and the inventory; the folder exists. The ticket is the arbiter and was not read.</li>
+      <li>The <code>/usr/local/bin</code> link, the privacy grants, and the Launch Services dump were not checked on the author's Mac for this page.</li>
+      <li>The guide EPUB, the launchd agent, the Keychain items, and the update path are planned and have no observed facts.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="changes">
+  <div class="wrap">
+    <h2>§9</h2>
+    <p class="h2big">Change record</p>
+    <div class="tbl"><table>
+      <tr><th>date</th><th>checked against</th><th>change</th></tr>
+      <tr><td>2026-10-13</td><td>dreader 7a13aa1; the installed bundle 0.1.0 (1); macOS 26.6.1</td><td>Page written (CSL-0155).</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<section id="sources">
+  <div class="wrap">
+    <h2>§10</h2>
+    <p class="h2big">Sources</p>
+    <div class="tbl"><table>
+      <tr><th>id</th><th>document</th><th>read</th></tr>
+      <tr><td>D</td><td>dreader at commit <code>7a13aa1</code> (2026-10-13), in its repository: <code>.development/design/on-disk-layout.md</code>, <code>.development/design/footprint.md</code>, <code>.development/design/reading-position.md</code>, <code>.development/design/annotation-schema.json</code>, <code>.development/design/schema.sql</code>, <code>.development/adr/ADR-0010-data-durability.md</code> (0.2.0), <code>.development/prd/PRD-0001-dreader.md</code> (1.1.0), <code>.development/prd/PRD-0002-macos-release.md</code> (0.2.0), tickets DR-0042, DR-0043, DR-0044, DR-0045, DR-0046, DR-0047, DR-0048, DR-0049, DR-0050, DR-0051, DR-0052, DR-0054, DR-0058, DR-0062, DR-0128; <code>src-tauri/tauri.conf.json</code>, <code>src-tauri/tauri.bundle.json</code>, <code>src-tauri/Cargo.toml</code>.</td><td>2026-10-13</td></tr>
+      <tr><td>O1</td><td>Observed on the author's Mac, macOS 26.6.1 (25G76), 2026-10-13: <code>ls -d</code> over the inventory's places; <code>plutil -p</code>, <code>codesign -dv</code>, <code>spctl -a -vv</code> on <code>/Applications/dreader.app</code>; <code>ls</code> of the bundle.</td><td>2026-10-13</td></tr>
+      <tr><td>O2</td><td>dreader's own tests as recorded in DR-0044 and DR-0046 ("As built", 2026-10-13).</td><td>2026-10-13</td></tr>
+      <tr><td>A2</td><td>Apple, File System Programming Guide, "macOS Library Directory Details" (archive); cited through the places page.</td><td>2026-10-13</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<footer><div class="wrap">macOS applications atlas · dreader · built by Straylight under PRD-0004. No script, no external asset.</div></footer>
+</body>
+</html>

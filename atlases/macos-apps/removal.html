@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Removal — macOS applications atlas</title>
+<link rel="stylesheet" href="atlas.css">
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <p class="kicker"><a href="../index.html">Atlases</a> · <a href="index.html">macOS applications</a> · removal</p>
+    <h1>What uninstalling removes, what it leaves, and the order a complete uninstaller follows</h1>
+    <p class="lede">Apple's procedure for an app without an uninstaller is a drag to the Trash, which removes the bundle. Everything the app and the system wrote on its behalf stays. This page is Apple's procedure, the residue by place as Homebrew's cask cookbook enumerates it, the per-mechanism undo for the things that are not files, and the order dreader's uninstaller settled on after its tests.</p>
+    <div class="observed">
+      <dl>
+        <dt>subject</dt><dd>Uninstalling: Apple's user procedure, Homebrew's <code>uninstall</code> and <code>zap</code> stanzas, installer receipts, Launch Services unregistration, the preferences daemon, WebKit's directories, privacy grants, and the ordering an uninstaller needs.</dd>
+        <dt>version observed</dt><dd>macOS <code>26.6.1</code> (25G76), 2026-10-13; Apple's user guide for macOS Tahoe 26; Homebrew cookbook and manpage as served 2026-10-13; dreader at <code>7a13aa1</code>, whose leftover check passed 2026-10-13.</dd>
+        <dt>sources</dt><dd><a href="#sources">A3</a>, <a href="#sources">A13</a>, <a href="#sources">A14</a>, <a href="#sources">H1</a>, <a href="#sources">H2</a>, <a href="#sources">M1</a>, <a href="#sources">O1</a>, <a href="#sources">O2</a>, <a href="#sources">D</a>.</dd>
+        <dt>change record</dt><dd><a href="#changes">§7</a>.</dd>
+      </dl>
+    </div>
+  </div>
+</header>
+
+<nav class="toc">
+  <div class="wrap">
+    <ol>
+      <li><a href="#apple">Apple's procedure</a></li>
+      <li><a href="#residue">The residue, by place</a></li>
+      <li><a href="#stanzas">Homebrew's two stanzas</a></li>
+      <li><a href="#order">The things that are not files, and the order</a></li>
+      <li><a href="#relations">Relationships</a></li>
+      <li><a href="#gaps">Gaps and unverified claims</a></li>
+      <li><a href="#changes">Change record</a></li>
+      <li><a href="#sources">Sources</a></li>
+    </ol>
+  </div>
+</nav>
+
+<section id="apple">
+  <div class="wrap">
+    <h2>§1</h2>
+    <p class="h2big">Apple's procedure</p>
+    <div class="tbl"><table>
+      <tr><th>fact</th><th>kind</th><th>source</th></tr>
+      <tr><td>In the Finder's Applications folder: if the app is in its own folder, look there for an uninstaller ("Uninstall [App]" or "[App] Uninstaller") and run it; otherwise drag the app from Applications to the Trash. The app "is removed permanently the next time you or the Finder empties the Trash"; "If you have files that you created with the app, you may not be able to open them again." To keep it, select it in the Trash and choose File → Put Back.</td><td><span class="kind doc">documented</span></td><td class="src">A3 · Uninstall, macOS 26</td></tr>
+      <tr><td>Apps the Mac requires cannot be removed (Mail, Music, Books, Notes, Podcasts, Maps, News, Stocks among them). An app reported in use must be closed first; failing that, restart or start in safe mode.</td><td><span class="kind doc">documented</span></td><td class="src">A3</td></tr>
+      <tr><td>The page says nothing about preferences, caches, support files, or Launch Services; the procedure removes the bundle. Everything in §2 remains.</td><td><span class="kind doc">documented</span></td><td class="src">A3 (a closed procedure; the residue list is §2's)</td></tr>
+      <tr><td>For a package install there is no uninstaller in macOS: <code>pkgutil --forget &lt;id&gt;</code> "discards the receipt data" and "leaves the installed files untouched"; <code>pkgutil --files &lt;id&gt;</code> lists what to remove by hand.</td><td><span class="kind doc">documented</span></td><td class="src">M1</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<section id="residue">
+  <div class="wrap">
+    <h2>§2</h2>
+    <p class="h2big">The residue, by place</p>
+    <p class="sub">Homebrew's cookbook is the vendor-independent enumeration: the directories a cask author searches when writing a <code>zap</code> stanza, "for more complete removal of user files and shared resources". Apple's own directory descriptions are on the <a href="places.html#library">places</a> page.</p>
+    <div class="tbl"><table>
+      <tr><th>place</th><th>in Homebrew's zap list</th><th>what an app leaves there</th><th>kind</th><th>source</th></tr>
+      <tr><td><code>~/Library/Application Support/</code></td><td>yes</td><td>the app's data, user data included</td><td><span class="kind doc">documented</span></td><td class="src">H1 · zap creation</td></tr>
+      <tr><td><code>~/Library/Caches/</code></td><td>yes</td><td>caches; WebKit's for an app with a web view</td><td><span class="kind doc">documented</span></td><td class="src">H1</td></tr>
+      <tr><td><code>~/Library/Containers/</code></td><td>yes</td><td>a sandboxed app's whole home</td><td><span class="kind doc">documented</span></td><td class="src">H1</td></tr>
+      <tr><td><code>~/Library/LaunchAgents/</code></td><td>yes</td><td>the app's per-user launchd jobs</td><td><span class="kind doc">documented</span></td><td class="src">H1</td></tr>
+      <tr><td><code>~/Library/Logs/</code></td><td>yes</td><td>log files</td><td><span class="kind doc">documented</span></td><td class="src">H1</td></tr>
+      <tr><td><code>~/Library/Preferences/</code></td><td>yes</td><td>the preference domain's plist</td><td><span class="kind doc">documented</span></td><td class="src">H1</td></tr>
+      <tr><td><code>~/Library/Saved Application State/</code></td><td>yes</td><td>AppKit's resume state</td><td><span class="kind doc">documented</span></td><td class="src">H1</td></tr>
+      <tr><td><code>/Library/Application Support/</code>, <code>/Library/LaunchAgents/</code>, <code>/Library/LaunchDaemons/</code>, <code>/Library/Frameworks/</code>, <code>/Library/Logs/</code>, <code>/Library/Preferences/</code>, <code>/Library/PrivilegedHelperTools/</code></td><td>yes</td><td>what an installer wrote for all users, with administrator rights</td><td><span class="kind doc">documented</span></td><td class="src">H1</td></tr>
+      <tr><td><code>~/Library/WebKit/</code>, <code>~/Library/HTTPStorages/</code></td><td>no</td><td>WebKit's website data and HTTP storage for an app with a web view; present for dreader on this Mac (the first) and in its inventory (both)</td><td><span class="kind obs">observed</span></td><td class="src">O1; D · footprint.md</td></tr>
+      <tr><td><code>~/Library/Group Containers/</code>, <code>~/Library/Cookies/</code></td><td>no</td><td>not on the cookbook page as read; not checked on this Mac</td><td><span class="kind unv">unverified</span></td><td class="src">—</td></tr>
+      <tr><td>Files the user created with the app</td><td>excluded by rule</td><td>Homebrew: a zap "should not remove" files the user created directly. Apple warns they "may not" open again. dreader asks about them and removes nothing else without asking.</td><td><span class="kind doc">documented</span></td><td class="src">H1; A3; D · PRD-0002 R-U4</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<section id="stanzas">
+  <div class="wrap">
+    <h2>§3</h2>
+    <p class="h2big">Homebrew's two stanzas</p>
+    <div class="tbl"><table>
+      <tr><th>fact</th><th>kind</th><th>source</th></tr>
+      <tr><td><code>uninstall</code> removes what the cask installed. For most casks Homebrew works it out from the artifacts; a cask using <code>pkg</code> or <code>installer</code> must state it. Its keys, run in the cookbook's fixed order and never the file's: <code>early_script</code>, <code>launchctl</code> (job ids, wildcards allowed), <code>quit</code> (bundle ids, sent the standard quit event), <code>signal</code> (signal and bundle id pairs for processes that ignore quit), <code>login_item</code>, <code>kext</code>, <code>script</code>, <code>pkgutil</code> (package ids, "the most useful key", preferred over <code>delete</code>), <code>delete</code> (absolute paths, last resort), <code>trash</code>, <code>rmdir</code> (empty directories, recursively).</td><td><span class="kind doc">documented</span></td><td class="src">H1 · uninstall</td></tr>
+      <tr><td><code>zap</code> takes the same keys, prefers <code>trash</code> over <code>delete</code>, and "is never run by default": the user runs <code>brew uninstall --zap &lt;cask&gt;</code>. The manual: <code>--zap</code> "Remove all files associated with a cask. May remove files which are shared between applications."</td><td><span class="kind doc">documented</span></td><td class="src">H1 · zap; H2 · uninstall</td></tr>
+      <tr><td>dreader's planned cask carries "a <code>zap</code> stanza taken from the footprint inventory", and <code>brew install --cask</code> then <code>brew uninstall --zap</code> must leave its leftover test passing (DR-0052).</td><td><span class="kind fam">family</span></td><td class="src">D · DR-0052</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<section id="order">
+  <div class="wrap">
+    <h2>§4</h2>
+    <p class="h2big">The things that are not files, and the order</p>
+    <p class="sub">Four kinds of residue are not files under the user's control and need a tool each. dreader's uninstaller found two ordering rules by running against a real account; both are recorded here as observed.</p>
+    <div class="tbl"><table>
+      <tr><th>residue</th><th>undo</th><th>fact</th><th>kind</th><th>source</th></tr>
+      <tr><td>Running processes</td><td>quit, then wait</td><td>Homebrew's <code>quit</code> runs before any file step. dreader: "a quit without a wait let the app write its preferences back after the delete", so the uninstaller quits and waits until the processes are gone before anything else.</td><td><span class="kind obs">observed</span></td><td class="src">H1; O2 · DR-0046</td></tr>
+      <tr><td>Launch Services registration</td><td><code>lsregister -u &lt;bundle&gt;</code></td><td>Apple's guide describes registration and re-registration, not removal; a deleted bundle's record stays until the database is rebuilt. dreader unregisters by name, "so another app becomes the default for EPUBs" (R-U5), and its check dumps the database to confirm.</td><td><span class="kind obs">observed</span></td><td class="src">A13; O2 · DR-0046</td></tr>
+      <tr><td>The preferences domain</td><td><code>defaults delete &lt;bundle id&gt;</code>, then the file</td><td>Apple: never edit the file directly. Observed on macOS 26: <code>defaults delete</code> leaves an empty plist, still listed by <code>defaults domains</code>; deleting the file first is undone, because the preferences daemon writes it back with its cached values. So: domain first, then the empty file.</td><td><span class="kind obs">observed</span></td><td class="src">A14; O2 · DR-0046</td></tr>
+      <tr><td>WebKit's directories</td><td>remove under the account's home</td><td>WebKit writes under the account's home from the user database, whatever <code>HOME</code> says, so a scratch <code>HOME</code> does not isolate them; dreader's check builds the app under a test identifier instead, so every account-wide place it touches is the test's.</td><td><span class="kind obs">observed</span></td><td class="src">O2 · DR-0046</td></tr>
+      <tr><td>Privacy grants</td><td><code>tccutil reset All &lt;bundle id&gt;</code></td><td>The grants are keyed by bundle identifier and outlive the bundle.</td><td><span class="kind obs">observed</span></td><td class="src">O1; D · footprint.md</td></tr>
+      <tr><td>launchd agents, login items, Keychain items</td><td><code>launchctl</code>; the login items setting; <code>security</code></td><td>dreader has none yet (ADR-0010 plans them); its check already searches <code>launchctl list</code> and the Keychain by service name.</td><td><span class="kind fam">family</span></td><td class="src">D · footprint.md; DR-0046</td></tr>
+      <tr><td>The Open Anyway exception</td><td>none found</td><td>Where the exception is kept and whether it can be revoked was not found.</td><td><span class="kind unv">unverified</span></td><td class="src">—</td></tr>
+    </table></div>
+    <div class="map">
+      <div class="step"><span class="k">1</span><span class="n">quit and wait</span><span class="d">every process of the app, until gone</span></div>
+      <div class="step"><span class="k">2</span><span class="n">unregister</span><span class="d">Launch Services, by bundle; then remove the bundle, and only a copy whose <code>Info.plist</code> names the identifier</span></div>
+      <div class="step"><span class="k">3</span><span class="n">links and completion</span><span class="d">the CLI links in <code>~/.local/bin</code>, and in <code>/usr/local/bin</code> if they point into the app; the shell completion file</span></div>
+      <div class="step"><span class="k">4</span><span class="n">the user's data</span><span class="d">the one question: keep, export to a chosen folder, or delete after a second confirmation</span></div>
+      <div class="step"><span class="k">5</span><span class="n">the domain, then its file</span><span class="d"><code>defaults delete</code>, then the empty plist; kept when the data is kept, because it says where the data is</span></div>
+      <div class="step"><span class="k">6</span><span class="n">framework residue</span><span class="d">Caches, WebKit, HTTPStorages, Saved Application State under the bundle identifier; the log folder</span></div>
+      <div class="step"><span class="k">7</span><span class="n">privacy grants</span><span class="d"><code>tccutil reset All</code></span></div>
+      <div class="step"><span class="k">8</span><span class="n">prove it</span><span class="d">search every place in the inventory, the defaults domains, launchd, the Keychain, and the Launch Services dump for the identifier; any hit fails</span></div>
+    </div>
+    <p class="sub">The order is dreader's (<span class="src">D · footprint.md, DR-0046</span>), given here as the worked example of the rules above; steps 1, 2 and 5 carry the observed constraints.</p>
+  </div>
+</section>
+
+<section id="relations">
+  <div class="wrap">
+    <h2>§5</h2>
+    <p class="h2big">Relationships</p>
+    <ul>
+      <li><strong>Places.</strong> §2 is the places page read backwards: every directory that carries the app's name or identifier (<a href="places.html#library">places §3</a>, <a href="places.html#unlisted">§7</a>).</li>
+      <li><strong>Arrival.</strong> The registration undone in §4 was made at arrival; a package's receipt is the record of what arrived (<a href="arrival.html#launchservices">arrival §6</a>, <a href="arrival.html#routes">§1</a>).</li>
+      <li><strong>The gate.</strong> The privacy grants reset in §4 were given at first access; the Gatekeeper exception has no documented undo (<a href="gate.html#tcc">gate §6</a>, <a href="gate.html#override">§3</a>).</li>
+      <li><strong>dreader.</strong> Its inventory is the list that its leftover check reads, so a new write location fails the check until it is listed (<a href="dreader.html#places">dreader §4</a>).</li>
+    </ul>
+  </div>
+</section>
+
+<section id="gaps">
+  <div class="wrap">
+    <h2>§6</h2>
+    <p class="h2big">Gaps and unverified claims</p>
+    <ul>
+      <li>Apple publishes no list of the residue a drag-to-Trash leaves; §2 rests on Homebrew's list and on one app's observed footprint.</li>
+      <li>How Launch Services prunes records for deleted bundles (at login, at a rebuild) was not found in the guide read.</li>
+      <li>The Open Anyway exception's storage and revocation are unverified (§4).</li>
+      <li><code>lsregister</code> and the preferences daemon are undocumented by Apple in the pages read; their behaviour here is observed through dreader's tests, on macOS 26 only.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="changes">
+  <div class="wrap">
+    <h2>§7</h2>
+    <p class="h2big">Change record</p>
+    <div class="tbl"><table>
+      <tr><th>date</th><th>checked against</th><th>change</th></tr>
+      <tr><td>2026-10-13</td><td>macOS 26.6.1; Homebrew docs as served; dreader 7a13aa1</td><td>Page written (CSL-0155).</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<section id="sources">
+  <div class="wrap">
+    <h2>§8</h2>
+    <p class="h2big">Sources</p>
+    <div class="tbl"><table>
+      <tr><th>id</th><th>document</th><th>read</th></tr>
+      <tr><td>A3</td><td>Apple, macOS User Guide for macOS Tahoe 26, "Install and uninstall apps from the internet or disc". <a href="https://support.apple.com/guide/mac-help/install-and-uninstall-apps-from-the-internet-or-disc-mh35835/26/mac/26">link</a></td><td>2026-10-13</td></tr>
+      <tr><td>A13</td><td>Apple, Launch Services Programming Guide, "Launch Services Concepts" (archive). <a href="https://developer.apple.com/library/archive/documentation/Carbon/Conceptual/LaunchServicesConcepts/LSCConcepts/LSCConcepts.html">link</a></td><td>2026-10-13</td></tr>
+      <tr><td>A14</td><td>Apple, Preferences and Settings Programming Guide, "About Preference Domains" (archive). <a href="https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/UserDefaults/AboutPreferenceDomains/AboutPreferenceDomains.html">link</a></td><td>2026-10-13</td></tr>
+      <tr><td>H1</td><td>Homebrew, "Cask Cookbook". <a href="https://docs.brew.sh/Cask-Cookbook">link</a></td><td>2026-10-13</td></tr>
+      <tr><td>H2</td><td>Homebrew, manual page. <a href="https://docs.brew.sh/Manpage">link</a></td><td>2026-10-13</td></tr>
+      <tr><td>M1</td><td><code>pkgutil(1)</code>, as reproduced at <a href="https://ss64.com/mac/pkgutil.html">ss64.com/mac/pkgutil.html</a>.</td><td>2026-10-13</td></tr>
+      <tr><td>O1</td><td>Observed on the author's Mac, macOS 26.6.1, 2026-10-13: <code>ls -d</code> over dreader's inventory places; <code>tccutil</code> usage.</td><td>2026-10-13</td></tr>
+      <tr><td>O2</td><td>dreader's DR-0046, closed 2026-10-13: the uninstaller and the leftover check (<code>bin/uninstall-check</code>), with the two ordering findings in its "As built" section.</td><td>2026-10-13</td></tr>
+      <tr><td>D</td><td>dreader at <code>7a13aa1</code>: <code>.development/design/footprint.md</code>, PRD-0002 §7.3, DR-0046, DR-0052, ADR-0010.</td><td>2026-10-13</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<footer><div class="wrap">macOS applications atlas · removal · built by Straylight under PRD-0004. No script, no external asset.</div></footer>
+</body>
+</html>

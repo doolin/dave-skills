@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arrival — macOS applications atlas</title>
+<link rel="stylesheet" href="atlas.css">
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <p class="kicker"><a href="../index.html">Atlases</a> · <a href="index.html">macOS applications</a> · arrival</p>
+    <h1>How an application reaches a Mac and how the system learns what it is</h1>
+    <p class="lede">A bundle arrives by one of five routes, carries its own description in a property list, and is registered with Launch Services, which from then on decides what the app opens and which app opens a document. This page is the routes, the bundle, the two registrations a reader cares about (document types and URL schemes), and what a Tauri build writes for each.</p>
+    <div class="observed">
+      <dl>
+        <dt>subject</dt><dd>Installation routes (disk image, installer package, Homebrew cask, App Store, build from source), the application bundle, Info.plist keys for document types and URL schemes, sidecar binaries, Launch Services registration and binding.</dd>
+        <dt>version observed</dt><dd>macOS <code>26.6.1</code> (25G76), 2026-10-13; Tauri <code>2.12</code> with the v2 guides as served 2026-10-13; Homebrew cookbook and manpage as served 2026-10-13; dreader at <code>7a13aa1</code>.</dd>
+        <dt>sources</dt><dd><a href="#sources">A3 Install and uninstall apps</a>, <a href="#sources">A10 CFBundleURLTypes</a>, <a href="#sources">A11 CFBundleDocumentTypes</a>, <a href="#sources">A13 Launch Services Concepts</a>, <a href="#sources">T1 Application Bundle</a>, <a href="#sources">T3 DMG</a>, <a href="#sources">T4 Configuration</a>, <a href="#sources">T6 Deep Linking</a>, <a href="#sources">T7 Sidecar</a>, <a href="#sources">H1</a>, <a href="#sources">H2</a>, <a href="#sources">M1 pkgutil</a>, <a href="#sources">O1</a>, <a href="#sources">D</a>.</dd>
+        <dt>change record</dt><dd><a href="#changes">§9</a>.</dd>
+      </dl>
+    </div>
+  </div>
+</header>
+
+<nav class="toc">
+  <div class="wrap">
+    <ol>
+      <li><a href="#routes">The five routes</a></li>
+      <li><a href="#bundle">The bundle</a></li>
+      <li><a href="#plist">Info.plist: what the system reads</a></li>
+      <li><a href="#documents">Document types</a></li>
+      <li><a href="#urls">URL schemes</a></li>
+      <li><a href="#launchservices">Launch Services: registration and binding</a></li>
+      <li><a href="#relations">Relationships</a></li>
+      <li><a href="#gaps">Gaps and unverified claims</a></li>
+      <li><a href="#changes">Change record</a></li>
+      <li><a href="#sources">Sources</a></li>
+    </ol>
+  </div>
+</nav>
+
+<section id="routes">
+  <div class="wrap">
+    <h2>§1</h2>
+    <p class="h2big">The five routes</p>
+    <div class="tbl"><table>
+      <tr><th>route</th><th>what happens</th><th>what it leaves besides the bundle</th><th>kind</th><th>source</th></tr>
+      <tr><td>Disk image (<code>.dmg</code>)</td><td>Apple's user guide: in Downloads, "double-click the disk image or package file (looks like an open box)"; if the installer does not open on its own, open it and follow the steps. Tauri's DMG shows the app icon and an Applications folder icon; "the user drags the app onto the Applications folder to install it". Tauri calls this "the most common installation method for macOS apps distributed outside the App Store".</td><td>nothing, until the app runs; the <code>.dmg</code> stays in Downloads</td><td><span class="kind doc">documented</span></td><td class="src">A3 · Install; T3</td></tr>
+      <tr><td>Installer package (<code>.pkg</code>)</td><td>Opened by the Installer app from the same double-click. The Installer records a receipt per package; <code>pkgutil --pkgs</code> lists installed package identifiers, <code>pkgutil --files &lt;id&gt;</code> the files it installed. Receipt storage is "subject to change", so the tool, not the path, is the interface.</td><td>a receipt; whatever the package's scripts did</td><td><span class="kind doc">documented</span></td><td class="src">A3 · Install; M1</td></tr>
+      <tr><td>Homebrew cask</td><td>A cask is a "package definition that installs pre-compiled binaries built and signed by upstream". The <code>app</code> stanza moves the <code>.app</code> from the staged cask into <code>/Applications</code>; the staged copy lives in the Caskroom (for example <code>/opt/homebrew/Caskroom</code>). A cask that installs a <code>pkg</code> needs an explicit <code>uninstall</code> stanza.</td><td>the Caskroom entry; the cask's metadata</td><td><span class="kind doc">documented</span></td><td class="src">H1 · app; H2 · Caskroom</td></tr>
+      <tr><td>Mac App Store</td><td>Installs into <code>/Applications</code>; requires the app to be sandboxed (<a href="places.html#sandbox">places §5</a>).</td><td>the sandbox container on first run</td><td><span class="kind doc">documented</span></td><td class="src">A1 · /Applications; A9</td></tr>
+      <tr><td>Build from source</td><td>dreader's <code>bin/install</code> builds the CLI, stages it as a sidecar, runs the Tauri bundler, ad hoc signs the result, copies it to <code>/Applications</code>, registers it with <code>lsregister -f</code>, links the CLI into <code>~/.local/bin</code>, and writes zsh completion.</td><td>the links, the completion file, the registration</td><td><span class="kind fam">family</span></td><td class="src">D · footprint.md; DR-0044</td></tr>
+    </table></div>
+    <div class="note"><strong>What "install" means on macOS.</strong> For a drag-installed app, nothing is recorded anywhere at the moment of installation except the file copy. The registration (§6) happens when the Finder sees the bundle or the app first launches; the residue in <code>~/Library</code> begins at first run. This is why there is no system uninstaller for such apps, and why Apple's own uninstall procedure is a drag to the Trash (<a href="removal.html">removal</a>).</div>
+  </div>
+</section>
+
+<section id="bundle">
+  <div class="wrap">
+    <h2>§2</h2>
+    <p class="h2big">The bundle</p>
+    <div class="tbl"><table>
+      <tr><th>fact</th><th>kind</th><th>source</th></tr>
+      <tr><td>Tauri's <code>tauri build --bundles app</code>, run on a Mac, produces <code>&lt;productName&gt;.app</code> with <code>Contents/</code> holding <code>Info.plist</code>, <code>MacOS/&lt;binary&gt;</code>, <code>Resources/</code> (the icon as <code>icon.icns</code> and <code>bundle.resources</code>), <code>_CodeSignature/</code>, and when used <code>Frameworks/</code>, <code>PlugIns/</code>, <code>SharedSupport/</code>. Files from <code>bundle.macOS.files</code> are added under <code>Contents/</code>.</td><td><span class="kind doc">documented</span></td><td class="src">T1 · Bundle</td></tr>
+      <tr><td>Tauri sets the binary name, version, bundle identifier and minimum system version in <code>Info.plist</code> itself; an <code>Info.plist</code> beside <code>tauri.conf.json</code> is merged in for other keys, and overriding a generated value such as the version "can cause conflicts".</td><td><span class="kind doc">documented</span></td><td class="src">T1 · Info.plist</td></tr>
+      <tr><td><code>bundle.macOS.minimumSystemVersion</code> defaults to <code>"10.13"</code>, writes <code>LSMinimumSystemVersion</code>, is ignored in <code>tauri dev</code>; <code>null</code> removes the key; an empty string is invalid.</td><td><span class="kind doc">documented</span></td><td class="src">T4 · bundle.macOS</td></tr>
+      <tr><td>GUI apps on macOS "don't inherit <code>$PATH</code> from shell dotfiles"; Tauri points at the <code>fix-path-env-rs</code> crate.</td><td><span class="kind doc">documented</span></td><td class="src">T1</td></tr>
+      <tr><td>A sidecar (<code>bundle.externalBin</code>) is a binary named with the host's target triple beside the configured path (<code>binaries/dreader-aarch64-apple-darwin</code> for Apple silicon); the app invokes it by file name through the shell plugin with a capability entry (<code>shell:allow-execute</code>, <code>"sidecar": true</code>). Tauri's page does not say where in the bundle it lands.</td><td><span class="kind doc">documented</span></td><td class="src">T7</td></tr>
+      <tr><td>The sidecar lands in <code>Contents/MacOS/</code> beside the app binary: dreader's installed bundle holds <code>Contents/MacOS/dreader</code> and <code>Contents/MacOS/dreader-app</code>, and its install check fails when the first is missing.</td><td><span class="kind obs">observed</span></td><td class="src">O1 · 2026-10-13; O2 · DR-0044</td></tr>
+      <tr><td>dreader's installed bundle, 2026-10-13: <code>Contents/{_CodeSignature, Info.plist, MacOS, Resources}</code>; <code>Resources/icon.icns</code> only; no <code>Frameworks</code>.</td><td><span class="kind obs">observed</span></td><td class="src">O1</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<section id="plist">
+  <div class="wrap">
+    <h2>§3</h2>
+    <p class="h2big">Info.plist: what the system reads</p>
+    <p class="sub">The keys dreader's bundle carries, as read with <code>plutil -p</code> on 2026-10-13, and what each is for. Launch Services reads the bundle's <code>Info.plist</code> to learn what the app opens.</p>
+    <div class="tbl"><table>
+      <tr><th>key</th><th>dreader's value</th><th>meaning</th><th>kind</th><th>source</th></tr>
+      <tr><td><code>CFBundleIdentifier</code></td><td><code>com.clubstraylight.dreader</code></td><td>The bundle identifier; names the preferences domain, the WebKit and cache directories, the Launch Services entry, and the privacy permissions.</td><td><span class="kind obs">observed</span></td><td class="src">O1; T4 · identifier</td></tr>
+      <tr><td><code>CFBundleExecutable</code></td><td><code>dreader-app</code></td><td>The binary under <code>Contents/MacOS</code>; Tauri's <code>mainBinaryName</code>.</td><td><span class="kind obs">observed</span></td><td class="src">O1; D · tauri.conf.json</td></tr>
+      <tr><td><code>CFBundleShortVersionString</code>, <code>CFBundleVersion</code></td><td><code>0.1.0</code>, <code>1</code></td><td>The version shown to users and the build number; Tauri takes the first from Cargo and the second from <code>bundle.macOS.bundleVersion</code>.</td><td><span class="kind obs">observed</span></td><td class="src">O1; T4</td></tr>
+      <tr><td><code>LSMinimumSystemVersion</code></td><td><code>15.0</code></td><td>The oldest macOS the app runs on; dreader's release plan sets it (PRD-0002 R-P4).</td><td><span class="kind obs">observed</span></td><td class="src">O1; D · PRD-0002</td></tr>
+      <tr><td><code>CFBundleDocumentTypes</code></td><td>two entries, §4</td><td>What the app opens.</td><td><span class="kind obs">observed</span></td><td class="src">O1</td></tr>
+      <tr><td><code>CFBundleURLTypes</code></td><td>absent</td><td>dreader registers no URL scheme yet; its <code>dreader://open?path=</code> handler is PRD-0001 R28, unbuilt (§5).</td><td><span class="kind obs">observed</span></td><td class="src">O1; D · PRD-0001</td></tr>
+      <tr><td><code>NSHighResolutionCapable</code>, <code>LSRequiresCarbon</code>, <code>CSResourcesFileMapped</code>, <code>CFBundlePackageType</code> <code>APPL</code></td><td>present</td><td>Written by Tauri's bundler.</td><td><span class="kind obs">observed</span></td><td class="src">O1</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<section id="documents">
+  <div class="wrap">
+    <h2>§4</h2>
+    <p class="h2big">Document types</p>
+    <div class="tbl"><table>
+      <tr><th>fact</th><th>kind</th><th>source</th></tr>
+      <tr><td><code>CFBundleDocumentTypes</code> is "the document types supported by the bundle", an array of dictionaries. Its keys include <code>CFBundleTypeName</code> ("the abstract name for the document type"), <code>CFBundleTypeRole</code> ("the app's role with respect to the document type"), <code>LSItemContentTypes</code> ("the document file types the app supports", as uniform type identifiers), <code>LSHandlerRank</code> ("the ranking of this app among apps that declare themselves as editors or viewers of the given file type"), <code>CFBundleTypeIconFile</code>. Available on macOS 10.0 and later.</td><td><span class="kind doc">documented</span></td><td class="src">A11</td></tr>
+      <tr><td>The allowed values of <code>CFBundleTypeRole</code> and <code>LSHandlerRank</code> are not on Apple's page as read. Tauri's reference lists them for its own fields: role <code>Editor</code> (default), <code>Viewer</code>, <code>Shell</code>, <code>QLGenerator</code>, <code>None</code>; rank <code>Default</code> (default), <code>Owner</code>, <code>Alternate</code>, <code>None</code>.</td><td><span class="kind doc">documented</span></td><td class="src">T4 · fileAssociations</td></tr>
+      <tr><td>Tauri's <code>bundle.fileAssociations</code> entries map: <code>ext</code> (required; a leading dot is stripped), <code>name</code> → <code>CFBundleTypeName</code> (defaults to the first extension), <code>role</code> → <code>CFBundleTypeRole</code>, <code>rank</code> → <code>LSHandlerRank</code>, <code>contentTypes</code> → <code>LSItemContentTypes</code>, <code>exportedType</code> → <code>UTExportedTypeDeclarations</code>, <code>mimeType</code> → <code>public.mime-type</code> in the exported type's tag specification; <code>description</code> is Windows only.</td><td><span class="kind doc">documented</span></td><td class="src">T4 · fileAssociations</td></tr>
+      <tr><td>dreader declares EPUB (<code>org.idpf.epub-container</code>, role Viewer, rank Default) and PDF (<code>com.adobe.pdf</code>, role Viewer, rank Alternate). Tauri also wrote the legacy <code>CFBundleTypeExtensions</code> key beside <code>LSItemContentTypes</code> for each.</td><td><span class="kind obs">observed</span></td><td class="src">O1; D · tauri.conf.json</td></tr>
+      <tr><td>Rank Default for EPUB means dreader offers to be the EPUB opener; rank Alternate for PDF means it is offered without claiming the default from Preview (PRD-0002 R-I6, R-P1).</td><td><span class="kind fam">family</span></td><td class="src">D · PRD-0002</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<section id="urls">
+  <div class="wrap">
+    <h2>§5</h2>
+    <p class="h2big">URL schemes</p>
+    <div class="tbl"><table>
+      <tr><th>fact</th><th>kind</th><th>source</th></tr>
+      <tr><td><code>CFBundleURLTypes</code> is "a list of URL schemes (http, ftp, and so on) supported by the app", an array of dictionaries with <code>CFBundleURLName</code> ("the abstract name for this type"), <code>CFBundleURLSchemes</code> ("the URL schemes supported by this type"), <code>CFBundleTypeRole</code>, <code>CFBundleURLIconFile</code>. macOS 10.0 and later.</td><td><span class="kind doc">documented</span></td><td class="src">A10</td></tr>
+      <tr><td>Tauri's deep-link plugin takes desktop schemes from <code>tauri.conf.json &gt; plugins &gt; deep-link &gt; desktop &gt; schemes</code>; "Registering deep links at runtime is not possible on macOS, so deep links can only be tested on the bundled application", installed in <code>/Applications</code>. The app receives a URL through <code>on_open_url</code> (Rust) or <code>onOpenUrl</code> (JavaScript), and <code>get_current</code> at startup for a launch from a link.</td><td><span class="kind doc">documented</span></td><td class="src">T6</td></tr>
+      <tr><td>Whether the plugin writes <code>CFBundleURLTypes</code> into the macOS <code>Info.plist</code>: Tauri's page documents that key for iOS only; the macOS mechanism is not stated.</td><td><span class="kind unv">unverified</span></td><td class="src">T6</td></tr>
+      <tr><td>Launch Services binds a URL to an app by scheme, choosing among claimants by the same ordering as documents minus the creator-signature step (§6).</td><td><span class="kind doc">documented</span></td><td class="src">A13 · URLs</td></tr>
+      <tr><td>dreader's planned scheme is <code>dreader://open?path=</code>, "so the catalog's record pages can link to the reader" (PRD-0001 R28); not built at <code>7a13aa1</code>.</td><td><span class="kind fam">family</span></td><td class="src">D · PRD-0001</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<section id="launchservices">
+  <div class="wrap">
+    <h2>§6</h2>
+    <p class="h2big">Launch Services: registration and binding</p>
+    <div class="tbl"><table>
+      <tr><th>fact</th><th>kind</th><th>source</th></tr>
+      <tr><td>Launch Services keeps "a central data structure" in which "it records all of the pertinent information about applications and the kinds of document files and URLs they are capable of opening", read from each app's <code>Info.plist</code>.</td><td><span class="kind doc">documented</span></td><td class="src">A13 · Registration</td></tr>
+      <tr><td>When an app is registered: at boot or a new user's login, "a built-in background tool … automatically searches the Applications folders in the system, network, local, and user domains and registers any new applications it finds there"; "the Finder automatically registers all applications as it becomes aware of them, such as when they are dragged onto the user's disk or when the user navigates to a folder containing them"; a custom installer calls <code>LSRegisterURL</code>. The guide names no command-line tool and does not mention the Installer app.</td><td><span class="kind doc">documented</span></td><td class="src">A13 · Registration</td></tr>
+      <tr><td>Re-registration after an <code>Info.plist</code> change: call the register function with <code>inUpdate</code> true, or <code>touch</code> the bundle so its modification time is newer than the database record.</td><td><span class="kind doc">documented</span></td><td class="src">A13 · Registration</td></tr>
+      <tr><td>Binding, in order: a user-specified binding from the Finder's Get Info "Open With" (per item, or "Change All" for the type) wins, and such bindings are "not user-specific but systemwide"; otherwise apps claiming the file's extension and then its type are found and, among several, preferred by native over Classic, boot volume over others, local over remote, then latest <code>CFBundleVersion</code>. Ties are broken "in an unspecified manner" and Apple "reserves the right to change the selection criteria". The guide predates <code>LSHandlerRank</code> and does not mention it.</td><td><span class="kind doc">documented</span></td><td class="src">A13 · Binding</td></tr>
+      <tr><td>The command-line tool <code>lsregister</code>, inside the LaunchServices framework, registers (<code>-f</code>), unregisters (<code>-u</code>), and dumps (<code>-dump</code>) the database. It is not in Apple's documentation as read; dreader's installer, uninstaller, and leftover check use it, and the check passed on 2026-10-13 with <code>-dump</code> showing nothing for the test identifier after <code>-u</code>.</td><td><span class="kind obs">observed</span></td><td class="src">O2 · DR-0046</td></tr>
+      <tr><td><code>open -b &lt;bundle id&gt; &lt;file&gt;</code> opens a file in the registered app wherever its bundle lives; dreader's CLI uses it in a release build and falls back to the app binary beside itself when Launch Services knows no such app.</td><td><span class="kind obs">observed</span></td><td class="src">O2 · DR-0044</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<section id="relations">
+  <div class="wrap">
+    <h2>§7</h2>
+    <p class="h2big">Relationships</p>
+    <ul>
+      <li><strong>Places.</strong> The bundle lands in the local or user domain's <code>Applications</code>; the Caskroom and the receipts are local-domain records of the arrival (<a href="places.html#standard">places §2</a>).</li>
+      <li><strong>The gate.</strong> A bundle that arrives by download carries quarantine, and the signature inside <code>_CodeSignature</code> is what Gatekeeper evaluates (<a href="gate.html#quarantine">gate §1</a>, <a href="gate.html#signing">§4</a>). A sidecar is signed with the bundle, so an unsigned or differently signed sidecar fails the whole bundle's notarization (DR-0050).</li>
+      <li><strong>Removal.</strong> The registration made here is the one piece of residue that is not a file under the user's control; it is undone by name (<a href="removal.html#order">removal §4</a>).</li>
+      <li><strong>dreader.</strong> Its bundle identifier is the key under which four other places are named (<a href="dreader.html#places">dreader §4</a>).</li>
+    </ul>
+  </div>
+</section>
+
+<section id="gaps">
+  <div class="wrap">
+    <h2>§8</h2>
+    <p class="h2big">Gaps and unverified claims</p>
+    <ul>
+      <li>Apple's current statement of Launch Services registration and binding, with <code>LSHandlerRank</code>, was not found; the Launch Services Programming Guide is an archive document and the per-user "Always Open With" binding is not described in it.</li>
+      <li>The receipts' on-disk location is deliberately unstated by <code>pkgutil</code>'s manual; <code>/var/db/receipts</code> is a common account and is not on this page as a fact.</li>
+      <li>Whether Tauri writes <code>CFBundleURLTypes</code> for macOS from the deep-link plugin's configuration is unverified (§5).</li>
+      <li>The Mac App Store route is covered only as far as the sandbox requirement; its receipt and update mechanisms are not on this page.</li>
+      <li>The DMG's internal anatomy (whether the Applications icon is a symbolic link; the <code>hdiutil</code> step) is not on Tauri's page as read.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="changes">
+  <div class="wrap">
+    <h2>§9</h2>
+    <p class="h2big">Change record</p>
+    <div class="tbl"><table>
+      <tr><th>date</th><th>checked against</th><th>change</th></tr>
+      <tr><td>2026-10-13</td><td>macOS 26.6.1; Tauri 2.12; dreader 7a13aa1</td><td>Page written (CSL-0155).</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<section id="sources">
+  <div class="wrap">
+    <h2>§10</h2>
+    <p class="h2big">Sources</p>
+    <div class="tbl"><table>
+      <tr><th>id</th><th>document</th><th>read</th></tr>
+      <tr><td>A1</td><td>Apple, File System Programming Guide, "File System Basics" (archive). <a href="https://developer.apple.com/library/archive/documentation/FileManagement/Conceptual/FileSystemProgrammingGuide/FileSystemOverview/FileSystemOverview.html">link</a></td><td>2026-10-13</td></tr>
+      <tr><td>A3</td><td>Apple, macOS User Guide for macOS Tahoe 26, "Install and uninstall apps from the internet or disc". <a href="https://support.apple.com/guide/mac-help/install-and-uninstall-apps-from-the-internet-or-disc-mh35835/26/mac/26">support.apple.com/guide/mac-help/…/mh35835/26/mac/26</a></td><td>2026-10-13</td></tr>
+      <tr><td>A9</td><td>Apple, "App Sandbox". <a href="https://developer.apple.com/documentation/security/app-sandbox">link</a></td><td>2026-10-13</td></tr>
+      <tr><td>A10</td><td>Apple, Information Property List, <code>CFBundleURLTypes</code>. <a href="https://developer.apple.com/documentation/bundleresources/information-property-list/cfbundleurltypes">link</a></td><td>2026-10-13</td></tr>
+      <tr><td>A11</td><td>Apple, Information Property List, <code>CFBundleDocumentTypes</code>. <a href="https://developer.apple.com/documentation/bundleresources/information-property-list/cfbundledocumenttypes">link</a></td><td>2026-10-13</td></tr>
+      <tr><td>A13</td><td>Apple, Launch Services Programming Guide, "Launch Services Concepts" (archive). <a href="https://developer.apple.com/library/archive/documentation/Carbon/Conceptual/LaunchServicesConcepts/LSCConcepts/LSCConcepts.html">link</a></td><td>2026-10-13</td></tr>
+      <tr><td>T1</td><td>Tauri v2, "macOS Application Bundle". <a href="https://v2.tauri.app/distribute/macos-application-bundle/">link</a></td><td>2026-10-13</td></tr>
+      <tr><td>T3</td><td>Tauri v2, "DMG". <a href="https://v2.tauri.app/distribute/dmg/">link</a></td><td>2026-10-13</td></tr>
+      <tr><td>T4</td><td>Tauri v2, "Configuration" reference. <a href="https://v2.tauri.app/reference/config/">link</a></td><td>2026-10-13</td></tr>
+      <tr><td>T6</td><td>Tauri v2, "Deep Linking" plugin. <a href="https://v2.tauri.app/plugin/deep-linking/">link</a></td><td>2026-10-13</td></tr>
+      <tr><td>T7</td><td>Tauri v2, "Embedding External Binaries". <a href="https://v2.tauri.app/develop/sidecar/">link</a></td><td>2026-10-13</td></tr>
+      <tr><td>H1</td><td>Homebrew, "Cask Cookbook". <a href="https://docs.brew.sh/Cask-Cookbook">link</a></td><td>2026-10-13</td></tr>
+      <tr><td>H2</td><td>Homebrew, manual page (<code>install</code>, <code>uninstall</code>, glossary). <a href="https://docs.brew.sh/Manpage">link</a></td><td>2026-10-13</td></tr>
+      <tr><td>M1</td><td><code>pkgutil(1)</code>, macOS, as reproduced at <a href="https://ss64.com/mac/pkgutil.html">ss64.com/mac/pkgutil.html</a>.</td><td>2026-10-13</td></tr>
+      <tr><td>O1</td><td>Observed on the author's Mac, macOS 26.6.1, 2026-10-13: <code>plutil -p /Applications/dreader.app/Contents/Info.plist</code>; <code>ls</code> of the bundle.</td><td>2026-10-13</td></tr>
+      <tr><td>O2</td><td>dreader's tickets DR-0044 (the CLI in the bundle; <code>open -b</code>) and DR-0046 (the leftover check), both closed 2026-10-13.</td><td>2026-10-13</td></tr>
+      <tr><td>D</td><td>dreader at <code>7a13aa1</code>: <code>src-tauri/tauri.conf.json</code>, <code>src-tauri/tauri.bundle.json</code>, <code>.development/design/footprint.md</code>, <code>.development/prd/PRD-0001-dreader.md</code>, <code>.development/prd/PRD-0002-macos-release.md</code>.</td><td>2026-10-13</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<footer><div class="wrap">macOS applications atlas · arrival · built by Straylight under PRD-0004. No script, no external asset.</div></footer>
+</body>
+</html>

@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gate — macOS applications atlas</title>
+<link rel="stylesheet" href="atlas.css">
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <p class="kicker"><a href="../index.html">Atlases</a> · <a href="index.html">macOS applications</a> · gate</p>
+    <h1>What stands between a downloaded app and its first launch, and between a running app and the user's files</h1>
+    <p class="lede">Two gates. The first is Gatekeeper: a downloaded bundle is quarantined, and on first open macOS checks that it is signed by an identified developer, notarized by Apple, and unaltered; what the user can do when it is not changed in macOS 15. The second is the privacy system: an app reads Documents, Desktop, or Downloads only with the user's grant. Both are per machine and per user, both survive the bundle's deletion, and both are what a public release must satisfy.</p>
+    <div class="observed">
+      <dl>
+        <dt>subject</dt><dd>Quarantine, Gatekeeper, the Open Anyway override, code signing identities, the hardened runtime, notarization and stapling, Tauri's signing flow, the privacy permissions for files, and <code>tccutil</code>.</dd>
+        <dt>version observed</dt><dd>macOS <code>26.6.1</code> (25G76), 2026-10-13; Apple's user guide pages for macOS Tahoe 26; the Platform Security guide as published 2024-12-19; Tauri v2 guides as served 2026-10-13; dreader at <code>7a13aa1</code>.</dd>
+        <dt>sources</dt><dd><a href="#sources">A4 Open an app from an unknown developer</a>, <a href="#sources">A5 Control access to files and folders</a>, <a href="#sources">A6 Gatekeeper and runtime protection</a>, <a href="#sources">A7 Developer news 2024-08-06</a>, <a href="#sources">A8 Notarizing macOS software</a>, <a href="#sources">A12 LSFileQuarantineEnabled</a>, <a href="#sources">A15 Protecting against malware</a>, <a href="#sources">T2 macOS Code Signing</a>, <a href="#sources">T4</a>, <a href="#sources">O1</a>, <a href="#sources">D</a>.</dd>
+        <dt>change record</dt><dd><a href="#changes">§9</a>.</dd>
+      </dl>
+    </div>
+  </div>
+</header>
+
+<nav class="toc">
+  <div class="wrap">
+    <ol>
+      <li><a href="#quarantine">Quarantine</a></li>
+      <li><a href="#gatekeeper">Gatekeeper's check</a></li>
+      <li><a href="#override">The override, at macOS 26</a></li>
+      <li><a href="#signing">Signing identities and the hardened runtime</a></li>
+      <li><a href="#notarization">Notarization and stapling</a></li>
+      <li><a href="#tcc">The privacy permissions for files</a></li>
+      <li><a href="#relations">Relationships</a></li>
+      <li><a href="#gaps">Gaps and unverified claims</a></li>
+      <li><a href="#changes">Change record</a></li>
+      <li><a href="#sources">Sources</a></li>
+    </ol>
+  </div>
+</nav>
+
+<section id="quarantine">
+  <div class="wrap">
+    <h2>§1</h2>
+    <p class="h2big">Quarantine</p>
+    <div class="tbl"><table>
+      <tr><th>fact</th><th>kind</th><th>source</th></tr>
+      <tr><td><code>LSFileQuarantineEnabled</code> is an <code>Info.plist</code> key, "a Boolean value indicating whether the files this app creates are quarantined by default"; macOS 10.0 and later. An app that downloads (a browser) sets it, and so marks what it saves.</td><td><span class="kind doc">documented</span></td><td class="src">A12</td></tr>
+      <tr><td>Gatekeeper "requests user approval before downloaded software opens for the first time, to prevent users from running executable code they thought was a data file", and "tracks the provenance of files written by downloaded software".</td><td><span class="kind doc">documented</span></td><td class="src">A6 · Gatekeeper</td></tr>
+      <tr><td>The mark is an extended attribute named <code>com.apple.quarantine</code>, readable and removable with <code>xattr</code>. Not confirmed from an Apple document at this version; common account.</td><td><span class="kind unv">unverified</span></td><td class="src">—</td></tr>
+      <tr><td>A file fetched with <code>curl</code> or copied from a source checkout carries no quarantine, so a developer's own build never meets the gate the way a tester's download does. dreader's signing ticket therefore requires the proof to be "downloaded through a browser (so it carries quarantine) on a clean macOS 15 account".</td><td><span class="kind fam">family</span></td><td class="src">D · DR-0050</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<section id="gatekeeper">
+  <div class="wrap">
+    <h2>§2</h2>
+    <p class="h2big">Gatekeeper's check</p>
+    <div class="tbl"><table>
+      <tr><th>fact</th><th>kind</th><th>source</th></tr>
+      <tr><td>Gatekeeper applies to "apps, plug-ins, and installer packages downloaded from outside the App Store". It checks that the software "is from an identified developer, notarized by Apple as free of known malicious content, and unaltered".</td><td><span class="kind doc">documented</span></td><td class="src">A6 · Gatekeeper</td></tr>
+      <tr><td>Default policy: "all software is checked for known malicious content the first time it's opened, regardless of how it arrived"; by default software must be "signed by the App Store, or signed by a registered developer and notarized by Apple". Users and organisations can restrict to the App Store only; Gatekeeper can be turned off; a device management service can forbid overrides.</td><td><span class="kind doc">documented</span></td><td class="src">A6 · Gatekeeper</td></tr>
+      <tr><td>Apple's three layers against malware: prevent launch (the App Store, and Gatekeeper with notarization), block execution (Gatekeeper, notarization, XProtect), remediate (XProtect). Apple can issue revocation tickets for apps found malicious, including ones it had notarized, which macOS checks for in the background.</td><td><span class="kind doc">documented</span></td><td class="src">A15</td></tr>
+      <tr><td>Against plug-ins bundled with benign apps, Gatekeeper "can open apps from randomized, read-only locations", which stops bundled plug-ins loading automatically. This is the mechanism by which a quarantined app may run from a translocated path rather than <code>/Applications</code>; the page does not use the word translocation.</td><td><span class="kind doc">documented</span></td><td class="src">A6 · Gatekeeper</td></tr>
+      <tr><td><code>spctl -a -vv --type exec &lt;app&gt;</code> prints Gatekeeper's verdict. On this Mac, <code>/Applications/dreader.app</code> (ad hoc signed): <code>rejected</code>.</td><td><span class="kind obs">observed</span></td><td class="src">O1 · 2026-10-13</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<section id="override">
+  <div class="wrap">
+    <h2>§3</h2>
+    <p class="h2big">The override, at macOS 26</p>
+    <div class="tbl"><table>
+      <tr><th>fact</th><th>kind</th><th>source</th></tr>
+      <tr><td>Opening an app "not registered with Apple by a known developer" shows a warning dialog (wording not quoted on the page). To open it anyway: System Settings → Privacy &amp; Security → under Security, click Open → click Open Anyway → enter the login password. "Open Anyway" "is available for about an hour after you try to open the app." The app is then "saved as an exception to your security settings" and opens by double-click thereafter.</td><td><span class="kind doc">documented</span></td><td class="src">A4 · macOS 26</td></tr>
+      <tr><td>Apple's own caution on the same page: "Overriding security settings to open an app is the most common way that a Mac gets infected with malware."</td><td><span class="kind doc">documented</span></td><td class="src">A4</td></tr>
+      <tr><td>Before macOS 15: "In macOS Sequoia, users will no longer be able to Control-click to override Gatekeeper when opening software that isn't signed correctly or notarized. They'll need to visit System Settings &gt; Privacy &amp; Security to review security information for software before allowing it to run." Announced 2024-08-06, with the recommendation to notarize software distributed outside the App Store.</td><td><span class="kind doc">documented</span></td><td class="src">A7</td></tr>
+      <tr><td>The macOS 26 user guide page does not mention Control-click. The macOS 27 page, which the support site serves by default, has the same steps.</td><td><span class="kind doc">documented</span></td><td class="src">A4; A4 at /27/mac/27</td></tr>
+      <tr><td>Tauri: ad hoc signing "does not stop macOS from requiring users to approve the app in Privacy &amp; Security settings"; a free developer account "cannot notarize, so the app still shows as unverified when opened".</td><td><span class="kind doc">documented</span></td><td class="src">T2</td></tr>
+      <tr><td>dreader's alpha may ship ad hoc signed; its README then gives these macOS 15 steps with screenshots (PRD-0002 R-A2). Its public release must open with no warning (goal 2, R-P2).</td><td><span class="kind fam">family</span></td><td class="src">D · PRD-0002</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<section id="signing">
+  <div class="wrap">
+    <h2>§4</h2>
+    <p class="h2big">Signing identities and the hardened runtime</p>
+    <div class="tbl"><table>
+      <tr><th>fact</th><th>kind</th><th>source</th></tr>
+      <tr><td>Signing for distribution needs an Apple Developer account (99 USD a year, or a free one for testing and development only) and an Apple device. Outside the App Store the certificate is "Developer ID Application"; only the Account Holder can create one. A certificate signing request made on a Mac is uploaded to Apple and the <code>.cer</code> downloaded.</td><td><span class="kind doc">documented</span></td><td class="src">T2 · Requirements, Certificates</td></tr>
+      <tr><td>Local signing: the identity is the keychain entry name listed by <code>security find-identity -v -p codesigning</code>, set in <code>bundle.macOS.signingIdentity</code> or <code>APPLE_SIGNING_IDENTITY</code>. For CI: the certificate exported as <code>.p12</code>, base64-encoded into <code>APPLE_CERTIFICATE</code> with <code>APPLE_CERTIFICATE_PASSWORD</code>.</td><td><span class="kind doc">documented</span></td><td class="src">T2 · Configuring</td></tr>
+      <tr><td>Ad hoc signing: identity <code>-</code> signs "without an Apple-authenticated identity"; "useful on Apple Silicon, where apps from the internet must be signed".</td><td><span class="kind doc">documented</span></td><td class="src">T2 · Ad-hoc</td></tr>
+      <tr><td><code>bundle.macOS.hardenedRuntime</code> defaults to <code>true</code>; <code>entitlements</code> names a file applied at signing time.</td><td><span class="kind doc">documented</span></td><td class="src">T4 · bundle.macOS; T1 · entitlements</td></tr>
+      <tr><td>Notarization prerequisites on the signature: every executable signed and valid; a Developer ID certificate (not Mac Distribution, ad hoc, Apple Development, or local); the hardened runtime on for app and command-line targets; a secure timestamp; no <code>com.apple.security.get-task-allow</code>; linked against the 10.9 SDK or later; ASCII XML entitlements.</td><td><span class="kind doc">documented</span></td><td class="src">A8 · Prerequisites</td></tr>
+      <tr><td>Entitlements a notarized app may still need: <code>com.apple.security.cs.allow-jit</code> or <code>allow-unsigned-executable-memory</code> for a JavaScript engine or function-pointer overrides; <code>disable-library-validation</code> for certain drivers. Plug-ins inherit the host's entitlements.</td><td><span class="kind doc">documented</span></td><td class="src">A8 · Entitlements</td></tr>
+      <tr><td>dreader's installed bundle, 2026-10-13: <code>codesign -dv</code> reports <code>Signature=adhoc</code>, flags <code>0x10002(adhoc,runtime)</code> (the hardened runtime flag is set even on the ad hoc signature), <code>TeamIdentifier=not set</code>, <code>Runtime Version=26.5.0</code>, arm64 only.</td><td><span class="kind obs">observed</span></td><td class="src">O1</td></tr>
+      <tr><td>dreader's plan: Developer ID Application, hardened runtime, no <code>get-task-allow</code>, entitlements start empty with any exception recorded with its reason; the sidecar CLI signed too; <code>bin/release</code> refuses a dirty tree or an untagged <code>HEAD</code> (PRD-0002 R-P2, R-P3; DR-0050).</td><td><span class="kind fam">family</span></td><td class="src">D · DR-0050</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<section id="notarization">
+  <div class="wrap">
+    <h2>§5</h2>
+    <p class="h2big">Notarization and stapling</p>
+    <div class="tbl"><table>
+      <tr><th>fact</th><th>kind</th><th>source</th></tr>
+      <tr><td>Notarization is "an automated system that scans your software for malicious content, checks for code-signing issues, and returns the results"; it is not App Review. If it passes, the notary service issues a ticket that the developer staples to the software and that Apple also publishes online for Gatekeeper to find. Apple keeps an audit trail so that tickets for software signed with an exposed key can be revoked.</td><td><span class="kind doc">documented</span></td><td class="src">A8 · Overview</td></tr>
+      <tr><td>Requirements by version: in macOS 10.14.5, software signed with a new Developer ID certificate and all new or updated kernel extensions must be notarized to run; in macOS 10.15, all software built after 2019-06-01 and distributed with Developer ID must be notarized. Mac App Store software needs none, because review includes equivalent checks.</td><td><span class="kind doc">documented</span></td><td class="src">A8 · Requirements</td></tr>
+      <tr><td>What can be notarized: macOS apps, non-app bundles such as kernel extensions, disk images (UDIF), flat installer packages, plug-ins; pre-existing software as a disk image, installer package, or ZIP archive containing the app. In macOS 10.15 and later, apps load quarantined plug-ins only if notarized.</td><td><span class="kind doc">documented</span></td><td class="src">A8 · Formats</td></tr>
+      <tr><td>Tools: <code>notarytool</code> uploads to the notary service; <code>stapler</code> attaches the ticket; the Notary API is the web interface. Scanning "usually takes less than an hour". At first launch, "a ticket, either online or attached to the executable, tells Gatekeeper that Apple notarized it", and Gatekeeper then shows "descriptive information in the initial launch dialog".</td><td><span class="kind doc">documented</span></td><td class="src">A8 · Tools, Gatekeeper</td></tr>
+      <tr><td>Tauri notarizes inside <code>tauri build</code> when either the App Store Connect API variables (<code>APPLE_API_ISSUER</code>, <code>APPLE_API_KEY</code>, <code>APPLE_API_KEY_PATH</code>) or the Apple ID variables (<code>APPLE_ID</code>, <code>APPLE_PASSWORD</code> as an app-specific password, <code>APPLE_TEAM_ID</code>) are set; notarization "is required with a Developer ID Application certificate"; <code>--skip-stapling</code> exists, so stapling is part of the normal flow. Whether the <code>.dmg</code> is itself signed is not stated on Tauri's pages.</td><td><span class="kind doc">documented</span></td><td class="src">T2 · Notarization; T3</td></tr>
+      <tr><td>Verification after the fact: <code>spctl -a -vv --type exec</code> reporting <code>source=Notarized Developer ID</code>, and <code>xcrun stapler validate</code> on the <code>.app</code> and the <code>.dmg</code>, are dreader's acceptance checks.</td><td><span class="kind fam">family</span></td><td class="src">D · DR-0050</td></tr>
+      <tr><td>Homebrew's main cask repository "disables casks that fail Gatekeeper from September 2026", which is dreader's stated reason that a public release has to open with no warning.</td><td><span class="kind fam">family</span></td><td class="src">D · DR-0050, citing dreader's release research §2</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<section id="tcc">
+  <div class="wrap">
+    <h2>§6</h2>
+    <p class="h2big">The privacy permissions for files</p>
+    <div class="tbl"><table>
+      <tr><th>fact</th><th>kind</th><th>source</th></tr>
+      <tr><td>"Some apps and websites can access files and folders in your Desktop, Downloads, and Documents folders." The grants are in System Settings → Privacy &amp; Security → Files &amp; Folders, one switch per app per location, and are turned off in the same list. The page covers only those three folders; it does not mention removable or network volumes, or Full Disk Access.</td><td><span class="kind doc">documented</span></td><td class="src">A5 · macOS 26</td></tr>
+      <tr><td>How an app first obtains the grant (the system prompt on first access) is not described on the page read.</td><td><span class="kind unv">unverified</span></td><td class="src">A5</td></tr>
+      <tr><td><code>tccutil</code>, the command-line tool for these grants, prints <code>Usage: tccutil reset SERVICE [BUNDLE_ID]</code>; it resets, it does not grant. <code>tccutil reset All &lt;bundle id&gt;</code> clears every grant for one app.</td><td><span class="kind obs">observed</span></td><td class="src">O1 · 2026-10-13</td></tr>
+      <tr><td>The grants are keyed by bundle identifier and outlive the bundle; dreader's uninstaller runs <code>tccutil reset All com.clubstraylight.dreader</code> (PRD-0002 R-U5).</td><td><span class="kind fam">family</span></td><td class="src">D · footprint.md; DR-0046</td></tr>
+      <tr><td>dreader's library roots are under <code>~/Documents</code> on the author's Mac, so the first scan "triggers macOS access prompts"; the app "asks once through the system dialog; CLI inherits the terminal's grant" (PRD-0001 §16, Q6). A sandboxed build would instead need security-scoped bookmarks (<a href="places.html#sandbox">places §5</a>).</td><td><span class="kind fam">family</span></td><td class="src">D · PRD-0001</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<section id="relations">
+  <div class="wrap">
+    <h2>§7</h2>
+    <p class="h2big">Relationships</p>
+    <ul>
+      <li><strong>Arrival.</strong> Quarantine is set by the route (a browser download sets it; a source build and <code>curl</code> do not), and Gatekeeper evaluates the signature inside the bundle (<a href="arrival.html#bundle">arrival §2</a>).</li>
+      <li><strong>Places.</strong> The privacy grants govern reading <code>~/Documents</code>, <code>~/Desktop</code>, <code>~/Downloads</code>; Apple's file-system rule governs writing there (<a href="places.html#standard">places §2</a>).</li>
+      <li><strong>Removal.</strong> The Open Anyway exception and the privacy grants are both keyed to the app and survive its deletion; only the grants have a reset tool (<a href="removal.html#order">removal §4</a>).</li>
+      <li><strong>dreader.</strong> Its current signature is ad hoc and rejected by Gatekeeper; its release plan is the Developer ID path on this page (<a href="dreader.html#ga">dreader §6</a>).</li>
+    </ul>
+  </div>
+</section>
+
+<section id="gaps">
+  <div class="wrap">
+    <h2>§8</h2>
+    <p class="h2big">Gaps and unverified claims</p>
+    <ul>
+      <li>The quarantine attribute's name and its fields are unverified against an Apple document at this version (§1).</li>
+      <li>The exact wording of the macOS 26 warning dialog is not on Apple's page and was not captured on this Mac.</li>
+      <li>Full Disk Access, and how an app first asks for a folder grant, are not on the user guide page read (§6).</li>
+      <li>Whether the Open Anyway exception can be revoked, and where it is stored, was not found.</li>
+      <li>App translocation (running from a randomized read-only path) is described by Apple only in the plug-in sentence quoted in §2; its effect on an app that locates files relative to its bundle is not on this page.</li>
+      <li>Apple's notarization page as read does not show the <code>xcrun notarytool</code> and <code>xcrun stapler</code> command lines; dreader's ticket carries them from the Tauri flow.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="changes">
+  <div class="wrap">
+    <h2>§9</h2>
+    <p class="h2big">Change record</p>
+    <div class="tbl"><table>
+      <tr><th>date</th><th>checked against</th><th>change</th></tr>
+      <tr><td>2026-10-13</td><td>macOS 26.6.1; Apple user guide for macOS 26; Tauri 2.12; dreader 7a13aa1</td><td>Page written (CSL-0155).</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<section id="sources">
+  <div class="wrap">
+    <h2>§10</h2>
+    <p class="h2big">Sources</p>
+    <div class="tbl"><table>
+      <tr><th>id</th><th>document</th><th>read</th></tr>
+      <tr><td>A4</td><td>Apple, macOS User Guide for macOS Tahoe 26, "Open a Mac app from an unknown developer". <a href="https://support.apple.com/guide/mac-help/open-a-mac-app-from-an-unknown-developer-mh40616/26/mac/26">…/mh40616/26/mac/26</a>; the macOS 27 page at <a href="https://support.apple.com/guide/mac-help/open-a-mac-app-from-an-unknown-developer-mh40616/mac">…/mh40616/mac</a>.</td><td>2026-10-13</td></tr>
+      <tr><td>A5</td><td>Apple, macOS User Guide for macOS Tahoe 26, "Control access to files and folders on Mac". <a href="https://support.apple.com/guide/mac-help/control-access-to-files-and-folders-on-mac-mchld5a35146/26/mac/26">…/mchld5a35146/26/mac/26</a></td><td>2026-10-13</td></tr>
+      <tr><td>A6</td><td>Apple Platform Security, "Gatekeeper and runtime protection in macOS", published 2024-12-19. <a href="https://support.apple.com/guide/security/gatekeeper-and-runtime-protection-sec5599b66df/web">link</a></td><td>2026-10-13</td></tr>
+      <tr><td>A7</td><td>Apple Developer news, 2024-08-06, on Gatekeeper in macOS Sequoia. <a href="https://developer.apple.com/news/?id=saqachfa">developer.apple.com/news/?id=saqachfa</a></td><td>2026-10-13</td></tr>
+      <tr><td>A8</td><td>Apple, "Notarizing macOS software before distribution". <a href="https://developer.apple.com/documentation/security/notarizing-macos-software-before-distribution">link</a></td><td>2026-10-13</td></tr>
+      <tr><td>A12</td><td>Apple, Information Property List, <code>LSFileQuarantineEnabled</code>. <a href="https://developer.apple.com/documentation/bundleresources/information-property-list/lsfilequarantineenabled">link</a></td><td>2026-10-13</td></tr>
+      <tr><td>A15</td><td>Apple Platform Security, "Protecting against malware in macOS". <a href="https://support.apple.com/guide/security/protecting-against-malware-sec469d47bd8/web">link</a></td><td>2026-10-13</td></tr>
+      <tr><td>T2</td><td>Tauri v2, "macOS Code Signing". <a href="https://v2.tauri.app/distribute/sign/macos/">link</a></td><td>2026-10-13</td></tr>
+      <tr><td>T3</td><td>Tauri v2, "DMG". <a href="https://v2.tauri.app/distribute/dmg/">link</a></td><td>2026-10-13</td></tr>
+      <tr><td>T4</td><td>Tauri v2, "Configuration" reference. <a href="https://v2.tauri.app/reference/config/">link</a></td><td>2026-10-13</td></tr>
+      <tr><td>O1</td><td>Observed on the author's Mac, macOS 26.6.1, 2026-10-13: <code>codesign -dv --entitlements - /Applications/dreader.app</code>; <code>spctl -a -vv --type exec /Applications/dreader.app</code>; <code>tccutil</code> with no arguments.</td><td>2026-10-13</td></tr>
+      <tr><td>D</td><td>dreader at <code>7a13aa1</code>: DR-0050, PRD-0001 (§16, §24 Q6), PRD-0002 (§7.1, §7.3, §7.6), <code>.development/design/footprint.md</code>.</td><td>2026-10-13</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<footer><div class="wrap">macOS applications atlas · gate · built by Straylight under PRD-0004. No script, no external asset.</div></footer>
+</body>
+</html>

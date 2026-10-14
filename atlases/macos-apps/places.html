@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Places — macOS applications atlas</title>
+<link rel="stylesheet" href="atlas.css">
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <p class="kicker"><a href="../index.html">Atlases</a> · <a href="index.html">macOS applications</a> · places</p>
+    <h1>Where an application may write, and what each place is for</h1>
+    <p class="lede">macOS divides the file system into four domains and gives every application the same few directories to write in. This page is those directories as Apple defines them, the preference system that owns one of them, the paths a Tauri application resolves to, and the places that exist on a real Mac but appear in no Apple list.</p>
+    <div class="observed">
+      <dl>
+        <dt>subject</dt><dd>The macOS file system as seen by an application: domains, the <code>Library</code> directories, the preferences domain, the sandbox container, Tauri's path resolver.</dd>
+        <dt>version observed</dt><dd>macOS <code>26.6.1</code> (25G76), 2026-10-13. Apple's File System Programming Guide is an archive document (last revised for macOS 10.x); where this Mac agrees with it, the row is marked documented; where this Mac shows a place the guide omits, the row is marked observed.</dd>
+        <dt>sources</dt><dd><a href="#sources">A1 File System Basics</a>, <a href="#sources">A2 macOS Library Directory Details</a>, <a href="#sources">A9 App Sandbox</a>, <a href="#sources">A14 About Preference Domains</a>, <a href="#sources">T4 Tauri configuration</a>, <a href="#sources">T5 Tauri PathResolver</a>, <a href="#sources">H1 Homebrew Cask Cookbook</a>, <a href="#sources">O1 this Mac</a>.</dd>
+        <dt>change record</dt><dd><a href="#changes">§10</a>.</dd>
+      </dl>
+    </div>
+  </div>
+</header>
+
+<nav class="toc">
+  <div class="wrap">
+    <ol>
+      <li><a href="#domains">The four domains</a></li>
+      <li><a href="#standard">The standard directories</a></li>
+      <li><a href="#library">The Library directories an app uses</a></li>
+      <li><a href="#prefs">The preferences domain</a></li>
+      <li><a href="#sandbox">The sandbox container</a></li>
+      <li><a href="#tauri">What a Tauri app resolves</a></li>
+      <li><a href="#unlisted">Places in no Apple list</a></li>
+      <li><a href="#relations">Relationships</a></li>
+      <li><a href="#gaps">Gaps and unverified claims</a></li>
+      <li><a href="#changes">Change record</a></li>
+      <li><a href="#sources">Sources</a></li>
+    </ol>
+  </div>
+</nav>
+
+<section id="domains">
+  <div class="wrap">
+    <h2>§1</h2>
+    <p class="h2big">The four domains</p>
+    <p class="sub">Apple's File System Programming Guide divides the file system "into multiple domains" that "separate files and resources based on their intended usage". Each has its own <code>Library</code>.</p>
+    <div class="tbl"><table>
+      <tr><th>domain</th><th>Apple's description</th><th>its Library</th><th>who may change it</th><th>kind</th><th>source</th></tr>
+      <tr><td>user</td><td>"contains resources specific to the users who log in to the system"; each user "has access to and control over the files in his or her own home directory"</td><td><code>~/Library</code></td><td>the user</td><td><span class="kind doc">documented</span></td><td class="src">A1 · Domains</td></tr>
+      <tr><td>local</td><td>"contains resources such as apps that are local to the current computer and shared among all users of that computer"</td><td><code>/Library</code></td><td>an administrator</td><td><span class="kind doc">documented</span></td><td class="src">A1 · Domains</td></tr>
+      <tr><td>network</td><td>"contains resources such as apps and documents that are shared among all users of a local area network"; "under the control of a network administrator"</td><td><code>/Network/Library</code></td><td>a network administrator</td><td><span class="kind doc">documented</span></td><td class="src">A1 · Domains</td></tr>
+      <tr><td>system</td><td>"contains the system software installed by Apple"; "Users cannot add, remove, or alter items in this domain"</td><td><code>/System/Library</code></td><td>Apple</td><td><span class="kind doc">documented</span></td><td class="src">A1 · Domains</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<section id="standard">
+  <div class="wrap">
+    <h2>§2</h2>
+    <p class="h2big">The standard directories</p>
+    <div class="tbl"><table>
+      <tr><th>directory</th><th>fact</th><th>kind</th><th>source</th></tr>
+      <tr><td><code>/Applications</code></td><td>"is where you install apps intended for use by all users of a computer"; the App Store installs purchased apps here; holds a <code>Utilities</code> subdirectory; local domain.</td><td><span class="kind doc">documented</span></td><td class="src">A1 · Standard directories</td></tr>
+      <tr><td><code>~/Applications</code></td><td>The home directory's subdirectory for "user-specific apps".</td><td><span class="kind doc">documented</span></td><td class="src">A1 · Standard directories</td></tr>
+      <tr><td><code>/Library</code></td><td>Shared resources used by all users. "Sandboxed apps are not permitted to use this directory."</td><td><span class="kind doc">documented</span></td><td class="src">A1 · Standard directories</td></tr>
+      <tr><td><code>/System</code>, <code>/System/Library</code></td><td>"reserved for use by Apple"; "must not be modified".</td><td><span class="kind doc">documented</span></td><td class="src">A1 · Standard directories</td></tr>
+      <tr><td><code>~/Desktop</code>, <code>~/Documents</code>, <code>~/Downloads</code>, <code>~/Movies</code>, <code>~/Music</code>, <code>~/Pictures</code>, <code>~/Public</code></td><td>"Apps must not write files to the preceding directories unless explicitly directed to do so by the user. The sole exception to this rule is the <code>Library</code> directory." Automatically generated files belong in <code>Library</code>.</td><td><span class="kind doc">documented</span></td><td class="src">A1 · Standard directories</td></tr>
+      <tr><td><code>~/Library</code></td><td>"In macOS 10.7 and later, the Finder also hides the <code>~/Library</code> directory." Dot files, the UNIX directories (<code>/bin</code>, <code>/dev</code>, <code>/etc</code>, <code>/sbin</code>, <code>/tmp</code>, <code>/usr</code>, <code>/var</code>) and <code>/Volumes</code> are hidden too. Cocoa's file APIs "do not filter out files or directories that are normally invisible to users."</td><td><span class="kind doc">documented</span></td><td class="src">A1 · Hidden files</td></tr>
+      <tr><td>bundles</td><td>Packages and bundles are "presented to the user as single files" by the Finder; the directory inside is reached with Show Package Contents.</td><td><span class="kind doc">documented</span></td><td class="src">A1 · Hidden files</td></tr>
+      <tr><td><code>/usr/local/bin</code>, <code>~/.local/bin</code></td><td>Neither is in Apple's list of standard directories. <code>/usr/local/bin</code> is where command-line tools installed outside Apple's software conventionally go; <code>~/.local/bin</code> is the per-user equivalent from the freedesktop convention. dreader's CLI installer offers both (<a href="dreader.html#places">dreader §4</a>).</td><td><span class="kind fam">family</span></td><td class="src">D · DR-0044</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<section id="library">
+  <div class="wrap">
+    <h2>§3</h2>
+    <p class="h2big">The Library directories an app uses</p>
+    <p class="sub">Apple's rule for which Library an app writes to: "In macOS, it is the app's sandbox directory or the current user's home directory (if the app is not in a sandbox)." The directories below are the ones that matter to an application and its uninstaller; Apple's full list has thirty-six.</p>
+    <div class="tbl"><table>
+      <tr><th>subdirectory</th><th>Apple's description</th><th>convention for the path</th><th>kind</th><th>source</th></tr>
+      <tr><td><code>Application Support</code></td><td>"Contains all app-specific data and support files. These are the files that your app creates and manages on behalf of the user and can include files that contain user data." Elsewhere: "Use this directory to store all app data files except those associated with the user's documents." "Resources required by the app to run must be placed inside the app bundle itself."</td><td>"a custom subdirectory whose name is that of your app's bundle identifier or your company", for example <code>~/Library/Application Support/com.example.MyApp/</code></td><td><span class="kind doc">documented</span></td><td class="src">A2 · Application Support; A1 · Library</td></tr>
+      <tr><td><code>Caches</code></td><td>"Contains cached data that can be regenerated as needed. Apps should never rely on the existence of cache files."</td><td><code>~/Library/Caches/com.example.MyApp/</code></td><td><span class="kind doc">documented</span></td><td class="src">A2 · Caches</td></tr>
+      <tr><td><code>Preferences</code></td><td>"You should never create files in this directory yourself. To get or set preference values, you should always use the <code>NSUserDefaults</code> class or an equivalent system-provided interface."</td><td>one file per domain, named by bundle identifier (<a href="#prefs">§4</a>)</td><td><span class="kind doc">documented</span></td><td class="src">A2 · Preferences</td></tr>
+      <tr><td><code>Logs</code></td><td>"Contains log files for the console and specific system services. Users can also view these logs using the Console app."</td><td>a subdirectory per app, by name or identifier</td><td><span class="kind doc">documented</span></td><td class="src">A2 · Logs</td></tr>
+      <tr><td><code>Containers</code></td><td>"Contains the home directories for any sandboxed apps. (Available in the user domain only.)"</td><td><code>~/Library/Containers/&lt;bundle id&gt;/</code></td><td><span class="kind doc">documented</span></td><td class="src">A2 · Containers</td></tr>
+      <tr><td><code>LaunchAgents</code>, <code>LaunchDaemons</code></td><td>"Agent apps to launch and run for the current user" and "Daemons to launch and run as root on the system".</td><td>one property list per job</td><td><span class="kind doc">documented</span></td><td class="src">A2 · LaunchAgents, LaunchDaemons</td></tr>
+      <tr><td><code>Frameworks</code></td><td>"The <code>Frameworks</code> directory in the system domain is for Apple-provided frameworks only. Developers should install their custom frameworks in either the local or user domain." Tauri's bundler looks for system frameworks in <code>$HOME/Library/Frameworks</code>, <code>/Library/Frameworks</code>, <code>/Network/Library/Frameworks</code>.</td><td></td><td><span class="kind doc">documented</span></td><td class="src">A2 · Frameworks; T1 · frameworks</td></tr>
+      <tr><td><code>Cookies</code></td><td>"Web browser cookie data files."</td><td></td><td><span class="kind doc">documented</span></td><td class="src">A2 · Cookies</td></tr>
+      <tr><td><code>Autosave Information</code></td><td>"App-specific autosave data."</td><td></td><td><span class="kind doc">documented</span></td><td class="src">A2 · Autosave Information</td></tr>
+      <tr><td><code>Saved Application State</code>, <code>WebKit</code>, <code>HTTPStorages</code>, <code>Group Containers</code></td><td>In none of Apple's thirty-six entries. Each exists on this Mac and holds per-application directories; <a href="#unlisted">§7</a>.</td><td></td><td><span class="kind obs">observed</span></td><td class="src">O1 · 2026-10-13</td></tr>
+    </table></div>
+    <div class="note"><strong>Name or identifier.</strong> Apple's convention for <code>Application Support</code> and <code>Caches</code> is a subdirectory named by bundle identifier or company. Frameworks that write on an app's behalf (WebKit, AppKit's saved state, the preferences system) always use the bundle identifier, so an app that names its own folder by product name, as dreader does with <code>Application Support/dreader</code>, has two names on disk: its own under <code>dreader</code>, the frameworks' under <code>com.clubstraylight.dreader</code>. An uninstaller has to know both.</div>
+  </div>
+</section>
+
+<section id="prefs">
+  <div class="wrap">
+    <h2>§4</h2>
+    <p class="h2big">The preferences domain</p>
+    <div class="tbl"><table>
+      <tr><th>fact</th><th>kind</th><th>source</th></tr>
+      <tr><td>Preferences are grouped into domains; each preference is a domain, a name, and a property-list value (data, string, number, date, array, dictionary). Preferences are per user; sharing between users is not supported.</td><td><span class="kind doc">documented</span></td><td class="src">A14 · Preference domains</td></tr>
+      <tr><td>The application domain is tied to the bundle identifier. Its file is <code>$HOME/Library/Preferences/&lt;ApplicationBundleIdentifier&gt;.plist</code>. The page says not to modify the file directly, but it may be inspected while debugging.</td><td><span class="kind doc">documented</span></td><td class="src">A14 · Application domain</td></tr>
+      <tr><td>Lookup order, first match wins: the argument domain (command-line arguments, volatile), the application domain, the global domain (<code>NSGlobalDomain</code>, for system values such as <code>AppleLanguages</code>), the languages domains, the registration domain (defaults set in code).</td><td><span class="kind doc">documented</span></td><td class="src">A14 · Search order</td></tr>
+      <tr><td>The <code>defaults</code> command reads a domain from Terminal: <code>defaults read &lt;bundle identifier&gt;</code>.</td><td><span class="kind doc">documented</span></td><td class="src">A14 · Defaults tool</td></tr>
+      <tr><td>A command-line tool can read an app's domain through CFPreferences. dreader's CLI and app both read the <code>DataRoot</code> key of <code>com.clubstraylight.dreader</code> this way, because an app launched from the Finder does not see shell environment variables.</td><td><span class="kind fam">family</span></td><td class="src">D · ADR-0010 layer 1</td></tr>
+      <tr><td>On macOS 26, <code>defaults delete &lt;domain&gt;</code> leaves an empty <code>&lt;domain&gt;.plist</code> in <code>~/Library/Preferences</code>, still listed by <code>defaults domains</code>; deleting the file first is undone, because the preferences daemon writes it back with its cached values. Found by dreader's uninstaller tests.</td><td><span class="kind obs">observed</span></td><td class="src">O2 · DR-0046, 2026-10-13</td></tr>
+      <tr><td><code>com.clubstraylight.dreader.plist</code> exists in this account's <code>~/Library/Preferences</code>.</td><td><span class="kind obs">observed</span></td><td class="src">O1 · 2026-10-13</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<section id="sandbox">
+  <div class="wrap">
+    <h2>§5</h2>
+    <p class="h2big">The sandbox container</p>
+    <div class="tbl"><table>
+      <tr><th>fact</th><th>kind</th><th>source</th></tr>
+      <tr><td>App Sandbox "restrict[s] access to system resources and user data in macOS apps to contain damage if an app becomes compromised", by "limiting your app's access to resources requested through entitlements". "To distribute a macOS app through the Mac App Store, you must enable the App Sandbox capability." The entitlement is <code>com.apple.security.app-sandbox</code>.</td><td><span class="kind doc">documented</span></td><td class="src">A9 · Overview</td></tr>
+      <tr><td>"macOS apps that are sandboxed have all their Application Support, Cache, temporary directories and other related documents stored within a directory located at a system-defined path", obtained with <code>NSHomeDirectory()</code>. The Containers directory holds "the home directories for any sandboxed apps".</td><td><span class="kind doc">documented</span></td><td class="src">A1 · Library; A2 · Containers</td></tr>
+      <tr><td>A sandboxed app reaches files outside its container through the user's choice in an Open or Save panel (<code>com.apple.security.files.user-selected.read-only</code> or <code>read-write</code>) or through folder entitlements (Downloads, Pictures, Music, Movies). <code>com.apple.security.files.all</code> is deprecated.</td><td><span class="kind doc">documented</span></td><td class="src">A9 · Entitlements</td></tr>
+      <tr><td>The container's exact path (<code>~/Library/Containers/&lt;bundle id&gt;/Data</code> by common account) was not confirmed from the pages read at this version.</td><td><span class="kind unv">unverified</span></td><td class="src">—</td></tr>
+      <tr><td>dreader is not sandboxed, by decision: a Developer ID build "can be unsandboxed and read books wherever the user keeps them"; an App Store build would move its root into the container and need security-scoped bookmarks for books outside it.</td><td><span class="kind fam">family</span></td><td class="src">D · ADR-0010, "Delivering dreader as a product"; PRD-0002 non-goals</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<section id="tauri">
+  <div class="wrap">
+    <h2>§6</h2>
+    <p class="h2big">What a Tauri app resolves</p>
+    <p class="sub">Tauri's <code>PathResolver</code> maps the conventional directories to macOS paths. <code>${bundle_identifier}</code> is <code>identifier</code> in <code>tauri.conf.json</code>, which must be reverse-DNS, unique, and alphanumeric with hyphens and periods, because it "is used in system configuration such as the bundle ID and the webview data directory path".</p>
+    <div class="tbl"><table>
+      <tr><th>method</th><th>macOS path</th><th>kind</th><th>source</th></tr>
+      <tr><td><code>app_config_dir</code>, <code>app_data_dir</code>, <code>app_local_data_dir</code></td><td><code>$HOME/Library/Application Support/${bundle_identifier}</code></td><td><span class="kind doc">documented</span></td><td class="src">T5 · tauri 2.12.3</td></tr>
+      <tr><td><code>app_cache_dir</code></td><td><code>$HOME/Library/Caches/${bundle_identifier}</code></td><td><span class="kind doc">documented</span></td><td class="src">T5</td></tr>
+      <tr><td><code>app_log_dir</code></td><td><code>$HOME/Library/Logs/${bundle_identifier}</code></td><td><span class="kind doc">documented</span></td><td class="src">T5</td></tr>
+      <tr><td><code>config_dir</code>, <code>data_dir</code>, <code>local_data_dir</code></td><td><code>$HOME/Library/Application Support</code></td><td><span class="kind doc">documented</span></td><td class="src">T5</td></tr>
+      <tr><td><code>cache_dir</code></td><td><code>$HOME/Library/Caches</code></td><td><span class="kind doc">documented</span></td><td class="src">T5</td></tr>
+      <tr><td><code>home_dir</code>, <code>document_dir</code>, <code>download_dir</code>, <code>desktop_dir</code>, <code>font_dir</code></td><td><code>$HOME</code>, <code>$HOME/Documents</code>, <code>$HOME/Downloads</code>, <code>$HOME/Desktop</code>, <code>$HOME/Library/Fonts</code></td><td><span class="kind doc">documented</span></td><td class="src">T5</td></tr>
+      <tr><td><code>resource_dir</code></td><td><code>${exe_dir}/../Resources</code>, inside the bundle</td><td><span class="kind doc">documented</span></td><td class="src">T5</td></tr>
+      <tr><td><code>executable_dir</code>, <code>runtime_dir</code>, <code>template_dir</code></td><td>not supported on macOS</td><td><span class="kind doc">documented</span></td><td class="src">T5</td></tr>
+      <tr><td><code>identifier</code> rules</td><td>reverse domain name notation; unique; only alphanumerics, <code>-</code>, <code>.</code>; the default <code>com.tauri.dev</code> is rejected by <code>tauri build</code></td><td><span class="kind doc">documented</span></td><td class="src">T4 · identifier</td></tr>
+      <tr><td>dreader's choice</td><td>dreader resolves its data root itself (<code>DREADER_HOME</code>, the <code>DataRoot</code> preference, then <code>~/Library/Application Support/dreader/</code>, by product name) rather than through <code>app_data_dir</code>, so the CLI, which has no Tauri runtime, resolves the same root.</td><td><span class="kind fam">family</span></td><td class="src">D · on-disk-layout.md; ADR-0010 as built</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<section id="unlisted">
+  <div class="wrap">
+    <h2>§7</h2>
+    <p class="h2big">Places in no Apple list</p>
+    <p class="sub">Apple's directory list is closed (thirty-six entries, A2). These four are outside it and are where frameworks write for an app on this Mac. Homebrew's cask cookbook, the vendor-independent enumeration of residue, names <code>Saved Application State</code> and omits the other three.</p>
+    <div class="tbl"><table>
+      <tr><th>place</th><th>written by</th><th>fact</th><th>kind</th><th>source</th></tr>
+      <tr><td><code>~/Library/WebKit/&lt;bundle id&gt;/</code></td><td>WebKit</td><td>Exists for <code>com.clubstraylight.dreader</code> on this Mac. dreader's test found that WebKit writes it under the account's home from the user database, whatever <code>HOME</code> says.</td><td><span class="kind obs">observed</span></td><td class="src">O1; O2 · DR-0046</td></tr>
+      <tr><td><code>~/Library/HTTPStorages/&lt;bundle id&gt;/</code></td><td>WebKit</td><td>Absent for dreader on this Mac at the time of the check; dreader's inventory lists it as written "when it stores".</td><td><span class="kind obs">observed</span></td><td class="src">O1; D · footprint.md</td></tr>
+      <tr><td><code>~/Library/Saved Application State/&lt;bundle id&gt;.savedState/</code></td><td>AppKit at quit</td><td>Absent for dreader on this Mac at the time of the check; in Homebrew's zap list.</td><td><span class="kind obs">observed</span></td><td class="src">O1; H1 · zap</td></tr>
+      <tr><td><code>~/Library/Group Containers/</code></td><td>the system, for app groups</td><td>Not read on this Mac; not in Apple's list or Homebrew's.</td><td><span class="kind unv">unverified</span></td><td class="src">—</td></tr>
+      <tr><td><code>~/Library/Caches/&lt;bundle id&gt;/</code></td><td>WebKit, for an app with a web view</td><td>In Apple's list for the app's own caches; on this Mac it exists for dreader although dreader writes its own cache inside its data root, so the writer is WebKit.</td><td><span class="kind obs">observed</span></td><td class="src">O1; D · footprint.md</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<section id="relations">
+  <div class="wrap">
+    <h2>§8</h2>
+    <p class="h2big">Relationships</p>
+    <ul>
+      <li><strong>Arrival</strong> puts a bundle in <code>/Applications</code> or <code>~/Applications</code> (§2) and registers it in a database outside any of these directories (<a href="arrival.html#launchservices">arrival §6</a>).</li>
+      <li><strong>The gate</strong> decides whether the app may read <code>~/Documents</code>, <code>~/Desktop</code>, <code>~/Downloads</code> at all (<a href="gate.html#tcc">gate §6</a>); Apple's rule in §2 is about writing, the privacy system's about reading.</li>
+      <li><strong>Removal</strong> is the inverse of §3 and §7: every directory here that carries the app's name or identifier is residue after the bundle is gone (<a href="removal.html#residue">removal §2</a>).</li>
+      <li><strong>dreader</strong> keeps its record under <code>Application Support</code> by Apple's rule for "files that contain user data", and resolves the path itself rather than through Tauri (§6), so that its CLI agrees with the app (<a href="dreader.html#root">dreader §1</a>).</li>
+    </ul>
+  </div>
+</section>
+
+<section id="gaps">
+  <div class="wrap">
+    <h2>§9</h2>
+    <p class="h2big">Gaps and unverified claims</p>
+    <ul>
+      <li>The File System Programming Guide is an archive document. Its rules held on this Mac wherever they were checked, but Apple has not revised it for macOS 26; a current-generation statement of the same rules was not found.</li>
+      <li>The sandbox container's internal layout and the location of the privacy permissions database were not read.</li>
+      <li><code>~/Library/Group Containers</code> and the <code>Keychains</code> directory are not on this page.</li>
+      <li>The preferences daemon (<code>cfprefsd</code>) is named in dreader's test, not in the Apple page read; its caching behaviour is observed only.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="changes">
+  <div class="wrap">
+    <h2>§10</h2>
+    <p class="h2big">Change record</p>
+    <div class="tbl"><table>
+      <tr><th>date</th><th>checked against</th><th>change</th></tr>
+      <tr><td>2026-10-13</td><td>macOS 26.6.1; tauri 2.12.3 docs</td><td>Page written (CSL-0155).</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<section id="sources">
+  <div class="wrap">
+    <h2>§11</h2>
+    <p class="h2big">Sources</p>
+    <div class="tbl"><table>
+      <tr><th>id</th><th>document</th><th>read</th></tr>
+      <tr><td>A1</td><td>Apple, File System Programming Guide, "File System Basics" (archive). <a href="https://developer.apple.com/library/archive/documentation/FileManagement/Conceptual/FileSystemProgrammingGuide/FileSystemOverview/FileSystemOverview.html">developer.apple.com/library/archive/…/FileSystemOverview.html</a></td><td>2026-10-13</td></tr>
+      <tr><td>A2</td><td>Apple, File System Programming Guide, "macOS Library Directory Details" (archive). <a href="https://developer.apple.com/library/archive/documentation/FileManagement/Conceptual/FileSystemProgrammingGuide/MacOSXDirectories/MacOSXDirectories.html">developer.apple.com/library/archive/…/MacOSXDirectories.html</a></td><td>2026-10-13</td></tr>
+      <tr><td>A9</td><td>Apple, "App Sandbox", developer documentation. <a href="https://developer.apple.com/documentation/security/app-sandbox">developer.apple.com/documentation/security/app-sandbox</a></td><td>2026-10-13</td></tr>
+      <tr><td>A14</td><td>Apple, Preferences and Settings Programming Guide, "About Preference Domains" (archive). <a href="https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/UserDefaults/AboutPreferenceDomains/AboutPreferenceDomains.html">developer.apple.com/library/archive/…/AboutPreferenceDomains.html</a></td><td>2026-10-13</td></tr>
+      <tr><td>T1</td><td>Tauri v2, "macOS Application Bundle". <a href="https://v2.tauri.app/distribute/macos-application-bundle/">v2.tauri.app/distribute/macos-application-bundle/</a></td><td>2026-10-13</td></tr>
+      <tr><td>T4</td><td>Tauri v2, "Configuration" reference (<code>identifier</code>, <code>bundle</code>). <a href="https://v2.tauri.app/reference/config/">v2.tauri.app/reference/config/</a></td><td>2026-10-13</td></tr>
+      <tr><td>T5</td><td>tauri 2.12.3, <code>tauri::path::PathResolver</code>. <a href="https://docs.rs/tauri/latest/tauri/path/struct.PathResolver.html">docs.rs/tauri/latest/tauri/path/struct.PathResolver.html</a></td><td>2026-10-13</td></tr>
+      <tr><td>H1</td><td>Homebrew, "Cask Cookbook" (<code>app</code>, <code>uninstall</code>, <code>zap</code> stanzas). <a href="https://docs.brew.sh/Cask-Cookbook">docs.brew.sh/Cask-Cookbook</a></td><td>2026-10-13</td></tr>
+      <tr><td>O1</td><td>Observed on the author's Mac, macOS 26.6.1 (25G76), 2026-10-13: <code>ls -d</code> over the places in dreader's inventory; <code>plutil -p</code> on the installed bundle's <code>Info.plist</code>; <code>codesign -dv</code> and <code>spctl -a -vv</code> on the bundle; <code>tccutil</code> usage.</td><td>2026-10-13</td></tr>
+      <tr><td>O2</td><td>Observed by dreader's own tests, recorded in its tickets: DR-0046 (the uninstaller and the leftover check, passed 2026-10-13), DR-0044 (the CLI in the bundle).</td><td>2026-10-13</td></tr>
+      <tr><td>D</td><td>dreader at commit <code>7a13aa1</code> (2026-10-13): <code>.development/design/on-disk-layout.md</code>, <code>.development/design/footprint.md</code>, <code>.development/adr/ADR-0010-data-durability.md</code>, <code>.development/prd/PRD-0002-macos-release.md</code>, <code>src-tauri/tauri.conf.json</code>.</td><td>2026-10-13</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<footer><div class="wrap">macOS applications atlas · places · built by Straylight under PRD-0004. No script, no external asset.</div></footer>
+</body>
+</html>
