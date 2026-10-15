@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Codex CLI permissions — harness atlas</title>
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="../atlas.css">
+</head>
+<body>
+<header class="chrome">
+<nav class="site" aria-label="Straylight">
+<a class="home" href="../../index.html">Straylight</a>
+<a href="../../kb/index.html">knowledge base</a>
+<a href="../../audits/index.html">audits</a>
+<a href="../../atlases/index.html" aria-current="true">atlases</a>
+<a href="../../search">search</a>
+</nav>
+</header>
+
+<header>
+  <div class="wrap">
+    <p class="kicker">Harness atlas · Codex CLI · permissions</p>
+    <h1>How Codex decides whether a command runs</h1>
+    <p class="lede">Every shell command Codex spawns passes through two controls: a sandbox that bounds what the command can touch, and an approval policy that says when Codex must stop and ask. Execution-policy rules, hooks, and a reviewer agent sit around the two. This page is that evaluation, then each control in depth, then the files they live in and how they relate to the <a href="claude-code-permissions.html">Claude Code permissions page</a>.</p>
+    <div class="observed">
+      <dl>
+        <dt>client</dt><dd>Codex CLI (<code>codex</code>, the terminal client). Where the ChatGPT desktop app, the IDE extension, or Codex cloud differ, the row says so.</dd>
+        <dt>version observed</dt><dd><code>codex-cli 0.162.0</code>, from <code>codex --version</code> on the author's machine, 2026-10-15</dd>
+        <dt>sources</dt><dd><a href="#sources">C1 Agent approvals &amp; security</a>, <a href="#sources">C2 Sandbox</a>, <a href="#sources">C3 Permissions</a>, <a href="#sources">C4 Rules</a>, <a href="#sources">C5 Hooks</a>, <a href="#sources">C6 Configuration reference</a>, <a href="#sources">C7 Configuration basics</a>, <a href="#sources">C8 Advanced configuration</a>, all read 2026-10-15 as the vendor served them that day. A row's source mark names the document and its section.</dd>
+        <dt>source kinds</dt><dd><span class="kind doc">documented</span> stated in the vendor documentation · <span class="kind obs">observed</span> read from the client installed on the author's machine, with its date · <span class="kind unv">unverified</span> a claim the author could not confirm at this version. A fact with no mark is documented.</dd>
+        <dt>change record</dt><dd><a href="#changes">§15</a>. Facts this page carries at other versions keep their version range there.</dd>
+      </dl>
+    </div>
+    <div class="law">
+      <span class="chip d">forbidden</span><span class="gt">&gt;</span>
+      <span class="chip a">prompt</span><span class="gt">&gt;</span>
+      <span class="chip l">allow</span>
+      <span class="muted">— among execution-policy rules, "Codex applies the most restrictive decision when more than one rule matches". <span class="src">C4 · Understand rule fields</span></span>
+    </div>
+  </div>
+</header>
+
+<nav class="toc">
+  <div class="wrap">
+    <ol>
+      <li><a href="#controls">The two controls</a></li>
+      <li><a href="#order">The evaluation order</a></li>
+      <li><a href="#worked">Worked resolutions</a></li>
+      <li><a href="#sandbox">Sandbox modes</a></li>
+      <li><a href="#approval">Approval policies and the reviewer</a></li>
+      <li><a href="#profiles">Permission profiles</a></li>
+      <li><a href="#rules">Execution-policy rules</a></li>
+      <li><a href="#hooks">Hooks and hook trust</a></li>
+      <li><a href="#scopes">Configuration scopes and precedence</a></li>
+      <li><a href="#enforcement">OS enforcement and the network</a></li>
+      <li><a href="#relations">Relationships</a></li>
+      <li><a href="#claude">Beside Claude Code</a></li>
+      <li><a href="#observed">Observed by the family</a></li>
+      <li><a href="#gaps">Gaps and unverified claims</a></li>
+      <li><a href="#changes">Change record</a></li>
+      <li><a href="#sources">Sources</a></li>
+    </ol>
+  </div>
+</nav>
+
+<!-- 1 CONTROLS -->
+<section id="controls">
+  <div class="wrap">
+    <h2>1 · the two controls</h2>
+    <p class="h2big">A sandbox says what a command can touch; an approval policy says when Codex asks</p>
+    <p class="sub">"Codex security controls come from two layers that work together": the sandbox mode, "What Codex can do technically (for example, where it can write and whether it can reach the network)", and the approval policy, "When Codex must ask you before it executes an action". Either value of one combines with either value of the other. <span class="src">C1 · Sandbox and approvals</span></p>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Control</th><th>Values</th><th>Set by</th><th>Source</th></tr></thead>
+        <tbody>
+          <tr><td><strong>sandbox mode</strong></td><td><code>read-only</code>, <code>workspace-write</code>, <code>danger-full-access</code></td><td><code>sandbox_mode</code> in a configuration file; <code>--sandbox</code> / <code>-s</code> on the command line; or, in their place, a <a href="#profiles">permission profile</a> named by <code>default_permissions</code>.</td><td class="src">C6 · sandbox_mode; C3 · Migrate from older sandbox settings</td></tr>
+          <tr><td><strong>approval policy</strong></td><td><code>on-request</code>, <code>never</code>, or a <code>granular</code> table</td><td><code>approval_policy</code> in a configuration file; <code>--ask-for-approval</code> / <code>-a</code> on the command line.</td><td class="src">C6 · approval_policy; C1 · Run without approval prompts</td></tr>
+          <tr><td><strong>approvals reviewer</strong></td><td><code>user</code> (the default), <code>auto_review</code></td><td><code>approvals_reviewer</code>; the <em>Approve for me</em> choice in the app and IDE menus; <code>--approve-for-me</code> on the command line (<a href="#observed">observed</a>).</td><td class="src">C6 · approvals_reviewer; C2 · How permissions work</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note">
+      <strong>The sandbox covers what the model spawns, not only its built-in file tools.</strong> "The sandbox applies to spawned commands, not just to built-in file operations." "If the agent runs tools like <code>git</code>, package managers, or test runners, those commands inherit the same sandbox boundaries." <span class="src">C2 · What the sandbox does</span>
+    </div>
+    <div class="note">
+      <strong>Two values are gone.</strong> "Codex and ChatGPT Work no longer support <code>untrusted</code> as a selectable approval policy." The configuration reference lists <code>on-failure</code> as deprecated. At 0.162.0, <code>codex --help</code> offers <code>-a</code> only the values <code>on-request</code> and <code>never</code> (<a href="#observed">§13</a>). <span class="src">C2 · How permissions work; C6 · approval_policy</span>
+    </div>
+  </div>
+</section>
+
+<!-- 2 ORDER -->
+<section id="order">
+  <div class="wrap">
+    <h2>2 · the evaluation order</h2>
+    <p class="h2big">Six gates, top to bottom, as this page reads them</p>
+    <p class="sub">The documentation states each gate on its own page and never joins them in one sequence. This table is the author's joining; the position of each row is marked where the documents leave it open. A gate that does not decide passes the command down.</p>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>#</th><th>Gate</th><th>What it can do</th><th>Source</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td><strong>PreToolUse hooks</strong></td><td>A trusted hook can deny the call, or allow it with a rewritten input. "Exit <code>0</code> with no output is treated as success and Codex continues"; exit code <code>2</code> blocks. A hook that answers <code>ask</code> fails and the call goes on (<a href="#hooks">§8</a>).</td><td class="src">C5 · PreToolUse; C5 · Common output fields</td></tr>
+          <tr><td>2</td><td><strong>Execution-policy rules</strong></td><td>A matching <code>forbidden</code> rule: "Block the request without prompting." A matching <code>allow</code> rule: "Run the command outside the sandbox without prompting." A matching <code>prompt</code> rule: "Prompt before each matching invocation." The most restrictive of several matches wins. <span class="kind unv">unverified</span> whether an <code>allow</code> rule is honoured under <code>approval_policy = "never"</code> and whether a <code>prompt</code> rule prompts under <code>read-only</code>; the rules page states the three effects without naming the modes.</td><td class="src">C4 · Understand rule fields</td></tr>
+          <tr><td>3</td><td><strong>The sandbox</strong></td><td>The command runs inside the mode's boundary: reads only, or writes in the workspace, or everything. The boundary is enforced by the operating system (<a href="#enforcement">§10</a>), so a command that needs more than the mode allows fails inside it rather than being refused beforehand.</td><td class="src">C1 · Sandbox and approvals; C2 · What the sandbox does</td></tr>
+          <tr><td>4</td><td><strong>The approval policy</strong></td><td>When the action lies outside the boundary: under <code>on-request</code>, "The agent works inside the sandbox by default and asks when it needs to go beyond that boundary"; under <code>never</code>, "The agent doesn't stop for approval prompts" and the failure returns to the model (<code>codex --help</code>: "Execution failures are immediately returned to the model"). A <code>granular</code> table keeps some prompt categories and auto-rejects the rest.</td><td class="src">C2 · How permissions work; C1 · Run without approval prompts</td></tr>
+          <tr><td>5</td><td><strong>PermissionRequest hooks and the reviewer</strong></td><td>When a prompt is about to show, a PermissionRequest hook "can allow the request, deny the request, or decline to decide and let the normal approval prompt continue". With <code>approvals_reviewer = "auto_review"</code>, "eligible approval prompts go to a reviewer agent"; "The reviewer evaluates only actions that already need approval" and "doesn't change the sandbox boundary". <span class="kind unv">unverified</span> which of the two sees a prompt first.</td><td class="src">C5 · PermissionRequest; C2 · How permissions work; C1 · Automatic approval reviews</td></tr>
+          <tr><td>6</td><td><strong>The operator</strong></td><td>What is left is a prompt in the terminal. Adding a command to the allow list from the prompt writes an <code>allow</code> rule to the user rules file, and Smart approvals may propose a prefix rule during an escalation (<a href="#rules">§7</a>).</td><td class="src">C4 · Create a rules file</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note">
+      <strong>Enforced by Codex and the operating system, not by the model.</strong> The sandbox is "OS-level enforcement"; "Local: OS-level mechanisms enforce sandbox policies." Hooks, by contrast, are "a useful guardrail, not a complete enforcement boundary". To change what a command may do you change a mode, a profile, a rule, or a hook, never the prompt wording. <span class="src">C1 · OS-level sandbox; C5 · PreToolUse</span>
+    </div>
+  </div>
+</section>
+
+<!-- 3 WORKED -->
+<section id="worked">
+  <div class="wrap">
+    <h2>3 · worked resolutions</h2>
+    <p class="h2big">The same command, under each combination that matters</p>
+    <p class="sub">The first five rows reproduce the vendor's own table of combinations; the rest walk one command through the gates above, each citing the sentence that decides it.</p>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Intent</th><th>Flags or configuration</th><th>Effect</th></tr></thead>
+        <tbody>
+          <tr><td>Auto (preset)</td><td><em>no flags needed</em> or <code>--sandbox workspace-write --ask-for-approval on-request</code></td><td>Codex can read files, make edits, and run commands in the workspace. Codex requires approval to edit outside the workspace or to access network.</td></tr>
+          <tr><td>Safe read-only browsing</td><td><code>--sandbox read-only --ask-for-approval on-request</code></td><td>Codex can read files and run commands within the read-only sandbox. Actions outside the sandbox can require approval.</td></tr>
+          <tr><td>Read-only non-interactive (CI)</td><td><code>--sandbox read-only --ask-for-approval never</code></td><td>Codex can read files and run commands within the read-only sandbox; it never asks for approval.</td></tr>
+          <tr><td>Auto-review mode</td><td><code>--sandbox workspace-write --ask-for-approval on-request -c approvals_reviewer=auto_review</code> or <code>approvals_reviewer = "auto_review"</code></td><td>Same sandbox boundary as standard on-request mode, but eligible approval requests are reviewed by Auto-review instead of surfacing to the user.</td></tr>
+          <tr><td>Dangerous full access</td><td><code>--dangerously-bypass-approvals-and-sandbox</code> (alias: <code>--yolo</code>)</td><td>No sandbox; no approvals <em>(not recommended)</em></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="src">C1 · Common sandbox and approval combinations, table reproduced verbatim (the vendor's risk badge on the last row omitted)</p>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Call</th><th>Rule</th><th>Sandbox</th><th>Policy</th><th>Decides at</th><th>Verdict</th><th>Why</th></tr></thead>
+        <tbody>
+          <tr><td>any</td><td>any</td><td>any</td><td>any</td><td>1 hook, exit 2</td><td class="verdict deny">blocked</td><td>Exit code 2 blocks in the events that support blocking; PreToolUse is one. <span class="src">C5 · Common output fields</span></td></tr>
+          <tr><td><code>git push origin main</code></td><td><code>forbidden</code> on <code>["git", "push"]</code></td><td>any</td><td>any</td><td>2 rule</td><td class="verdict deny">blocked</td><td>"Block the request without prompting." <span class="src">C4 · Understand rule fields</span></td></tr>
+          <tr><td><code>gh pr view 7888</code></td><td><code>prompt</code> on <code>["gh", "pr", "view"]</code></td><td>workspace-write</td><td>on-request</td><td>2 rule</td><td class="verdict prompt">prompts</td><td>"Prompt before each matching invocation." The vendor's own example rule. <span class="src">C4 · Create a rules file</span></td></tr>
+          <tr><td><code>gh pr --repo openai/codex view 7888</code></td><td>the same rule</td><td>workspace-write</td><td>on-request</td><td>3 sandbox</td><td class="verdict allow">runs sandboxed</td><td>The rule "must be an exact prefix", so it does not match; the command runs inside the sandbox like any other. <span class="src">C4 · Create a rules file (not_match)</span></td></tr>
+          <tr><td><code>npm test</code></td><td><code>allow</code> and <code>prompt</code> both match</td><td>any</td><td>any</td><td>2 rule</td><td class="verdict prompt">prompts</td><td>"Codex applies the most restrictive decision when more than one rule matches (<code>forbidden</code> &gt; <code>prompt</code> &gt; <code>allow</code>)." <span class="src">C4 · Understand rule fields</span></td></tr>
+          <tr><td><code>cargo build</code> (writes in the workspace)</td><td>none</td><td>workspace-write</td><td>any</td><td>3 sandbox</td><td class="verdict allow">runs sandboxed</td><td>"Codex can read files, make edits, and run commands in the working directory automatically." <span class="src">C1 · Sandbox and approvals</span></td></tr>
+          <tr><td><code>cargo build</code></td><td>none</td><td>read-only</td><td>on-request</td><td>4 policy</td><td class="verdict prompt">prompts</td><td>The mode "can't edit files or run commands without approval"; on-request asks "when it needs to go beyond that boundary". <span class="src">C2 · How permissions work</span></td></tr>
+          <tr><td><code>cargo build</code></td><td>none</td><td>read-only</td><td>never</td><td>4 policy</td><td class="verdict deny">fails, returned to the model</td><td>"The agent doesn't stop for approval prompts"; <code>-a never</code>: "Execution failures are immediately returned to the model". <span class="src">C2 · How permissions work; codex --help, observed</span></td></tr>
+          <tr><td><code>curl https://example.com</code></td><td>none</td><td>workspace-write</td><td>on-request</td><td>4 policy</td><td class="verdict prompt">prompts</td><td>"By default, the agent runs with network access turned off." "Codex asks for approval to edit files outside the workspace or to run commands that require network access." <span class="src">C1 · Network access; C1 · Sandbox and approvals</span></td></tr>
+          <tr><td>write <code>&lt;workspace&gt;/.git/config</code></td><td>none</td><td>workspace-write</td><td>on-request</td><td>3 sandbox</td><td class="verdict prompt">prompts</td><td>"<code>&lt;writable_root&gt;/.git</code> is protected as read-only whether it appears as a directory or file." The write lies outside the boundary, so the policy applies. <span class="src">C1 · Protected paths in writable roots</span></td></tr>
+          <tr><td>write <code>~/notes.txt</code></td><td>none</td><td>workspace-write with <code>--add-dir ~</code></td><td>any</td><td>3 sandbox</td><td class="verdict allow">runs sandboxed</td><td><code>--add-dir</code>: "Additional directories that should be writable alongside the primary workspace"; the configuration form is <code>sandbox_workspace_write.writable_roots</code>. <span class="src">codex --help, observed; C6 · sandbox_workspace_write</span></td></tr>
+          <tr><td>write <code>~/notes.txt</code></td><td>none</td><td>workspace-write</td><td>on-request, <code>auto_review</code></td><td>5 reviewer</td><td class="verdict prompt">reviewer decides</td><td>Eligible prompts "go to a reviewer agent" that "evaluates only actions that already need approval". <span class="src">C2 · How permissions work; C1 · Automatic approval reviews</span></td></tr>
+          <tr><td><code>rm -rf ~</code></td><td>none</td><td>danger-full-access</td><td>never</td><td>none</td><td class="verdict allow">runs</td><td>"No sandbox; no approvals". The page finds no documented critical-path check (<a href="#gaps">§14</a>). <span class="src">C1 · Common sandbox and approval combinations</span></td></tr>
+          <tr><td>any command</td><td>any</td><td>any</td><td>any, in an untrusted project</td><td>2 and 4</td><td class="verdict prompt">prompts unless a user rule allows</td><td>Codex "may also start in <code>read-only</code> until you explicitly trust the working directory"; "Commands then require approval unless an execution-policy rule allows them." Project rules and hooks are not loaded. <span class="src">C1 · Defaults and recommendations; C7 · trust</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- 4 SANDBOX -->
+<section id="sandbox">
+  <div class="wrap">
+    <h2>4 · sandbox modes</h2>
+    <p class="h2big">Three boundaries, and what is writable inside the middle one</p>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Mode</th><th>What the documentation says</th><th>Network</th><th>Source</th></tr></thead>
+        <tbody>
+          <tr><td><code>read-only</code></td><td>"The agent can inspect files, but it can't edit files or run commands without approval." Elsewhere: "Codex can read files and run commands within the read-only sandbox." The two sentences differ on whether commands run; read as: commands run, but any write fails inside the boundary and needs approval.</td><td>Off</td><td class="src">C2 · How permissions work; C1 · Common combinations</td></tr>
+          <tr><td><code>workspace-write</code></td><td>"The agent can read files, edit within the workspace, and run routine local commands inside that boundary." "This is the default low-friction mode for local work." "The workspace includes the current directory and temporary directories like <code>/tmp</code>."</td><td>Off "unless you enable it in your configuration"</td><td class="src">C2 · How permissions work; C1 · Protected paths; C1 · Network access</td></tr>
+          <tr><td><code>danger-full-access</code></td><td>"This removes the filesystem and network boundaries and should be used only when you want the agent to act with full access." Reached by <code>--sandbox danger-full-access</code> or, with approvals off too, <code>--dangerously-bypass-approvals-and-sandbox</code>.</td><td>On</td><td class="src">C2 · How permissions work; C1 · Sandbox and approvals</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h3>The writable roots of workspace-write</h3>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Key or flag</th><th>What the documentation says</th><th>Source</th></tr></thead>
+        <tbody>
+          <tr><td><code>sandbox_workspace_write.writable_roots</code></td><td>"Additional writable roots when <code>sandbox_mode = "workspace-write"</code>." Writable roots "let you extend the places it can modify without removing the sandbox entirely."</td><td class="src">C6 · sandbox_workspace_write; C2 · How permissions work</td></tr>
+          <tr><td><code>--add-dir DIR</code></td><td>"Additional directories that should be writable alongside the primary workspace." <span class="kind obs">observed</span> in <code>codex --help</code> and <code>codex exec --help</code> at 0.162.0; the configuration reference does not name the flag.</td><td class="src">codex --help, 2026-10-15</td></tr>
+          <tr><td><code>sandbox_workspace_write.exclude_slash_tmp</code></td><td>"Exclude <code>/tmp</code> from writable roots in workspace-write mode."</td><td class="src">C6 · sandbox_workspace_write</td></tr>
+          <tr><td><code>sandbox_workspace_write.exclude_tmpdir_env_var</code></td><td>"Exclude <code>$TMPDIR</code> from writable roots in workspace-write mode."</td><td class="src">C6 · sandbox_workspace_write</td></tr>
+          <tr><td>protected paths</td><td>"In the default <code>workspace-write</code> sandbox policy, writable roots still include protected paths": "<code>&lt;writable_root&gt;/.git</code> is protected as read-only whether it appears as a directory or file", "<code>&lt;writable_root&gt;/.codex</code> is protected as read-only when it exists as a directory", "<code>&lt;writable_root&gt;/.agents</code> is protected as read-only when it exists as a directory". "Protection is recursive, so everything under those paths is read-only." The <code>:workspace</code> permission profile adds <code>.aws</code> to that list (<a href="#profiles">§6</a>).</td><td class="src">C1 · Protected paths in writable roots; C3 · Extend a profile</td></tr>
+          <tr><td><code>--worktree</code></td><td>"Run the session in a new managed Git worktree." <span class="kind obs">observed</span> in <code>codex --help</code>; what the worktree does to the writable roots is not stated.</td><td class="src">codex --help, 2026-10-15</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- 5 APPROVAL -->
+<section id="approval">
+  <div class="wrap">
+    <h2>5 · approval policies and the reviewer</h2>
+    <p class="h2big">When Codex stops, and who answers</p>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Policy</th><th>What the documentation says</th><th>Source</th></tr></thead>
+        <tbody>
+          <tr><td><code>on-request</code></td><td>"The agent works inside the sandbox by default and asks when it needs to go beyond that boundary." "With <code>on-request</code>, commands allowed by the sandbox can run without approval". The <code>-a</code> help text: "The model decides when to ask the user for approval".</td><td class="src">C2 · How permissions work; C1 · Run without approval prompts; codex --help</td></tr>
+          <tr><td><code>never</code></td><td>"The agent doesn't stop for approval prompts." Set with "<code>--ask-for-approval never</code> or <code>-a never</code> (shorthand)". The <code>-a</code> help text: "Never ask for user approval Execution failures are immediately returned to the model".</td><td class="src">C2 · How permissions work; C1 · Run without approval prompts; codex --help</td></tr>
+          <tr><td><code>granular</code></td><td>"<code>approval_policy = { granular = { ... } }</code> lets you keep specific approval prompt categories interactive while automatically rejecting others." Five booleans: <code>sandbox_approval</code> (sandbox escalation prompts), <code>rules</code> (prompts from execution-policy <code>prompt</code> rules), <code>mcp_elicitations</code>, <code>request_permissions</code> (prompts from the <code>request_permissions</code> tool), <code>skill_approval</code>.</td><td class="src">C1 · Run without approval prompts; C6 · approval_policy.granular</td></tr>
+          <tr><td><code>untrusted</code></td><td>Retired: "Codex and ChatGPT Work no longer support <code>approval_policy = "untrusted"</code>." C1 carries a migration section for it.</td><td class="src">C1 · Migrate from the retired untrusted approval policy</td></tr>
+          <tr><td><code>on-failure</code></td><td>Deprecated, per the configuration reference. Absent from the <code>-a</code> help text at 0.162.0.</td><td class="src">C6 · approval_policy; codex --help, observed</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h3>The reviewer</h3>
+    <p><code>approvals_reviewer</code> is <code>user</code> by default; <code>auto_review</code> means "eligible approval prompts go to a reviewer agent". "The reviewer evaluates only actions that already need approval", and "Automatic review, when available, doesn't change the sandbox boundary." The app and IDE menus call it <em>Approve for me</em>; the CLI flag <code>--approve-for-me</code> reads "Route approval requests through automatic review using the workspace-write sandbox" (<span class="kind obs">observed</span>, <code>codex --help</code>). MCP servers and apps carry their own reviewer setting, <code>apps.&lt;id&gt;.approvals_reviewer</code>, inheriting the top-level value; MCP and app tools carry a per-tool <code>approval_mode</code> of <code>auto</code>, <code>prompt</code>, <code>writes</code>, or <code>approve</code>. <span class="src">C2 · How permissions work; C1 · Automatic approval reviews; C6 · approvals_reviewer, mcp_servers</span></p>
+    <div class="note">
+      <strong>Where the untrusted policy went.</strong> Its two parts moved to different controls: the sandbox decides what runs without asking, and execution-policy rules name the commands that may leave it. A project that is not yet trusted gets a narrower start instead: Codex "may also start in <code>read-only</code> until you explicitly trust the working directory", and "Commands then require approval unless an execution-policy rule allows them." <span class="src">C1 · Defaults and recommendations</span>
+    </div>
+  </div>
+</section>
+
+<!-- 6 PROFILES -->
+<section id="profiles">
+  <div class="wrap">
+    <h2>6 · permission profiles</h2>
+    <p class="h2big">One named policy for filesystem and network, in place of the sandbox keys</p>
+    <p class="sub">"Beta. Permission profiles are under active development and may change." A profile is "a named policy that combines filesystem rules" with "network rules", and profiles "let you apply least-privilege boundaries to local commands Codex runs on your behalf." "Permission profiles do not compose with the older sandbox settings": a configuration sets either <code>default_permissions</code> with <code>[permissions]</code> tables, or <code>sandbox_mode</code> with <code>[sandbox_workspace_write]</code>, never both. <span class="src">C3 · Permissions; C3 · Migrate from older sandbox settings</span></p>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Element</th><th>What the documentation says</th><th>Source</th></tr></thead>
+        <tbody>
+          <tr><td>built-in profiles</td><td>"<code>:read-only</code> keeps local command execution read-only." <code>:workspace</code> allows writes inside the active workspace roots and the system temporary directories, and "keeps the workspace root's <code>.git</code>, <code>.agents</code>, <code>.codex</code>, and <code>.aws</code> paths read-only" unless a profile overrides those rules. "<code>:danger-full-access</code> removes local sandbox restrictions and should be used only when that broad access is intentional."</td><td class="src">C3 · Define and select a profile; C3 · Extend a profile</td></tr>
+          <tr><td><code>default_permissions</code></td><td>"Names the permissions profile Codex applies by default." "Name of the default permissions profile to apply to sandboxed tool calls."</td><td class="src">C3 · Define and select a profile; C6 · default_permissions</td></tr>
+          <tr><td><code>[permissions.&lt;name&gt;]</code></td><td><code>description</code>: "Human-readable description for this named profile", not inherited. <code>extends</code>: "Optional parent profile applied before this named profile"; may name another profile, <code>:read-only</code>, or <code>:workspace</code>, never <code>:danger-full-access</code>; unknown parents and cycles are rejected. <code>workspace_roots.&lt;path&gt; = true</code>: "Opt a path into the profile's workspace root set".</td><td class="src">C6 · permissions.&lt;name&gt;; C3 · Extend a profile</td></tr>
+          <tr><td><code>filesystem</code></td><td>Each entry is a path, a glob, or a special token (<code>:minimal</code>, <code>:workspace_roots</code>, <code>:tmpdir</code>, <code>:slash_tmp</code>) set to <code>read</code>, <code>write</code>, or <code>deny</code>, or a table of nested entries under that root. "More specific entries override broader entries." "When two entries target the same path, deny takes precedence over write, and write takes precedence over read." <code>glob_scan_max_depth</code> bounds glob expansion and must be at least 1 when set.</td><td class="src">C3 · Filesystem permissions; C6 · permissions.&lt;name&gt;.filesystem</td></tr>
+          <tr><td><code>network</code></td><td><code>enabled</code>: "Enables network access for commands in the profile", default false, and does not start the proxy. <code>mode</code>: <code>limited</code> or <code>full</code>, "Network proxy mode used for subprocess traffic". <code>domains.&lt;pattern&gt;</code>: <code>allow</code> or <code>deny</code> for "an exact host or scoped wildcard pattern such as <code>*.example.com</code> or <code>**.example.com</code>"; "Rules apply only when the network proxy is active." <code>unix_sockets.&lt;path&gt;</code>: "a local escape hatch for tools such as Docker".</td><td class="src">C3 · Network permissions; C6 · permissions.&lt;name&gt;.network</td></tr>
+          <tr><td>selecting one</td><td><code>codex sandbox -P NAME</code> / <code>--permission-profile</code>: "Named permissions profile to apply from the active configuration stack" (<span class="kind obs">observed</span>, <code>codex sandbox --help</code>). The Sandbox page says <code>/permissions</code> in the CLI changes "the active permissions profile".</td><td class="src">codex sandbox --help, 2026-10-15; C2 · How permissions work</td></tr>
+          <tr><td>managed allowlist</td><td>"Enterprise administrators can define profiles and restrict which profiles users may select through managed requirements.toml." "Once <code>allowed_permission_profiles</code> is present, omitted profiles are denied", built-ins included.</td><td class="src">C3 · Scope and enforcement; C6 · allowed_permission_profiles</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note">
+      <strong>What a profile does not reach.</strong> The proxy filters only sandboxed command traffic; web search, connectors, MCP servers, browser actions, and Codex's own service traffic are outside it. "Don't assume Work Cloud supports the Codex permission profiles shown here." <span class="src">C3 · What the network proxy does not control; C3 · Scope and enforcement</span>
+    </div>
+  </div>
+</section>
+
+<!-- 7 RULES -->
+<section id="rules">
+  <div class="wrap">
+    <h2>7 · execution-policy rules</h2>
+    <p class="h2big">Prefix rules that allow, prompt, or forbid a command outside the sandbox</p>
+    <p class="sub">"Rules let you allow, prompt, or forbid command prefixes outside the sandbox, which is often a better fit than broadly expanding access." "Rules are experimental and may change." <span class="src">C2 · How permissions work; C4 · Understand the rules language</span></p>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Element</th><th>What the documentation says</th><th>Source</th></tr></thead>
+        <tbody>
+          <tr><td>files</td><td>User layer: "When you add a command to the allow list in the TUI, Codex writes to the user layer at <code>~/.codex/rules/default.rules</code>". Project layer: "Project-local rules under <code>&lt;repo&gt;/.codex/rules/</code> load only when the project <code>.codex/</code> layer is trusted." <code>codex exec --ignore-rules</code>: "Do not load user or project execpolicy <code>.rules</code> files" (<span class="kind obs">observed</span>).</td><td class="src">C4 · Create a rules file; codex exec --help, 2026-10-15</td></tr>
+          <tr><td><code>prefix_rule</code></td><td><code>pattern</code>: "A non-empty list that defines the command prefix to match"; an element may be "A union of literals (for example, <code>["view", "list"]</code>) to match alternatives at that argument position." <code>decision</code>: "The action to take when the rule matches." <code>justification</code>: optional; "When you use <code>forbidden</code>, include a recommended alternative in the justification when appropriate". <code>match</code> and <code>not_match</code>: inline examples the rule is checked against.</td><td class="src">C4 · Understand rule fields</td></tr>
+          <tr><td>decisions</td><td><code>allow</code>: "Run the command outside the sandbox without prompting." <code>prompt</code>: "Prompt before each matching invocation." <code>forbidden</code>: "Block the request without prompting." Several matches: "Codex applies the most restrictive decision when more than one rule matches (<code>forbidden</code> &gt; <code>prompt</code> &gt; <code>allow</code>)."</td><td class="src">C4 · Understand rule fields</td></tr>
+          <tr><td>matching</td><td>"When Codex considers a command to run, it compares the command's argument list to <code>pattern</code>." The pattern "must be an exact prefix": <code>gh pr --repo openai/codex view 7888</code> does not match <code>["gh", "pr", "view"]</code>.</td><td class="src">C4 · Create a rules file</td></tr>
+          <tr><td>compound commands</td><td>Where Codex can split a shell script safely, each piece is matched on its own, which "prevents dangerous commands from being smuggled in alongside safe ones". Where it cannot, "the entire invocation is treated as" one command, and the rules apply to the whole script.</td><td class="src">C4 · Shell wrappers and compound commands</td></tr>
+          <tr><td>proposed rules</td><td>"When Smart approvals are enabled (the default), Codex may propose a" prefix rule during an escalation request; "Review the suggested prefix carefully before accepting it."</td><td class="src">C4 · Create a rules file</td></tr>
+          <tr><td>testing</td><td><code>codex execpolicy check</code> evaluates a command against rule files: "Use more than one <code>--rules</code> flag to combine files, and add <code>--pretty</code> to format the output."</td><td class="src">C4 · Test a rule file</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>The vendor's own example, reproduced verbatim:</p>
+<pre><code>prefix_rule(
+    pattern = ["gh", "pr", "view"],
+    decision = "prompt",
+    justification = "Viewing PRs is allowed with approval",
+    match = [
+        "gh pr view 7888",
+        "gh pr view --repo openai/codex",
+        "gh pr view 7888 --json title,body,comments",
+    ],
+    not_match = [
+        "gh pr --repo openai/codex view 7888",
+    ],
+)</code></pre>
+    <p class="src">C4 · Create a rules file (the vendor's comments omitted)</p>
+    <div class="note">
+      <strong>A rule matches the argument list, not the program.</strong> As on the Claude Code page, a prefix rule covers the invocation the model usually produces. The rules page says nothing about a program reached by another path (<code>/usr/bin/git</code>, <code>sh -c '…'</code>); the sandbox, not the rule, is the boundary for those. <span class="kind unv">unverified</span> as to how an unsplittable script with a forbidden piece is decided beyond "treated as" one invocation.
+    </div>
+  </div>
+</section>
+
+<!-- 8 HOOKS -->
+<section id="hooks">
+  <div class="wrap">
+    <h2>8 · hooks and hook trust</h2>
+    <p class="h2big">Lifecycle hooks that can deny a tool call, and must be trusted before they run</p>
+    <p class="sub">"Hooks are an extensibility framework for Codex." The feature flag <code>hooks</code> is stable and on at 0.162.0 (<span class="kind obs">observed</span>, <code>codex features list</code>); <code>features.codex_hooks</code> is its deprecated alias. <span class="src">C5 · Hooks; C6 · features.hooks</span></p>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>When</th><th>Hooks</th></tr></thead>
+        <tbody>
+          <tr><td>During a turn</td><td><code>PreToolUse</code>, <code>PermissionRequest</code>, <code>PostToolUse</code>, <code>PreCompact</code>, <code>PostCompact</code>, <code>UserPromptSubmit</code>, <code>SubagentStop</code>, <code>Stop</code></td></tr>
+          <tr><td>When you interrupt an active turn</td><td><code>Interrupt</code> (doesn't run for subagents)</td></tr>
+          <tr><td>When a session or subagent starts</td><td><code>SessionStart</code>, <code>SubagentStart</code></td></tr>
+          <tr><td>When the main thread ends</td><td><code>SessionEnd</code> (doesn't run for subagents)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="src">C5 · Hooks, table reproduced verbatim</p>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Element</th><th>What the documentation says</th><th>Source</th></tr></thead>
+        <tbody>
+          <tr><td>where they live</td><td>"Codex discovers hooks next to active config layers in either of these forms": a <code>hooks.json</code> file or an inline <code>[hooks]</code> table in <code>config.toml</code>, at the user layer (<code>~/.codex/</code>) and the project layer (<code>&lt;repo&gt;/.codex/</code>). "Project-local hooks load only when the project <code>.codex/</code> layer is trusted." Managed hooks "from system, MDM, cloud, or <code>requirements.toml</code> sources are marked as managed" and cannot be disabled from the hook browser; <code>allow_managed_hooks_only = true</code> in <code>requirements.toml</code> skips every other layer.</td><td class="src">C5 · Where Codex looks for hooks; C5 · Managed hooks; C6 · allow_managed_hooks_only</td></tr>
+          <tr><td>trust</td><td>"Non-managed hooks must be reviewed and trusted before they run." Trust is keyed on the hook's hash: "new or changed hooks are marked for review and skipped until trusted." The <code>/hooks</code> command reviews and trusts them. <code>--dangerously-bypass-hook-trust</code> runs "enabled hooks without requiring persisted hook trust for that invocation" (help text: "Intended only for automation that already vets hook sources", <span class="kind obs">observed</span>).</td><td class="src">C5 · Review and trust hooks; codex --help, 2026-10-15</td></tr>
+          <tr><td><code>PreToolUse</code></td><td>Deny: the hook returns <code>permissionDecision: "deny"</code>. Rewrite: <code>permissionDecision: "allow"</code> with <code>updatedInput</code>. Ask: not available; such values "are parsed but not supported yet. Codex marks the hook run as failed, reports the error, and continues the tool call." Exit codes: "Exit <code>0</code> with no output is treated as success and Codex continues"; "You can also use exit code <code>2</code> and write the blocking reason to <code>stderr</code>."</td><td class="src">C5 · PreToolUse; C5 · Common output fields</td></tr>
+          <tr><td><code>PermissionRequest</code></td><td>"runs when Codex is about to ask for approval, such as a shell escalation or managed-network approval." "It doesn't run for commands that don't need approval." The hook "can allow the request, deny the request, or decline to decide and let the normal approval prompt continue."</td><td class="src">C5 · PermissionRequest</td></tr>
+          <tr><td>background hooks</td><td><code>async = true</code> runs "a command hook in the background without delaying the triggering operation"; <code>SessionEnd</code> always runs synchronously. A background hook cannot block.</td><td class="src">C6 · hooks.&lt;Event&gt;[].hooks[].async; C5 · Run hooks in the background</td></tr>
+          <tr><td>limit</td><td>"Treat tool hooks as a useful guardrail, not a complete enforcement boundary."</td><td class="src">C5 · PreToolUse</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- 9 SCOPES -->
+<section id="scopes">
+  <div class="wrap">
+    <h2>9 · configuration scopes and precedence</h2>
+    <p class="h2big">Seven layers, and the one above them that constrains rather than defaults</p>
+    <p class="sub">"Codex resolves values in this order (highest precedence first):" <span class="src">C7 · Configuration precedence</span></p>
+    <div class="ladder">
+      <div class="rung"><span class="rk">highest</span><span class="rname">CLI flags and <code>--config</code> overrides</span><span class="rdesc"><code>-c key=value</code>: "Keys can use dot notation to set nested values"; "<code>--config</code> values are parsed as TOML"; "If the value can't be parsed as TOML, Codex treats it as a string." Dedicated flags such as <code>--sandbox</code> and <code>-a</code> sit here too.</span></div>
+      <div class="rung"><span class="rk">↓</span><span class="rname">Project config files</span><span class="rdesc">"<code>.codex/config.toml</code>, ordered from the project root down to your current working directory (closest wins; trusted projects only)". Provider, auth, notification, profile-selection, and telemetry keys are ignored in a project file.</span></div>
+      <div class="rung"><span class="rk">↓</span><span class="rname">Profile files</span><span class="rdesc">"selected with <code>--profile profile-name</code> (<code>~/.codex/profile-name.config.toml</code>)". "Use top-level config keys in the profile file; don't nest them under <code>[profiles.profile-name]</code>." "In Codex 0.134.0 and later, <code>--profile</code> no longer reads <code>[profiles.profile-name]</code>".</span></div>
+      <div class="rung"><span class="rk">↓</span><span class="rname">User config</span><span class="rdesc">"<code>~/.codex/config.toml</code>". "Codex stores user-level configuration at <code>~/.codex/config.toml</code>." <code>codex exec --ignore-user-config</code> skips it (<span class="kind obs">observed</span>).</span></div>
+      <div class="rung"><span class="rk">↓</span><span class="rname">Cloud-managed defaults</span><span class="rdesc">"Cloud-managed <code>config.toml</code> defaults, when delivered for the signed-in workspace".</span></div>
+      <div class="rung"><span class="rk">↓</span><span class="rname">System config</span><span class="rdesc">"System config (if present): <code>/etc/codex/config.toml</code> on Unix".</span></div>
+      <div class="rung"><span class="rk">lowest</span><span class="rname">Built-in defaults</span><span class="rdesc">The vendor's defaults; the sandbox page calls <code>workspace-write</code> "the default low-friction mode for local work".</span></div>
+    </div>
+    <p class="src">C7 · Configuration precedence (seven levels, verbatim order); C8 · Profiles; C8 · Override configuration from the command line</p>
+    <h3>Managed requirements</h3>
+    <p>"Requirements constrain behavior; configuration values provide defaults." A <code>requirements.toml</code> delivered by an organisation sits above the ladder and narrows what any layer may choose: <code>allowed_sandbox_modes</code>, <code>allowed_approval_policies</code> ("such as <code>on-request</code>, <code>never</code>, and <code>granular</code>"), <code>allowed_approvals_reviewers</code>, <code>allowed_permission_profiles</code>, <code>allowed_web_search_modes</code>, <code>allow_login_shell</code>, <code>allow_managed_hooks_only</code>. "Omitted keys remain unconstrained." For local execution the order among managed sources is MDM and legacy managed-device requirements, then Agent Security, then the device's system requirements file. <span class="src">C7 · Managed configuration; C6 · requirements.toml</span></p>
+    <h3>Project trust</h3>
+    <p>"For security, Codex loads project <code>.codex/</code> layers only when you trust the project." "If you mark a project as untrusted, Codex skips project-scoped <code>.codex/</code> layers, including project-local config, hooks, and rules." "User and system config still load, including user/global hooks and rules." Trust is recorded per path as <code>projects.&lt;path&gt;.trust_level = "trusted" | "untrusted"</code>, worktrees included. The documents read do not describe the trust prompt itself. <span class="src">C7 · Project configuration; C6 · projects.&lt;path&gt;.trust_level</span></p>
+  </div>
+</section>
+
+<!-- 10 ENFORCEMENT -->
+<section id="enforcement">
+  <div class="wrap">
+    <h2>10 · OS enforcement and the network</h2>
+    <p class="h2big">What holds the boundary on each platform, and what leaves it</p>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Platform</th><th>What the documentation says</th><th>Source</th></tr></thead>
+        <tbody>
+          <tr><td>macOS</td><td>"On macOS, sandboxing works out of the box using the built-in Seatbelt framework." "Codex uses Seatbelt sandbox profiles." <code>codex sandbox COMMAND</code> runs a command "under seatbelt", and <code>--log-denials</code> captures the denials "via <code>log stream</code>" and prints them after exit (<span class="kind obs">observed</span>, <code>codex sandbox --help</code>).</td><td class="src">C2 · Getting started; C3 · How enforcement works; codex sandbox --help, 2026-10-15</td></tr>
+          <tr><td>Linux and WSL2</td><td>"On Linux and WSL2, install <code>bubblewrap</code> with your package manager first." Enforcement is bubblewrap with seccomp; "The legacy Landlock option can't isolate app-server Unix sockets and is rejected for filesystem-restricted policies." The flag <code>use_legacy_landlock</code> is deprecated and off (<span class="kind obs">observed</span>, <code>codex features list</code>). Ubuntu 24.04 and 25.04 need an AppArmor step; a fallback helper needs unprivileged user namespaces.</td><td class="src">C2 · Prerequisites; C3 · How enforcement works</td></tr>
+          <tr><td>Windows</td><td>"On Windows, Codex uses the native Windows sandbox when you run in PowerShell and the Linux sandbox implementation when you run in WSL2." <code>codex sandbox uninstall</code> removes "the legacy Windows sandbox's machine-wide accounts and network rules" (<span class="kind obs">observed</span>).</td><td class="src">C2 · Prerequisites; codex sandbox --help, 2026-10-15</td></tr>
+          <tr><td>Codex cloud</td><td>"Runs in isolated OpenAI-managed containers, preventing access to your host system or unrelated data." "Secrets configured for cloud environments are available only during setup and are removed before the agent phase starts."</td><td class="src">C1 · OS-level sandbox</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h3>The network</h3>
+    <p>"By default, the agent runs with network access turned off." In <code>workspace-write</code> it stays off "unless you enable it in your configuration" with <code>sandbox_workspace_write.network_access = true</code>; <code>danger-full-access</code> removes the network boundary with the filesystem one. A command network proxy (<code>features.network_proxy</code>, "experimental; off by default", and <span class="kind obs">observed</span> off at 0.162.0) adds per-domain <code>allow</code> and <code>deny</code> patterns, Unix socket allowlists, local-binding and SOCKS5 switches, and two keys prefixed <code>dangerously_</code>; the domain rules "apply only when the network proxy is active". Web search is a separate control: <code>web_search</code> is <code>cached</code> by default ("an OpenAI-maintained index without external access"), <code>indexed</code>, <code>live</code>, or <code>disabled</code>; under full access the default becomes <code>live</code>; the <code>--search</code> flag enables live search "(no per‑call approval)" (<span class="kind obs">observed</span>). <span class="src">C1 · Network access; C6 · sandbox_workspace_write.network_access, features.network_proxy, web_search; codex --help</span></p>
+    <div class="note">
+      <strong>Treat web results as untrusted.</strong> "Prompt injection can cause the agent to fetch and follow untrusted instructions." The vendor's guidance pairs the network boundary with a narrow sandbox rather than relying on either alone. <span class="src">C1 · Network access</span>
+    </div>
+  </div>
+</section>
+
+<!-- 11 RELATIONS -->
+<section id="relations">
+  <div class="wrap">
+    <h2>11 · relationships</h2>
+    <p class="h2big">How the controls on this page connect to one another and to the atlas's other subjects</p>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Permissions and …</th><th>The relation</th><th>Source</th><th>Atlas page</th></tr></thead>
+        <tbody>
+          <tr><td><strong>the sandbox and the policy</strong></td><td>Orthogonal. The sandbox bounds what a command can do; the policy decides what happens at the edge: ask, or fail back to the model. A reviewer answers prompts in the operator's place without moving the edge.</td><td class="src">C1 · Sandbox and approvals; C1 · Automatic approval reviews</td><td>this page, §4 and §5</td></tr>
+          <tr><td><strong>rules</strong></td><td>Rules are the only documented way a command runs <em>outside</em> the sandbox without a prompt (<code>allow</code>), and the only documented way one is refused before it runs (<code>forbidden</code>). They are per-command-prefix; the sandbox is per-session.</td><td class="src">C4 · Understand rule fields</td><td>this page, §7</td></tr>
+          <tr><td><strong>permission profiles</strong></td><td>A profile replaces <code>sandbox_mode</code> and <code>sandbox_workspace_write</code> with finer filesystem and network rules; the approval policy, rules, and hooks are unchanged by the choice.</td><td class="src">C3 · Migrate from older sandbox settings</td><td>this page, §6</td></tr>
+          <tr><td><strong>hooks</strong></td><td>A PreToolUse hook can deny or rewrite a call before the rules and the sandbox see it; a PermissionRequest hook can answer the prompt the policy would show. Neither can force a prompt, and project hooks run only in a trusted project.</td><td class="src">C5 · PreToolUse; C5 · PermissionRequest</td><td>this page, §8</td></tr>
+          <tr><td><strong>configuration files</strong></td><td>Every control is a key in the seven-layer ladder; a trusted project may set its own sandbox, policy, rules, and hooks, and an organisation's requirements file narrows the allowed values of each.</td><td class="src">C7 · Configuration precedence; C7 · Managed configuration</td><td>this page, §9</td></tr>
+          <tr><td><strong>gates</strong></td><td>A gate the family builds from Codex's primitives: a <code>forbidden</code> or <code>prompt</code> rule (matches the argument list), a PreToolUse hook (sees the call, can deny), the sandbox (the OS boundary), and the policy (what happens at the edge). Which holds against which evasion is the gates page's subject.</td><td class="src">C4; C5; C1</td><td>gates (not yet written)</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- 12 CLAUDE -->
+<section id="claude">
+  <div class="wrap">
+    <h2>12 · beside Claude Code</h2>
+    <p class="h2big">The same questions, answered by each client</p>
+    <p class="sub">Each row names one mechanism on the <a href="claude-code-permissions.html">Claude Code permissions page</a> (v2.1.268) and the nearest thing on this page (0.162.0). The pairing is the author's reading; the two vendors do not describe each other.</p>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Question</th><th>Claude Code</th><th>Codex CLI</th></tr></thead>
+        <tbody>
+          <tr><td>What bounds a command?</td><td>Permission rules on the command text; an optional OS sandbox.</td><td>An OS sandbox by default, chosen by mode or profile; rules only for leaving it.</td></tr>
+          <tr><td>When does it ask?</td><td>A permission mode's baseline, plus ask rules.</td><td>An approval policy (<code>on-request</code> or <code>never</code>, or granular), plus <code>prompt</code> rules.</td></tr>
+          <tr><td>Allow, ask, deny a command prefix</td><td><code>allow</code> / <code>ask</code> / <code>deny</code> rules, <code>Bash(git push *)</code>, deny beats ask beats allow across scopes.</td><td><code>allow</code> / <code>prompt</code> / <code>forbidden</code> prefix rules, <code>["git", "push"]</code>, forbidden beats prompt beats allow among matches.</td></tr>
+          <tr><td>What does allow mean?</td><td>Run without a prompt, inside whatever sandbox is on.</td><td>"Run the command outside the sandbox without prompting."</td></tr>
+          <tr><td>No prompts at all</td><td><code>bypassPermissions</code> (still prompts for ask rules and critical paths) or <code>dontAsk</code> (denies).</td><td><code>-a never</code> (fails back to the model) with any sandbox; <code>--yolo</code> drops the sandbox too.</td></tr>
+          <tr><td>A model in the operator's place</td><td>Auto mode's classifier decides what no rule decided.</td><td><code>approvals_reviewer = "auto_review"</code> answers prompts that would have shown.</td></tr>
+          <tr><td>Paths never auto-approved</td><td>Protected paths (<code>.git</code>, <code>.claude</code>, shell startup files, …) and critical paths (roots, home, the working directory).</td><td><code>.git</code>, <code>.codex</code>, <code>.agents</code> read-only inside writable roots (<code>.aws</code> under <code>:workspace</code>). No critical-path check found (§14).</td></tr>
+          <tr><td>A hook before a tool call</td><td>PreToolUse: allow, deny, or ask; exit 2 blocks.</td><td>PreToolUse: allow (with rewrite) or deny; ask not supported; exit 2 blocks. Hooks must be trusted by hash first.</td></tr>
+          <tr><td>A hook at the prompt</td><td>PermissionRequest answers the prompt.</td><td>PermissionRequest allows, denies, or declines.</td></tr>
+          <tr><td>Untrusted repository</td><td>Workspace trust gates project allow rules and additional directories; hooks run before trust.</td><td>Project trust gates project config, hooks, and rules alike; may start read-only.</td></tr>
+          <tr><td>Where rules live</td><td>Five scopes: managed, command line, local project, project, user.</td><td>Seven layers: command line, project (nearest wins), profile, user, cloud-managed, system, defaults; requirements above all.</td></tr>
+          <tr><td>Compound commands</td><td>Split on separators; an allow rule must match each piece; deny or ask fires on any.</td><td>Split where safe, each piece matched; otherwise the whole script is one invocation.</td></tr>
+          <tr><td>Network</td><td>WebFetch domain rules; sandbox network allowlist when the sandbox is on.</td><td>Off by default in the sandbox; one key to turn on; an experimental proxy for per-domain rules; web search a separate setting.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- 13 OBSERVED -->
+<section id="observed">
+  <div class="wrap">
+    <h2>13 · observed by the family</h2>
+    <p class="h2big">What the installed client says about itself</p>
+    <p class="sub">No test of Codex's behaviour has been run by the family. The observations below are readings of the client's own help text and feature list at 0.162.0 on 2026-10-15; they say what the client offers, not what it does.</p>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Kind</th><th>Observation</th><th>Where</th><th>Documentation now</th></tr></thead>
+        <tbody>
+          <tr><td><span class="kind obs">observed</span></td><td><code>-a, --ask-for-approval</code> lists two values, <code>on-request</code> and <code>never</code>; <code>untrusted</code> and <code>on-failure</code> are absent.</td><td><code>codex --help</code></td><td>C2 says <code>untrusted</code> is no longer supported; C6 lists <code>on-failure</code> as deprecated.</td></tr>
+          <tr><td><span class="kind obs">observed</span></td><td>No <code>--full-auto</code> flag in <code>codex --help</code> or <code>codex exec --help</code>.</td><td><code>codex --help</code>, <code>codex exec --help</code></td><td>None of the eight documents read names the flag. Third-party write-ups say it was deprecated at 0.128.0 in favour of explicit <code>--sandbox</code> and <code>--ask-for-approval</code>; <span class="kind unv">unverified</span> here.</td></tr>
+          <tr><td><span class="kind obs">observed</span></td><td><code>--approve-for-me</code>: "Route approval requests through automatic review using the workspace-write sandbox".</td><td><code>codex --help</code></td><td>C2 names the menu item <em>Approve for me</em> and the key <code>approvals_reviewer</code>; the flag is not named in the documents read.</td></tr>
+          <tr><td><span class="kind obs">observed</span></td><td><code>--dangerously-bypass-approvals-and-sandbox</code>: "Skip all confirmation prompts and execute commands without sandboxing. EXTREMELY DANGEROUS. Intended solely for running in environments that are externally sandboxed".</td><td><code>codex --help</code></td><td>C1, with the alias <code>--yolo</code>.</td></tr>
+          <tr><td><span class="kind obs">observed</span></td><td><code>--dangerously-bypass-hook-trust</code>, <code>--add-dir</code>, <code>--worktree</code>, <code>-C/--cd</code>, <code>--search</code>, <code>-p/--profile</code> ("Layer <code>$CODEX_HOME/&lt;name&gt;.config.toml</code> on top of the base user config"), <code>--strict-config</code>.</td><td><code>codex --help</code></td><td>C5 for hook trust; C7 and C8 for profiles; the rest as cited on their rows.</td></tr>
+          <tr><td><span class="kind obs">observed</span></td><td>The <code>-c</code> help text's example <code>sandbox_permissions=["disk-full-read-access"]</code> names a key the configuration reference does not list.</td><td><code>codex --help</code></td><td><span class="kind unv">unverified</span> whether the key is live or a leftover.</td></tr>
+          <tr><td><span class="kind obs">observed</span></td><td><code>codex exec</code> adds <code>--skip-git-repo-check</code>, <code>--ephemeral</code>, <code>--ignore-user-config</code>, <code>--ignore-rules</code>, and <code>--cyber-access-program</code> (<code>standard</code>, <code>daybreak_blue</code>, <code>daybreak_red</code>, "OpenAI provider only").</td><td><code>codex exec --help</code></td><td>Not in the documents read.</td></tr>
+          <tr><td><span class="kind obs">observed</span></td><td><code>codex sandbox</code> runs a command "under seatbelt", takes <code>-P/--permission-profile</code>, <code>--allow-unix-socket</code>, <code>--log-denials</code>, <code>--sandbox-state-readable-root</code>, <code>--sandbox-state-disable-network</code>, <code>--include-managed-config</code>.</td><td><code>codex sandbox --help</code></td><td>C1 names <code>codex sandbox macos|linux|windows</code>, <code>--permissions-profile</code>, and <code>--log-denials</code>; the subcommand form differs from the help text.</td></tr>
+          <tr><td><span class="kind obs">observed</span></td><td>Feature flags: <code>hooks</code> stable, on; <code>guardian_approval</code> stable, on; <code>write_stdin_approval</code> stable, on; <code>network_proxy</code> experimental, off; <code>exec_permission_approvals</code> and <code>request_permissions_tool</code> under development, off; <code>request_rule</code> removed; <code>use_legacy_landlock</code> deprecated, off; <code>elevated_windows_sandbox</code> and <code>experimental_windows_sandbox</code> removed.</td><td><code>codex features list</code></td><td>C6 documents <code>features.hooks</code> and <code>features.network_proxy</code>; C1's safety-monitoring section covers the guardian; the rest are not in the documents read.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- 14 GAPS -->
+<section id="gaps">
+  <div class="wrap">
+    <h2>14 · gaps and unverified claims</h2>
+    <p class="h2big">What this page does not know</p>
+    <ul>
+      <li><span class="kind unv">unverified</span> The joined order in §2. The documents state each gate alone; where the rules check sits against the sandbox, and whether a PermissionRequest hook or the reviewer sees a prompt first, is inferred.</li>
+      <li><span class="kind unv">unverified</span> Whether an <code>allow</code> rule runs a command outside the sandbox under <code>approval_policy = "never"</code>, and whether a <code>prompt</code> rule prompts under <code>never</code> or is rejected as the granular <code>rules</code> switch suggests.</li>
+      <li><span class="kind unv">unverified</span> The status of <code>--full-auto</code>: absent from the help text at 0.162.0, absent from the documents read, reported deprecated by third parties at 0.128.0.</li>
+      <li><span class="kind unv">unverified</span> The <code>sandbox_permissions</code> key in the <code>-c</code> example.</li>
+      <li><strong>No critical-path check found.</strong> The documents read describe protected paths inside writable roots and nothing that outranks <code>danger-full-access</code> with <code>never</code> for a removal of the home directory or a root. Compare the Claude Code page §10. The list searched is closed: the eight documents in §16.</li>
+      <li><strong>Not covered here:</strong> the safety monitoring and paused-task table (C1), the guardian and <code>guardian_policy_config</code>, MCP server and app approval modes beyond their names, the <code>request_permissions</code> tool, skills approval, Work Cloud and the desktop app's own permission menus, Codex cloud environments, telemetry. Each is a page of its own or a later row.</li>
+      <li><strong>Not tested by the family at this version:</strong> none of the facts above were run against 0.162.0; §13 reads the client, it does not exercise it.</li>
+      <li><strong>The vendor's pages moved while this page was written.</strong> Every <code>developers.openai.com/codex/…</code> address answered 308 to <code>learn.chatgpt.com/docs/…</code> on 2026-10-15; §16 records the address that served the text. The GitHub repository's <code>docs/</code> copies are stubs pointing at the site.</li>
+      <li><strong>Version-gated facts</strong> keep their version on the row (profiles at 0.134.0). The documents carry no version marker of their own.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 15 CHANGES -->
+<section id="changes">
+  <div class="wrap">
+    <h2>15 · change record</h2>
+    <p class="h2big">Versions checked, and what changed on this page</p>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Date</th><th>Client version checked</th><th>Change</th></tr></thead>
+        <tbody>
+          <tr><td>2026-10-15</td><td><code>0.162.0</code></td><td>First version. Second client in the harness atlas; the page follows the structure of the Claude Code permissions page (PRD-0004 FR-008) with the sections the subject needs: the two controls, permission profiles, execution-policy rules, hook trust, and the side-by-side in §12. Built from eight vendor documents read the same day and the installed client's help text and feature list.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- 16 SOURCES -->
+<section id="sources">
+  <div class="wrap">
+    <h2>16 · sources</h2>
+    <p class="h2big">What each mark on this page points to</p>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Mark</th><th>Document</th><th>Address</th><th>Read</th><th>Note</th></tr></thead>
+        <tbody>
+          <tr><td><strong>C1</strong></td><td>Agent approvals &amp; security</td><td><a href="https://learn.chatgpt.com/docs/agent-approvals-security.md">learn.chatgpt.com/docs/agent-approvals-security</a></td><td>2026-10-15</td><td>Reached from <code>developers.openai.com/codex/agent-approvals-security</code> by a 308 redirect. Fetched as markdown. The combinations table in §3 is this document's.</td></tr>
+          <tr><td><strong>C2</strong></td><td>Sandbox</td><td><a href="https://learn.chatgpt.com/docs/sandboxing.md">learn.chatgpt.com/docs/sandboxing</a></td><td>2026-10-15</td><td>From <code>developers.openai.com/codex/concepts/sandboxing</code>. Covers the ChatGPT desktop app, the CLI, and the IDE extension together.</td></tr>
+          <tr><td><strong>C3</strong></td><td>Permissions</td><td><a href="https://learn.chatgpt.com/docs/permissions.md">learn.chatgpt.com/docs/permissions</a></td><td>2026-10-15</td><td>From <code>developers.openai.com/codex/permissions</code>. Marked beta by the vendor.</td></tr>
+          <tr><td><strong>C4</strong></td><td>Rules</td><td><a href="https://learn.chatgpt.com/docs/agent-configuration/rules.md">learn.chatgpt.com/docs/agent-configuration/rules</a></td><td>2026-10-15</td><td>From <code>developers.openai.com/codex/rules</code>. Marked experimental by the vendor.</td></tr>
+          <tr><td><strong>C5</strong></td><td>Hooks</td><td><a href="https://learn.chatgpt.com/docs/hooks.md">learn.chatgpt.com/docs/hooks</a></td><td>2026-10-15</td><td>From <code>developers.openai.com/codex/hooks</code>.</td></tr>
+          <tr><td><strong>C6</strong></td><td>Configuration reference</td><td><a href="https://learn.chatgpt.com/docs/config-file/config-reference.md">learn.chatgpt.com/docs/config-file/config-reference</a></td><td>2026-10-15</td><td>From <code>developers.openai.com/codex/config-reference</code>. Key names, types, and the one-line descriptions quoted on this page.</td></tr>
+          <tr><td><strong>C7</strong></td><td>Configuration basics</td><td><a href="https://learn.chatgpt.com/docs/config-file/config-basic.md">learn.chatgpt.com/docs/config-file/config-basic</a></td><td>2026-10-15</td><td>From <code>developers.openai.com/codex/config-basic</code>. The seven-level precedence list and project trust.</td></tr>
+          <tr><td><strong>C8</strong></td><td>Advanced configuration</td><td><a href="https://learn.chatgpt.com/docs/config-file/config-advanced.md">learn.chatgpt.com/docs/config-file/config-advanced</a></td><td>2026-10-15</td><td>Profiles and <code>-c</code> overrides.</td></tr>
+          <tr><td><strong>client</strong></td><td><code>codex --help</code>, <code>codex exec --help</code>, <code>codex sandbox --help</code>, <code>codex features list</code></td><td>the installed client</td><td>2026-10-15</td><td><code>codex-cli 0.162.0</code>; quoted in §13 and on the rows marked observed.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>The vendor documentation describes the current release with no version marker of its own. The version on this page is the client installed where the page was written on the day the documents were read; a fact the documents gate by version carries that version on its row.</p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    Harness atlas, Straylight family. Hand-written HTML, no script, no external assets; opens from the file system and prints. The pattern this page follows will be stated on the atlas's pattern page once written.
+  </div>
+</footer>
+
+</body>
+</html>

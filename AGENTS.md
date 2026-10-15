@@ -43,8 +43,9 @@ Atlases are NOT skills and NOT playbooks: they state what a vendor's
 tool does, not how the family works; a fact taken from a family
 document is marked `family` and cited by path at a commit.
 `atlases/index.html` lists them. The first is `atlases/harness/`, on
-how agent clients construct and manage a session, opened with
-`claude-code-permissions.html`. The second is `atlases/macos-apps/`,
+how agent clients construct and manage a session: one page per
+client on permissions so far, `claude-code-permissions.html` and
+`codex-permissions.html`. The second is `atlases/macos-apps/`,
 on what a macOS application leaves on a Mac and how it gets there,
 with dreader mapped onto it for its release (index plus places,
 arrival, gate, removal, dreader).
@@ -159,6 +160,10 @@ Present a recommendation to the human before starting work.
   exit code doubles as a script guard.
 - **linear-walkthrough** — Create a structured code walkthrough using
   Showboat. Reads source, plans a linear explanation, builds the document.
+- **screenshot-testing** — Verify running applications with scoped window
+  captures, compare the actual rendering with references, and turn visual
+  failures into regression checks. Includes dreader's WKWebView workflow
+  and using CuaDriver under its existing macOS grant.
 - **pause-session** — Capture session context and next steps before
   stepping away, keyed to the ticket or thread the work advanced. In a
   full-form `.development` repo it updates the ticket's `## Next` in
