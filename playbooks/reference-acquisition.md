@@ -29,27 +29,30 @@ Base: `http://localhost:3000/api/v1/references`
 
 ## Making the call
 
-Bash `curl` (most common):
+Use the `references` skill's command, in the main session and in every
+subagent brief:
 
 ```bash
-curl -s -H "Authorization: Bearer $REFERENCE_API_TOKEN" \
-  "http://localhost:3000/api/v1/references?tags=ml,perceptron"
+~/.claude/skills/references/references search --tags ml,perceptron
 ```
 
-`?tags=ml,perceptron` returns only references carrying **both** tags
-(AND). Combine filters: `?q=margin&tags=ml&reading_state=read&limit=50`.
+`--tags ml,perceptron` returns only references carrying **both** tags
+(AND). Combine filters:
+`search margin --tags ml --state read --limit 50`.
 
 Fetch one reference and its cached text:
 
 ```bash
-curl -s -H "Authorization: Bearer $REFERENCE_API_TOKEN" \
-  http://localhost:3000/api/v1/references/42
-curl -s -H "Authorization: Bearer $REFERENCE_API_TOKEN" \
-  http://localhost:3000/api/v1/references/42/content
+~/.claude/skills/references/references show 42
+~/.claude/skills/references/references content 42
 ```
 
-`WebFetch` against the same URLs works too if you prefer a tool call
-over the shell.
+**Never curl the API**, and never brief a subagent to. Each curl call
+carries its URL, so no allowlist prefix matches it, and a fan-out of
+research subagents buries the operator in permission prompts too fast
+to stop (operator, 2026-10-25). The Bash policy hook refuses curl from
+agents. WebFetch is no substitute here: it cannot send the bearer
+token.
 
 ## Response shape
 
@@ -87,5 +90,5 @@ boot never reads `.env`. Use a real shell export.
 
 `DBB-0461` wraps these endpoints in an MCP server, so agents call
 `search_references` / `get_reference` / `get_cached_content` as native
-tools with no curl or token handling. Until then, use curl/WebFetch as
-above.
+tools with no token handling. Until then, use the `references` command
+as above.

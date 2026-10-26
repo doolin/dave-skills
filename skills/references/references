@@ -1,0 +1,138 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# references -- query dbb's Agent Reference API (PRD-0003 §10.2 in dbb):
+# the operator's bookmarked reading, with AI summaries, tags and cached
+# page text.
+#
+# One named command in place of curl. A curl call carries its URL, so every
+# call is a new shape that no allowlist prefix matches, and a fan-out of
+# research subagents becomes a stream of prompts. This command is the same
+# shape every time, and WebFetch cannot send the API's bearer token.
+#
+# Usage:
+#   references search [QUERY] [--tags a,b] [--domain D] [--state S] [--limit N]
+#   references show ID
+#   references content ID
+#
+# Prints the API's JSON response, pretty-printed, on stdout. Never prints
+# the token.
+#
+# Env:
+#   REFERENCE_API_TOKEN   required; the bearer token (fail-closed API)
+#   REFERENCE_API_URL     default http://localhost:3000
+#
+# Exit codes: 0 ok · 1 the API answered with an error (401, 404, 409, ...)
+#             7 server unreachable · 10 bad arguments · 11 no token
+
+require 'json'
+require 'net/http'
+require 'optparse'
+require 'uri'
+
+# Builds the request path from the arguments, sends it with the token, and
+# turns the response into stdout and an exit code.
+module References
+  PATH = '/api/v1/references'
+  USAGE = <<~TEXT
+    usage: references search [QUERY] [--tags a,b] [--domain D] [--state S] [--limit N]
+           references show ID
+           references content ID
+  TEXT
+
+  def self.usage!(message = nil)
+    warn "references: #{message}" if message
+    warn USAGE
+    exit 10
+  end
+
+  def self.request_path(argv)
+    command = argv.shift
+    case command
+    when 'search' then search_path(argv)
+    when 'show', 'content' then reference_path(command, argv)
+    when '-h', '--help'
+      puts USAGE
+      exit 0
+    else usage!(command ? "unknown command: #{command}" : 'no command given')
+    end
+  end
+
+  def self.search_path(argv)
+    filters = search_filters(argv)
+    usage!('search takes at most one QUERY; quote a phrase') if argv.size > 1
+    params = { q: argv.first }.compact.merge(filters)
+    params.empty? ? PATH : "#{PATH}?#{URI.encode_www_form(params)}"
+  end
+
+  # The flags, as the API's parameter names; parse! leaves the query in argv.
+  def self.search_filters(argv)
+    filters = {}
+    OptionParser.new do |opts|
+      opts.on('--tags TAGS') { filters[:tags] = it }
+      opts.on('--domain DOMAIN') { filters[:domain] = it }
+      opts.on('--state STATE') { filters[:reading_state] = it }
+      opts.on('--limit N', Integer) { filters[:limit] = it }
+    end.parse!(argv)
+    filters
+  rescue OptionParser::ParseError => e
+    usage!(e.message)
+  end
+
+  def self.reference_path(command, argv)
+    id = argv.shift
+    usage!("#{command} takes one numeric ID") unless id&.match?(/\A\d+\z/) && argv.empty?
+    command == 'show' ? "#{PATH}/#{id}" : "#{PATH}/#{id}/content"
+  end
+
+  def self.run(argv)
+    path = request_path(argv.dup)
+    token = ENV['REFERENCE_API_TOKEN'].to_s
+    return no_token if token.empty?
+
+    base = ENV.fetch('REFERENCE_API_URL', 'http://localhost:3000')
+    respond(fetch(URI.join(base, path), token), base)
+  rescue URI::InvalidURIError
+    usage!("REFERENCE_API_URL is not a URL: #{base}")
+  rescue SystemCallError, SocketError, Net::OpenTimeout, Net::ReadTimeout => e
+    warn "references: cannot reach #{base} (#{e.class}); is the dbb server running?"
+    7
+  end
+
+  def self.no_token
+    warn 'references: REFERENCE_API_TOKEN is not set; export it in the shell (the API is fail-closed)'
+    11
+  end
+
+  def self.fetch(uri, token)
+    Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == 'https', open_timeout: 5, read_timeout: 30) do |http|
+      request = Net::HTTP::Get.new(uri)
+      request['Authorization'] = "Bearer #{token}"
+      request['Accept'] = 'application/json'
+      http.request(request)
+    end
+  end
+
+  def self.respond(response, base)
+    body = parse(response.body)
+    return print_json(body) if response.is_a?(Net::HTTPSuccess)
+
+    error = body.is_a?(Hash) && body['error'].is_a?(Hash) ? body['error'] : {}
+    warn "references: #{base} answered #{response.code} #{error['code'] || response.message}: " \
+         "#{error['message'] || 'no error message'}"
+    1
+  end
+
+  def self.parse(text)
+    JSON.parse(text.to_s)
+  rescue JSON::ParserError
+    text.to_s
+  end
+
+  def self.print_json(body)
+    puts body.is_a?(String) ? body : JSON.pretty_generate(body)
+    0
+  end
+end
+
+exit References.run(ARGV) if $PROGRAM_NAME == __FILE__

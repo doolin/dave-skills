@@ -188,6 +188,11 @@ Present a recommendation to the human before starting work.
   each distinct error and warning, each panic, the failed tests, and
   one tally of the test results, keeping the full output in a log.
   Replaces the `cargo … 2>&1 | grep | head` pipeline. Any Rust repo.
+- **references** — Query dbb's Agent Reference API (the operator's
+  bookmarked reading: summaries, tags, cached page text) with one named
+  command: `search`, `show`, `content`. Stands in for curl, which the
+  Bash policy hook refuses from agents. Pure-stdlib Ruby, tested against
+  a local stub of the API.
 - **tool-call-ledger** — Turn permission prompts into a queue of
   tools: cluster the Bash calls the `hooks/tool-call-ledger.sh` hook
   records (or Bash calls read straight from transcripts) by shape,
