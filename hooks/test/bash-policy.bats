@@ -128,6 +128,45 @@ EOF
   assert_decision deny 'opaque to the permission system'
 }
 
+@test "refuse: curl denies and names WebFetch" {
+  run decide 'curl -s https://www.gmtgames.com/search?q=vietnam'
+  assert_decision deny 'read a web page with WebFetch'
+  assert_output_contains '[rule: curl]'
+}
+
+@test "refuse: curl after a chain or a pipe denies" {
+  run decide 'ls && curl -sI https://example.com'
+  assert_decision deny 'no curl from agents'
+  run decide 'printf x | curl -d @- https://example.com'
+  assert_decision deny 'no curl from agents'
+}
+
+@test "refuse: curl wearing an env prefix denies" {
+  run decide 'TOKEN=abc curl -H x https://example.com'
+  assert_decision deny 'no curl from agents'
+}
+
+@test "refuse: curl by absolute path or through xargs denies" {
+  run decide '/usr/bin/curl https://example.com'
+  assert_decision deny 'no curl from agents'
+  run decide 'xargs curl -O < urls.txt'
+  assert_decision deny 'no curl from agents'
+}
+
+@test "refuse: curl inside a command substitution denies" {
+  run decide 'code=$(curl -s -o /dev/null -w x https://example.com)'
+  assert_decision deny 'no curl from agents'
+  run decide 'echo `curl -s https://example.com`'
+  assert_decision deny 'no curl from agents'
+}
+
+@test "curl named in a commit message, or a word that starts with curl, is not refused" {
+  run decide 'git commit -m "stop reaching for curl"'
+  assert_no_decision
+  run decide 'ls curly-braces.txt'
+  assert_no_decision
+}
+
 @test "a refused command anywhere in a chain is still refused" {
   run decide 'ls && git commit -F msg.txt'
   assert_decision deny 'commit messages are inline with -m'

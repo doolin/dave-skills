@@ -16,6 +16,14 @@ refuse_when(/\b(perl|ruby) -[a-z]*e\b/,
 refuse_when(/\bcat\s*>>?\s*\S+\s*<</,
             because: 'writing a file through a heredoc is opaque to the permission system; use Write')
 
+# Every URL makes a curl call a new shape that no allowlist prefix matches,
+# so ten research subagents become a stream of prompts too fast to stop.
+# A refusal returns at once with the alternative, and no prompt is raised.
+no_curl = 'no curl from agents: read a web page with WebFetch, query the reference corpus with ' \
+          '~/.claude/skills/references/references, check a running app with a spec'
+refuse 'curl', 'xargs curl', '/usr/bin/curl', because: no_curl
+refuse_when(/(\$\(|`)[[:blank:]]*curl\b/, because: no_curl)
+
 # ── Asked: the operator decides this one, every time. ─────────────────
 
 ask_when(%r{\b(bin/rails|rake) db:},
