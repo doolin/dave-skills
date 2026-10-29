@@ -5,7 +5,7 @@ description: The operator's banned words and banned rhetorical devices — words
 
 # Banned words and rhetorical devices
 
-Bafflegab asserts value or agreement without naming anything. This
+Bafflegab asserts value or agreement without pointing to anything. This
 list bans the recurring offenders. Each entry records the ban's
 scope, the replacements, and any carve-out — the carve-outs are
 part of the ban, not exceptions to it.
@@ -30,9 +30,9 @@ Ground rules:
 ### richer
 
 - **Banned:** in every sense except literal wealth or money.
-- **Why:** it claims improvement without naming the improved
-  property.
-- **Instead:** name the property — more detailed, more fields,
+- **Why:** it claims improvement without saying which property
+  improved.
+- **Instead:** say which property — more detailed, more fields,
   higher-resolution, more expressive, broader coverage.
 
 ### groom
@@ -64,7 +64,7 @@ Ground rules:
   suspicion about everything else. Credibility is carried by the
   content, not asserted over it.
 - **Instead:** delete the word and let the statement stand, or
-  name what the marker was gesturing at — the limitation, the
+  state what the marker was gesturing at — the limitation, the
   uncertainty, the unflattering number.
 - **Carve-out:** describing a person's character, and direct
   quotation of sources.
@@ -76,7 +76,7 @@ Ground rules:
 - **Why:** it asserts nothing went wrong without saying what was
   checked. The reader learns the author's satisfaction, not the
   result.
-- **Instead:** name the check and its result — "applies with no
+- **Instead:** state the check and its result — "applies with no
   conflicts", "compiles with zero warnings" — or delete.
 - **Carve-out:** the concrete verb "clean up" (removing things)
   is a different word and not covered.
@@ -85,7 +85,7 @@ Ground rules:
 
 - **Banned:** as structural metaphor — "the spine of the
   document", "narrative spine", "the spine of the argument".
-- **Why:** it names a shape where the reader needs the function.
+- **Why:** it gives a shape where the reader needs the function.
 - **Instead:** say what the thing does — the ordering principle,
   the main sequence, the section everything else references.
 - **Carve-out:** literal spines — anatomy, book bindings.
@@ -95,9 +95,9 @@ Ground rules:
 - **Banned:** as an importance marker, hyphenated or not — "the
   load-bearing sentence", "load-bearing consistency".
 - **Why:** it asserts that something depends on this without
-  naming what. If nothing named would break, the phrase was
-  decoration.
-- **Instead:** name the dependent — "X breaks if this changes",
+  saying what. If nothing in particular would break, the phrase
+  was decoration.
+- **Instead:** say what depends on it — "X breaks if this changes",
   "the claim the argument rests on".
 - **Carve-out:** literal structural and rock mechanics — walls,
   beams, pillars, abutments.
@@ -112,18 +112,34 @@ Ground rules:
   again. The word is not the problem; the unilateral claim is.
 - **Instead:** report the finding and leave the closing to him —
   "the command ran without a prompt, so the allowlist is not the
-  cause" — or name who closed it: "you ruled X on 19 September".
+  cause" — or say who closed it: "you ruled X on 19 September".
 - **Carve-outs:**
   - **Settlement by the operator, or reached together.** This is
     the main one, and it is what the ban is for. "Nothing changes
     until the proposal is settled" is right where only he can
     settle it. "We settled on Marp" is right where the choice was
-    joint. Naming a real act of his is accurate; claiming the act
+    joint. Reporting a real act of his is accurate; claiming the act
     is what the ban catches.
   - The physical and legal senses: a foundation settles, a claim is
     settled out of court, a settlement is a place.
   - `settle` as an identifier in code. The ban covers prose; a
     method name is a name, not a claim.
+
+### name
+
+- **Banned:** "name", "names", "named", "naming", and the rest of
+  the family, as an all-purpose verb or noun — "the trailer names
+  the agent", "names the change", "naming the cause", "the gems
+  named in the ruling".
+- **Why:** it stands in for whatever the sentence should say
+  happened, and repeated it stops meaning anything.
+- **Instead:** call the act what it is. A trailer credits, a
+  subject describes, a check reports, a list contains, a ruling
+  allows, a commit cites, a heading reads. Pick the verb for that
+  particular act.
+- **Carve-out:** an actual name — a person's, a file's, a gem's or
+  a method's, the `name` field of a record. "The gem's name is
+  ostruct" and "renamed the directory" keep it.
 
 ## Banned rhetorical devices
 
@@ -141,16 +157,16 @@ Ground rules:
 - A banned device is banned in every artifact: responses, tickets,
   commit messages, documents.
 - Fix in passing when editing text that carries one.
-- Each entry names the device, so it can be looked up and argued
-  with, and shows it working — these are real instruments, banned
+- Each entry gives the device's established term, so it can be
+  looked up and argued with, and shows it working — these are real instruments, banned
   here for misuse, not because they are always wrong.
 - The list grows by operator decree. Propose candidates under
   `## Candidates` rather than banning on your own judgment.
 
 ### argument from absence
 
-- **Banned:** naming what a document, file, or system does *not*
-  contain as though the absence were itself a finding —
+- **Banned:** pointing out what a document, file, or system
+  does *not* contain as though the absence were itself a finding —
   "COMMONS.md says nothing about handoffs", "the ticket never
   mentions the rollback path", "there is no test for this".
 - **Why:** absence is unbounded. The same sentence is true of
@@ -172,13 +188,13 @@ Ground rules:
   night-time." Gregory: "The dog did nothing in the night-time."
   Holmes: "That was the curious incident." The inference holds
   because the expectation was closed and certain — that dog barks
-  at strangers — so its silence names the intruder as someone it
+  at strangers — so its silence marks the intruder as someone it
   knew. Absence is evidence once something guarantees the presence.
 - **Carve-outs:**
   - A completeness check against a **closed** list: which of the
     eight page rules a page fails, an uncovered branch in a
     coverage report, an unticked acceptance criterion. The list
-    bounds the absence, so naming a member is a measurement.
+    bounds the absence, so reporting a member is a measurement.
   - A direct answer to a direct question. "Does the commons cover
     handoffs?" — "No" is an answer, not a device.
   - A logged dead end. The research playbooks require negative
@@ -247,8 +263,8 @@ up into a list above. Same fields.
   and corollaries in the *Elements*, so a reader can find the
   claim being used. The label earns its place when it aids
   navigation, not when it asserts importance.
-- **Carve-out:** a summary section in a long document naming which
-  of many findings changed the decision.
+- **Carve-out:** a summary section in a long document stating
+  which of many findings changed the decision.
 
 ## Adding an entry
 
