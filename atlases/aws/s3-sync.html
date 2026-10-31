@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>s3 sync — AWS atlas</title>
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="../atlas.css">
+</head>
+<body>
+<header class="chrome">
+<nav class="site" aria-label="Straylight">
+<a class="home" href="../../index.html">Straylight</a>
+<a href="../../kb/index.html">knowledge base</a>
+<a href="../../audits/index.html">audits</a>
+<a href="../../atlases/index.html" aria-current="true">atlases</a>
+<a href="../../presentations/index.html">presentations</a>
+<a href="../../search">search</a>
+</nav>
+</header>
+
+<header>
+  <div class="wrap">
+    <p class="kicker"><a href="../index.html">Atlases</a> · <a href="index.html">AWS</a> · s3 sync</p>
+    <h1>How <code>aws s3 sync</code> decides what to send, skip, and delete</h1>
+    <p class="lede">A sync lists both sides, filters both lists, walks them together pairing names, and asks one rule per pair whether to transfer. The rule reads two things, the size and the modification time, never the contents, and it is not the same in each direction: on a download a file is fetched again only when the local copy is <em>newer</em> than the object. The installed help states the download rule two ways that disagree; the source settles which one runs (§8).</p>
+    <div class="observed">
+      <dl>
+        <dt>subject</dt><dd>The <code>sync</code> subcommand of the AWS CLI's high-level <code>s3</code> commands: its path forms, listing, filters, pairing, the sync strategies and the flags that replace them, what follows from them, the transfer settings it shares with <code>cp</code>, <code>mv</code>, and <code>rm</code>, and its exit codes.</dd>
+        <dt>version observed</dt><dd>AWS CLI <code>2.39.2</code> on the author's Mac (<code>aws-cli/2.39.2 Python/3.15.2 Darwin/25.6.0 source/arm64</code>), 2026-10-31. Source files read at tag <code>2.39.2</code> of <code>aws/aws-cli</code>, the same day.</dd>
+        <dt>sources</dt><dd><a href="#sources">H1 sync help</a>, <a href="#sources">H2 s3 help</a>, <a href="#sources">H3 s3-config</a>, <a href="#sources">C1 base.py</a>, <a href="#sources">C2 flag strategies</a>, <a href="#sources">C3 comparator.py</a>, <a href="#sources">C4 subcommands.py</a>, <a href="#sources">C5 filegenerator.py</a>, <a href="#sources">C6 filters.py</a>, <a href="#sources">O1</a>.</dd>
+        <dt>change record</dt><dd><a href="#changes">§14</a>.</dd>
+      </dl>
+    </div>
+  </div>
+</header>
+
+<nav class="toc">
+  <div class="wrap">
+    <ol>
+      <li><a href="#what">What sync is</a></li>
+      <li><a href="#pipeline">The pipeline</a></li>
+      <li><a href="#listing">Listing both sides</a></li>
+      <li><a href="#filters">Filters</a></li>
+      <li><a href="#compare">Pairing the two lists</a></li>
+      <li><a href="#decide">The decision, by direction and flag</a></li>
+      <li><a href="#consequences">What follows from the rule</a></li>
+      <li><a href="#contradiction">The help text's two download rules</a></li>
+      <li><a href="#transfer">Transfer settings</a></li>
+      <li><a href="#exit">Exit codes</a></li>
+      <li><a href="#relations">Relationships</a></li>
+      <li><a href="#observed-facts">Observed</a></li>
+      <li><a href="#gaps">Gaps and unverified claims</a></li>
+      <li><a href="#changes">Change record</a></li>
+      <li><a href="#sources">Sources</a></li>
+    </ol>
+  </div>
+</nav>
+
+<section id="what">
+  <div class="wrap">
+    <h2>§1</h2>
+    <p class="h2big">What sync is</p>
+    <div class="tbl"><table>
+      <tr><th>fact</th><th>kind</th><th>source</th></tr>
+      <tr><td>"Syncs directories and S3 prefixes. Recursively copies new and updated files from the source directory to the destination. Only creates folders in the destination if they contain one or more files."</td><td><span class="kind doc">documented</span></td><td class="src">H1 · DESCRIPTION; C4 · SyncCommand</td></tr>
+      <tr><td>Three path forms: <code>&lt;LocalPath&gt; &lt;S3Uri&gt;</code>, <code>&lt;S3Uri&gt; &lt;LocalPath&gt;</code>, <code>&lt;S3Uri&gt; &lt;S3Uri&gt;</code>. The CLI names them <code>locals3</code>, <code>s3local</code>, <code>s3s3</code> and translates them to the operation names <code>upload</code>, <code>download</code>, <code>copy</code>; those names are what the decision rule branches on (§6). Local to local is refused.</td><td><span class="kind doc">documented</span></td><td class="src">H1 · SYNOPSIS; C4 · run, cmd_translation, template_type</td></tr>
+      <tr><td>Sync is always a directory or prefix operation: "Adding or omitting a forward slash or back slash to the end of any path argument, depending on its type, does not affect the results of the operation." The source sets <code>dir_op</code> to true for <code>sync</code>.</td><td><span class="kind doc">documented</span></td><td class="src">H2 · Directory and S3 Prefix Operations; C4 · CommandParameters</td></tr>
+      <tr><td>On an upload the local source must exist (<code>The user-provided path … does not exist.</code>); on a download a missing local destination directory is created.</td><td><span class="kind doc">documented</span></td><td class="src">C4 · add_paths</td></tr>
+      <tr><td>A directory bucket (S3 Express One Zone) is refused on either side: <code>Cannot use sync command with a directory bucket.</code></td><td><span class="kind doc">documented</span></td><td class="src">C4 · _validate_not_s3_express_bucket_for_sync</td></tr>
+      <tr><td><code>--dryrun</code> "Displays the operations that would be performed using the specified command without actually running them." It is the way to see the decision for a given tree before trusting it.</td><td><span class="kind doc">documented</span></td><td class="src">H1 · --dryrun</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<section id="pipeline">
+  <div class="wrap">
+    <h2>§2</h2>
+    <p class="h2big">The pipeline</p>
+    <p class="sub">The stages a sync runs, in the order <code>create_instructions</code> appends them. The source and the destination each get a file generator and a filter; the comparator takes both streams and hands one on.</p>
+    <div class="map">
+      <div class="step"><span class="k">1</span><span class="n">file_generator</span><span class="d">Two generators: the source, listed with the source client and the operation name; the destination, listed with the destination client and no operation name (§3).</span></div>
+      <div class="step"><span class="k">2</span><span class="n">filters</span><span class="d">One filter per stream, built from the same <code>--exclude</code> and <code>--include</code> list; skipped when no filter was given (§4).</span></div>
+      <div class="step"><span class="k">3</span><span class="n">comparator</span><span class="d">Present only for <code>sync</code>: it walks both streams together and yields the source files to transfer and, with <code>--delete</code>, the destination files to delete (§5, §6).</span></div>
+      <div class="step"><span class="k">4</span><span class="n">file_info_builder</span><span class="d">Turns each yielded item into the record the transfer stage takes.</span></div>
+      <div class="step"><span class="k">5</span><span class="n">s3_handler</span><span class="d">The transfer client runs the operations concurrently under the settings of §9 and counts failures and warnings for the exit code (§10).</span></div>
+    </div>
+    <div class="tbl"><table>
+      <tr><th>fact</th><th>kind</th><th>source</th></tr>
+      <tr><td>The order and the condition, verbatim: <code>self.instructions.append('file_generator')</code>; <code>if self.parameters.get('filters'): self.instructions.append('filters')</code>; <code>if self.cmd == 'sync': self.instructions.append('comparator')</code>; then <code>'file_info_builder'</code> and <code>'s3_handler'</code>. So <code>cp --recursive</code> runs the same pipeline without the comparator: it transfers every listed file.</td><td><span class="kind doc">documented</span></td><td class="src">C4 · create_instructions</td></tr>
+      <tr><td>For sync the command table pairs the stages: <code>'file_generator': [file_generator, rev_generator]</code>, <code>'filters': [create_filter(...), create_filter(...)]</code>, <code>'comparator': [Comparator(**sync_strategies)]</code>. A stage with two components runs one per stream; the comparator, one component, is called with both.</td><td><span class="kind doc">documented</span></td><td class="src">C4 · run</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<section id="listing">
+  <div class="wrap">
+    <h2>§3</h2>
+    <p class="h2big">Listing both sides</p>
+    <div class="tbl"><table>
+      <tr><th>fact</th><th>kind</th><th>source</th></tr>
+      <tr><td>The local side is walked depth-first with <code>os.listdir</code>, one directory at a time. A directory's name gets a trailing separator before the sort, and the sort normalizes the separator to <code>/</code> (<code>names.sort(key=lambda item: item.replace(os_sep, character))</code>), so the local order matches the order of S3 keys: <code>a/b.txt</code> sorts as the key <code>a/b.txt</code> would. The code's own comment: "We need to list files in byte order based on the full expanded path of the key".</td><td><span class="kind doc">documented</span></td><td class="src">C5 · list_files, normalize_sort</td></tr>
+      <tr><td>Symbolic links are followed by default; "S3 does not support symbolic links, so the contents of the link target are uploaded under the name of the link." <code>--no-follow-symlinks</code> skips links on an upload; on a download it "skips any object whose destination is a symbolic link, or is located under one".</td><td><span class="kind doc">documented</span></td><td class="src">H1 · --follow-symlinks; C5 · should_ignore_file</td></tr>
+      <tr><td>Skipped with a warning, not an error: a file that does not exist by the time it is read; a character or block device, FIFO, or socket; a file or directory that is not readable; a name that cannot be decoded. A warning sets the exit code to 2 (§10).</td><td><span class="kind doc">documented</span></td><td class="src">C5 · triggers_warning, should_ignore_file_with_decoding_warnings</td></tr>
+      <tr><td>A local file whose timestamp cannot be read is given the epoch as its time, with the warning "File has an invalid timestamp. Passing epoch time as timestamp." It is not skipped, so on an upload it compares as older than any object.</td><td><span class="kind doc">documented</span></td><td class="src">C5 · _validate_update_time</td></tr>
+      <tr><td>The S3 side is listed through the CLI's <code>BucketLister</code> with the bucket, the prefix, and the page size; <code>--page-size</code> "The default value is 1000 (the maximum allowed). Using a lower value may help if an operation times out." Each object brings its <code>Size</code> and <code>LastModified</code>.</td><td><span class="kind doc">documented</span></td><td class="src">C5 · list_objects; H1 · --page-size</td></tr>
+      <tr><td>A zero-byte key ending in <code>/</code>, the marker the console creates for a "folder", is dropped from the listing for every operation but delete. A sync never copies such markers, which is the source's side of "Only creates folders in the destination if they contain one or more files".</td><td><span class="kind doc">documented</span></td><td class="src">C5 · list_objects</td></tr>
+      <tr><td>The listing order on the S3 side is the API's: the comparator's docstring says both sides are "listed in the same order, least to greatest in collation order". <code>BucketLister</code>, which calls <code>ListObjectsV2</code>, was not read, and S3's own statement of its key order is not on this page.</td><td><span class="kind unv">unverified</span></td><td class="src">C3 · Comparator.call docstring</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<section id="filters">
+  <div class="wrap">
+    <h2>§4</h2>
+    <p class="h2big">Filters</p>
+    <div class="tbl"><table>
+      <tr><th>fact</th><th>kind</th><th>source</th></tr>
+      <tr><td>"by default, all files are included. This means that providing only an <code>--include</code> filter will not change what files are transferred. <code>--include</code> will only re-include files that have been excluded from an <code>--exclude</code> filter." To send only <code>.jpg</code> files: <code>--exclude "*" --include "*.jpg"</code>.</td><td><span class="kind doc">documented</span></td><td class="src">H2 · Use of Exclude and Include Filters</td></tr>
+      <tr><td>"the filters that appear later in the command take precedence over filters that appear earlier." In the source each matching pattern overwrites the verdict of the ones before it; the last match decides.</td><td><span class="kind doc">documented</span></td><td class="src">H2; C6 · call</td></tr>
+      <tr><td>Patterns are not relative. Each is joined to the source root, the absolute local directory or <code>bucket/prefix</code>, and the full path is matched with Python's <code>fnmatch.fnmatch</code>. The symbols are <code>*</code>, <code>?</code>, <code>[sequence]</code>, <code>[!sequence]</code>.</td><td><span class="kind doc">documented</span></td><td class="src">H2; C6 · _full_path_patterns, _match_pattern</td></tr>
+      <tr><td>A pattern is also joined to the destination root and tried against each file, so the same filter list applies to the destination listing. That is what makes "files excluded by filters are excluded from deletion" hold for <code>--delete</code>.</td><td><span class="kind doc">documented</span></td><td class="src">C6 · call, dst_patterns; H1 · --delete</td></tr>
+      <tr><td><code>*</code> crosses directory separators: <code>fnmatch('/tmp/foo/a/b/c.txt', '/tmp/foo/*.txt')</code> is <code>True</code>. So <code>--exclude "*.txt"</code> reaches every depth, and <code>--exclude "a/*"</code> excludes everything under <code>a/</code>, however deep.</td><td><span class="kind obs">observed</span></td><td class="src">O1 · Python 3.15.2</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<section id="compare">
+  <div class="wrap">
+    <h2>§5</h2>
+    <p class="h2big">Pairing the two lists</p>
+    <div class="tbl"><table>
+      <tr><th>fact</th><th>kind</th><th>source</th></tr>
+      <tr><td>The comparator takes the next item from each stream and compares their keys. Equal: the pair goes to the <em>file at source and destination</em> strategy, and the source file is yielded if it says so. Source key less: the file is only at the source; the <em>file not at destination</em> strategy decides, and only the source stream advances. Source key greater: the file is only at the destination; the <em>file not at source</em> strategy decides, and only the destination stream advances. When one stream ends, the rest of the other goes to its one-sided strategy.</td><td><span class="kind doc">documented</span></td><td class="src">C3 · call, compare_comp_key</td></tr>
+      <tr><td>The comparator does not sort. "The key concept in this function is that no matter the type of where the files are coming from, they are listed in the same order, least to greatest in collation order." A difference in order between the two listings would pair the wrong names; the shared sort of §3 is what prevents it.</td><td><span class="kind doc">documented</span></td><td class="src">C3 · call docstring</td></tr>
+      <tr><td>The three slots and their defaults: at both, <code>SizeAndLastModifiedSync</code>; not at destination, <code>MissingFileSync</code> (or <code>CaseConflictSync</code> on a download with <code>--case-conflict</code> other than <code>ignore</code>); not at source, <code>NeverSync</code>.</td><td><span class="kind doc">documented</span></td><td class="src">C4 · choose_sync_strategies</td></tr>
+      <tr><td>A flag replaces a slot. Each flag's strategy class adds its option to the sync command through the <code>building-arg-table.s3_sync</code> event and, when the option is set, answers the <code>choosing-s3-sync-strategy</code> event with itself; it takes the slot its <code>sync_type</code> names. This is why <code>--delete</code>, <code>--size-only</code>, and <code>--exact-timestamps</code> are not in the sync command's own option table.</td><td><span class="kind doc">documented</span></td><td class="src">C1 · BaseSync.register_strategy; C4 · choose_sync_strategies</td></tr>
+    </table></div>
+    <div class="note"><strong>Term.</strong> A <em>sync strategy</em> is the class that answers "transfer or not" for one slot: the pair, the source-only file, or the destination-only file. The source's name; this atlas uses it the same way.</div>
+  </div>
+</section>
+
+<section id="decide">
+  <div class="wrap">
+    <h2>§6</h2>
+    <p class="h2big">The decision, by direction and flag</p>
+    <p class="sub">The default rule, <code>SizeAndLastModifiedSync</code>, transfers when <code>(not same_size) or (not same_last_modified_time)</code>. The time half, verbatim from the source:</p>
+<pre><code>    def compare_time(self, src_file, dest_file):
+        src_time = src_file.last_update
+        dest_time = dest_file.last_update
+        delta = dest_time - src_time
+        cmd = src_file.operation_name
+        if cmd == "upload" or cmd == "copy":
+            if self.total_seconds(delta) &gt;= 0:
+                # Destination is newer than source.
+                return True
+            else:
+                # Destination is older than source, so
+                # we have a more recently updated file
+                # at the source location.
+                return False
+        elif cmd == "download":
+            if self.total_seconds(delta) &lt;= 0:
+                return True
+            else:
+                # delta is positive, so the destination
+                # is newer than the source.
+                return False</code></pre>
+    <p class="sub">(<span class="src">C1 · compare_time</span>, docstring left out.) <code>True</code> means "same enough, no transfer". On a download the destination is the local file: it is skipped when it is as old as the object or older, and fetched when it is newer.</p>
+    <div class="tbl"><table>
+      <tr><th>case</th><th>upload (local → S3)</th><th>copy (S3 → S3)</th><th>download (S3 → local)</th><th>source</th></tr>
+      <tr><td>on both sides, no flag</td><td>sizes differ, or the object is older than the file</td><td>sizes differ, or the destination object is older than the source</td><td>sizes differ, or the local file is <strong>newer</strong> than the object</td><td class="src">C1 · SizeAndLastModifiedSync, compare_time</td></tr>
+      <tr><td><code>--exact-timestamps</code></td><td>as with no flag</td><td>as with no flag</td><td>sizes differ, or the times differ at all</td><td class="src">C2 · ExactTimestampsSync; H1</td></tr>
+      <tr><td><code>--size-only</code></td><td colspan="3">sizes differ; times are not read</td><td class="src">C2 · SizeOnlySync; H1</td></tr>
+      <tr><td>only at the source</td><td colspan="3">always transferred (<code>MissingFileSync</code>)</td><td class="src">C1</td></tr>
+      <tr><td>only at the source, <code>--no-overwrite</code></td><td colspan="3">"only files not present at the destination will be transferred"</td><td class="src">H1 · --no-overwrite</td></tr>
+      <tr><td>only at the destination</td><td colspan="3">left alone (<code>NeverSync</code>)</td><td class="src">C1</td></tr>
+      <tr><td>only at the destination, <code>--delete</code></td><td colspan="3">deleted: <code>DeleteSync</code> sets the file's operation to <code>delete</code> and yields it; a file a filter excludes is not deleted</td><td class="src">C2 · DeleteSync; H1 · --delete</td></tr>
+      <tr><td>download, keys differing only by case, <code>--case-conflict</code></td><td colspan="2">not applicable</td><td><code>error</code> aborts, <code>warn</code> downloads with a warning, <code>skip</code> skips, <code>ignore</code> (the default) downloads</td><td class="src">H1 · --case-conflict; C4</td></tr>
+    </table></div>
+    <div class="tbl"><table>
+      <tr><th>fact</th><th>kind</th><th>source</th></tr>
+      <tr><td>Times are compared with their fractions of a second: <code>total_seconds</code> keeps microseconds, and the comparison is <code>&gt;= 0</code>, <code>&lt;= 0</code>, or under <code>--exact-timestamps</code> <code>== 0</code>.</td><td><span class="kind doc">documented</span></td><td class="src">C1 · total_seconds; C2</td></tr>
+      <tr><td>With <code>--debug</code> the rule logs each transfer it chose with both sizes and both times: "syncing: %s -&gt; %s, size: %s -&gt; %s, modified time: %s -&gt; %s". A skipped pair logs nothing.</td><td><span class="kind doc">documented</span></td><td class="src">C1 · SizeAndLastModifiedSync</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<section id="consequences">
+  <div class="wrap">
+    <h2>§7</h2>
+    <p class="h2big">What follows from the rule</p>
+    <p class="sub">Worked cases. Each follows from the facts it cites; none was run against a bucket for this page (§13).</p>
+    <div class="tbl"><table>
+      <tr><th>case</th><th>outcome</th><th>rests on</th></tr>
+      <tr><td>An object is rewritten in S3 at the same size after it was last downloaded; sync down again.</td><td><strong>Not downloaded.</strong> The download set the local file's time to the object's last-modified time (H1 example 3: "the last modified time of the local file is changed to the last modified time of the S3 object"). The rewrite makes the object newer, so the local file is older, which the download rule reads as "no transfer". <code>--exact-timestamps</code> fetches it.</td><td class="src">C1 · compare_time; H1 · example 3; C2</td></tr>
+      <tr><td>A local file is edited, its size unchanged; sync up.</td><td>Uploaded: its new modification time is later than the object's last-modified time, unless the object was written after the edit.</td><td class="src">C1</td></tr>
+      <tr><td>A local file is replaced by an older version of the same size with its old time kept (<code>cp -p</code>, <code>tar -x</code>, <code>rsync -t</code>); sync up.</td><td><strong>Not uploaded</strong>: the object is newer than the file. No flag fixes this on the time side; <code>--size-only</code> skips it too. <code>aws s3 cp</code> sends it.</td><td class="src">C1; C2</td></tr>
+      <tr><td>Two versions of a file differ in content but not in size, and the destination's time is the later.</td><td>Never transferred. No strategy reads the content: the listing carries an ETag, but the rules compare <code>size</code> and <code>last_update</code> only.</td><td class="src">C1; C2; C5 · FileStat</td></tr>
+      <tr><td>A site's objects need a new <code>Cache-Control</code> or <code>--metadata</code>; sync with the new value.</td><td>Only the files sync transfers get it. For <code>--metadata</code> the help says so: "In a sync, this means that files which haven't changed won't receive the new metadata." The other object properties ride the same transfer.</td><td class="src">H1 · --metadata; C4 · create_instructions</td></tr>
+      <tr><td>Sync with <code>--delete</code> while some uploads fail.</td><td>The comparator emits each delete as it reaches the name, in the same stream as the transfers, not after them. Whether the transfer stage holds deletes back until transfers succeed is not on this page (§13).</td><td class="src">C3 · call; C2 · DeleteSync</td></tr>
+      <tr><td>Sync down into a case-insensitive file system (the macOS default) from a bucket holding <code>Readme.md</code> and <code>README.md</code>.</td><td>With the default <code>--case-conflict ignore</code> both are downloaded to what the file system treats as one name; the help calls the result "undefined behavior on case-insensitive filesystems". <code>warn</code>, <code>skip</code>, or <code>error</code> make the conflict visible.</td><td class="src">H1 · --case-conflict</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<section id="contradiction">
+  <div class="wrap">
+    <h2>§8</h2>
+    <p class="h2big">The help text's two download rules</p>
+    <div class="tbl"><table>
+      <tr><th>fact</th><th>kind</th><th>source</th></tr>
+      <tr><td>Example 3 of the installed help: "An S3 object will require downloading if the size of the S3 object differs from the size of the local file, the last modified time of the S3 object is newer than the last modified time of the local file, or the S3 object does not exist in the local directory."</td><td><span class="kind doc">documented</span></td><td class="src">H1 · Example 3</td></tr>
+      <tr><td>The same help, under <code>--exact-timestamps</code>: "The default behavior is to ignore same-sized items unless the local version is newer than the S3 version."</td><td><span class="kind doc">documented</span></td><td class="src">H1 · --exact-timestamps</td></tr>
+      <tr><td>The source follows the second: on a download, <code>compare_time</code> returns "no transfer" when the local file is as old as the object or older (§6). Example 3's "the S3 object is newer" does not trigger a download of a same-sized file at 2.39.2.</td><td><span class="kind doc">documented</span></td><td class="src">C1 · compare_time</td></tr>
+    </table></div>
+    <div class="warn"><strong>Read the flag, not the example.</strong> Anyone relying on Example 3 to keep a local mirror current will keep a stale copy of every object rewritten at the same size. Use <code>--exact-timestamps</code> for a mirror pulled from S3.</div>
+  </div>
+</section>
+
+<section id="transfer">
+  <div class="wrap">
+    <h2>§9</h2>
+    <p class="h2big">Transfer settings</p>
+    <p class="sub">The <code>aws s3</code> transfer commands (<code>cp</code>, <code>sync</code>, <code>mv</code>, <code>rm</code>) share these, set under the <code>s3</code> key of a profile in <code>~/.aws/config</code> or with <code>aws configure set default.s3.NAME VALUE</code>. They change how fast and how hard the transfer stage works, never which files the decision picks.</p>
+    <div class="tbl"><table>
+      <tr><th>setting</th><th>default</th><th>what it does</th><th>source</th></tr>
+      <tr><td><code>max_concurrent_requests</code></td><td>10</td><td>"the maximum number of transfer commands that are allowed at any given time"; the transfers are multithreaded</td><td class="src">H3</td></tr>
+      <tr><td><code>max_queue_size</code></td><td>1000</td><td>tasks queued ahead of the workers; until the queue has seen every task the progress line shows the total as <code>...</code></td><td class="src">H3</td></tr>
+      <tr><td><code>multipart_threshold</code></td><td>8MB</td><td>the size at which uploads, downloads, and copies switch to multipart</td><td class="src">H3</td></tr>
+      <tr><td><code>multipart_chunksize</code></td><td>8MB (5MB minimum for uploads)</td><td>the part size; adjusted automatically when outside S3's limits</td><td class="src">H3</td></tr>
+      <tr><td><code>max_bandwidth</code></td><td>none</td><td>a rate cap on uploads and downloads; "It does not apply to copies nor deletes because those data transfers take place server side"</td><td class="src">H3</td></tr>
+      <tr><td><code>io_chunksize</code></td><td>256KB</td><td>the size of read parts queued in memory for a download's writes</td><td class="src">H3</td></tr>
+      <tr><td><code>preferred_transfer_client</code></td><td><code>auto</code></td><td><code>classic</code> (Python, every command and setting) or <code>crt</code> (C, faster, a subset). <code>auto</code> picks <code>crt</code> only when the command is not an S3-to-S3 copy, no unsupported setting is in use, and no other CLI process is using it; "Between versions of the AWS CLI, auto resolution criteria may change." A sync between buckets always runs on <code>classic</code>.</td><td class="src">H3</td></tr>
+      <tr><td><code>target_bandwidth</code>, <code>should_stream</code>, <code>disk_throughput</code>, <code>direct_io</code></td><td>derived; false; 10.0; false</td><td>tuning for the <code>crt</code> client only; <code>direct_io</code> is Linux only</td><td class="src">H3</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<section id="exit">
+  <div class="wrap">
+    <h2>§10</h2>
+    <p class="h2big">Exit codes</p>
+    <div class="tbl"><table>
+      <tr><th>fact</th><th>kind</th><th>source</th></tr>
+      <tr><td><code>0</code> when every task succeeded with no warning; <code>1</code> when any task failed; <code>2</code> when none failed and any warned: <code>if files[0].num_tasks_failed &gt; 0: rc = 1</code>, <code>elif files[0].num_tasks_warned &gt; 0: rc = 2</code>.</td><td><span class="kind doc">documented</span></td><td class="src">C4 · run</td></tr>
+      <tr><td>The warnings of §3 (an unreadable or special file, an undecodable name, an invalid timestamp) and a Glacier object that cannot be transferred set <code>2</code>; <code>--ignore-glacier-warnings</code> stops the Glacier warnings from doing so. A script that treats anything but <code>0</code> as failure fails a sync that skipped one unreadable file.</td><td><span class="kind doc">documented</span></td><td class="src">C5; H1 · --ignore-glacier-warnings</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<section id="relations">
+  <div class="wrap">
+    <h2>§11</h2>
+    <p class="h2big">Relationships</p>
+    <ul>
+      <li><strong><code>aws s3 cp --recursive</code></strong> runs the same listing, filters, and transfer stage without the comparator, so it transfers every listed file (§2). It is the tool when the decision rule would skip a file that must go.</li>
+      <li><strong><code>aws s3 mv</code> and <code>aws s3 rm</code></strong> share the filters (§4) and the transfer settings (§9).</li>
+      <li><strong><code>aws s3api</code></strong> is the low-level command set, one API call per command; it has no sync and no decision rule.</li>
+      <li><strong>S3 itself.</strong> The rule rests on an object's <code>LastModified</code> and <code>Size</code> as the listing returns them; what sets <code>LastModified</code> is S3's, not the CLI's, and a later page on S3 objects is where it belongs (§13).</li>
+    </ul>
+  </div>
+</section>
+
+<section id="observed-facts">
+  <div class="wrap">
+    <h2>§12</h2>
+    <p class="h2big">Observed</p>
+    <ul>
+      <li>The installed CLI reports <code>aws-cli/2.39.2 Python/3.15.2 Darwin/25.6.0 source/arm64</code> (2026-10-31). H1, H2, and H3 are this binary's own help output.</li>
+      <li>Python 3.15.2's <code>fnmatch.fnmatch</code> returns <code>True</code> for <code>('/tmp/foo/a/b/c.txt', '/tmp/foo/*.txt')</code> and for <code>('/tmp/foo/a/b/c.txt', '/tmp/foo/a/*')</code> (§4). The CLI reports the same Python version, 3.15.2.</li>
+      <li>No sync was run against a bucket for this page; the worked cases of §7 are read from the rules, not from a transfer.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="gaps">
+  <div class="wrap">
+    <h2>§13</h2>
+    <p class="h2big">Gaps and unverified claims</p>
+    <ul>
+      <li>How a local file's size and time are read (<code>get_file_stat</code> in <code>utils.py</code>) was not read; whether the time is the modification time to the microsecond is assumed from §6, not confirmed.</li>
+      <li>The S3 listing's order and paging (<code>BucketLister</code> in <code>utils.py</code>) were not read; the shared order of §3 rests on the comparator's docstring (§3, unverified row).</li>
+      <li>How a download sets the local file's time is taken from the help's Example 3 sentence, not from the transfer code.</li>
+      <li>What sets an object's <code>LastModified</code> (the time of the write, not the uploaded file's time) is S3's behaviour and is not cited on this page; the upload cases of §7 assume it.</li>
+      <li>The strategy behind <code>--no-overwrite</code> and the <code>CaseConflictSync</code> class were not read; their rows rest on the help text.</li>
+      <li>Whether the transfer stage orders deletes after transfers, and how it retries, was not read (§7).</li>
+      <li>Glacier handling (<code>--force-glacier-transfer</code>, which objects warn) lives outside the files read.</li>
+      <li>How <code>--checksum-mode</code> and <code>--checksum-algorithm</code> act during a sync: they verify or set a checksum on the transfer, but they do not enter the decision (§6); the transfer side is not on this page.</li>
+      <li>Behavioural differences between the <code>classic</code> and <code>crt</code> clients during a sync beyond H3's list.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="changes">
+  <div class="wrap">
+    <h2>§14</h2>
+    <p class="h2big">Change record</p>
+    <div class="tbl"><table>
+      <tr><th>date</th><th>checked against</th><th>change</th></tr>
+      <tr><td>2026-10-31</td><td>AWS CLI 2.39.2; source at tag 2.39.2</td><td>Page written (CSL-0212).</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<section id="sources">
+  <div class="wrap">
+    <h2>§15</h2>
+    <p class="h2big">Sources</p>
+    <div class="tbl"><table>
+      <tr><th>id</th><th>document</th><th>read</th></tr>
+      <tr><td>H1</td><td>AWS CLI 2.39.2, <code>aws s3 sync help</code>, as the installed binary prints it. The same text is served as the command reference at <a href="https://awscli.amazonaws.com/v2/documentation/api/latest/reference/s3/sync.html">awscli.amazonaws.com/…/s3/sync.html</a>, which tracks the latest release.</td><td>2026-10-31</td></tr>
+      <tr><td>H2</td><td>AWS CLI 2.39.2, <code>aws s3 help</code>: path arguments, directory operations, filters.</td><td>2026-10-31</td></tr>
+      <tr><td>H3</td><td>AWS CLI 2.39.2, <code>aws help s3-config</code>: "AWS CLI S3 Configuration".</td><td>2026-10-31</td></tr>
+      <tr><td>C1</td><td><code>awscli/customizations/s3/syncstrategy/base.py</code> at tag 2.39.2. <a href="https://github.com/aws/aws-cli/blob/2.39.2/awscli/customizations/s3/syncstrategy/base.py">github.com/aws/aws-cli/…/base.py</a></td><td>2026-10-31</td></tr>
+      <tr><td>C2</td><td><code>syncstrategy/exacttimestamps.py</code>, <code>sizeonly.py</code>, <code>delete.py</code> at tag 2.39.2. <a href="https://github.com/aws/aws-cli/tree/2.39.2/awscli/customizations/s3/syncstrategy">github.com/aws/aws-cli/…/syncstrategy</a></td><td>2026-10-31</td></tr>
+      <tr><td>C3</td><td><code>awscli/customizations/s3/comparator.py</code> at tag 2.39.2. <a href="https://github.com/aws/aws-cli/blob/2.39.2/awscli/customizations/s3/comparator.py">github.com/aws/aws-cli/…/comparator.py</a></td><td>2026-10-31</td></tr>
+      <tr><td>C4</td><td><code>awscli/customizations/s3/subcommands.py</code> at tag 2.39.2: <code>SyncCommand</code>, <code>CommandArchitecture</code>, <code>CommandParameters</code>. <a href="https://github.com/aws/aws-cli/blob/2.39.2/awscli/customizations/s3/subcommands.py">github.com/aws/aws-cli/…/subcommands.py</a></td><td>2026-10-31</td></tr>
+      <tr><td>C5</td><td><code>awscli/customizations/s3/filegenerator.py</code> at tag 2.39.2. <a href="https://github.com/aws/aws-cli/blob/2.39.2/awscli/customizations/s3/filegenerator.py">github.com/aws/aws-cli/…/filegenerator.py</a></td><td>2026-10-31</td></tr>
+      <tr><td>C6</td><td><code>awscli/customizations/s3/filters.py</code> at tag 2.39.2. <a href="https://github.com/aws/aws-cli/blob/2.39.2/awscli/customizations/s3/filters.py">github.com/aws/aws-cli/…/filters.py</a></td><td>2026-10-31</td></tr>
+      <tr><td>O1</td><td>Observed on the author's Mac, 2026-10-31: <code>aws --version</code>; <code>python3 -c "import fnmatch; …"</code> under Python 3.15.2.</td><td>2026-10-31</td></tr>
+    </table></div>
+    <p class="sub">The C sources were served from <code>raw.githubusercontent.com/aws/aws-cli/2.39.2/…</code>; the links above are the same files' browsable addresses.</p>
+  </div>
+</section>
+
+<footer><div class="wrap">AWS atlas · s3 sync · built by Straylight under PRD-0004. No script, no external asset.</div></footer>
+</body>
+</html>

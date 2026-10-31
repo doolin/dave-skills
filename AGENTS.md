@@ -48,7 +48,9 @@ client on permissions so far, `claude-code-permissions.html` and
 `codex-permissions.html`. The second is `atlases/macos-apps/`,
 on what a macOS application leaves on a Mac and how it gets there,
 with dreader mapped onto it for its release (index plus places,
-arrival, gate, removal, dreader).
+arrival, gate, removal, dreader). The third is `atlases/aws/`, on
+what the AWS CLI's commands do, read from the installed help and
+the CLI's source at the matching tag (index plus `s3-sync.html`).
 
 The atlases are one section of clubstraylight's local site
 (DES-0001 and ADR-0007 there), served at
@@ -61,8 +63,8 @@ site row, the five-link navigation every page of the site carries,
 written by hand here since the atlases have no build and checked by
 clubstraylight's `ruby graph/inspect pages --site ../dave-skills/atlases`
 (the `site-nav` rule). The pattern is defined by PRD-0004 in
-clubstraylight.com, which also owns the tickets; commits here cite
-the ticket in the body.
+clubstraylight.com, which also owns the tickets; a commit here
+carries the ticket as its subject's prefix and cites it in the body.
 
 ## Hooks
 

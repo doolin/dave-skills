@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AWS — atlas index</title>
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="../atlas.css">
+</head>
+<body>
+<header class="chrome">
+<nav class="site" aria-label="Straylight">
+<a class="home" href="../../index.html">Straylight</a>
+<a href="../../kb/index.html">knowledge base</a>
+<a href="../../audits/index.html">audits</a>
+<a href="../../atlases/index.html" aria-current="true">atlases</a>
+<a href="../../presentations/index.html">presentations</a>
+<a href="../../search">search</a>
+</nav>
+</header>
+
+<header>
+  <div class="wrap">
+    <p class="kicker"><a href="../index.html">Atlases</a> · AWS · index</p>
+    <h1>What the AWS tools the family runs actually do</h1>
+    <p class="lede">The family deploys to and backs up into AWS through the AWS CLI. Its high-level commands make decisions the operator never sees: which files to send, which to skip, which to delete. This atlas reads those decisions from the vendor's own documents, the help text the installed CLI ships and the CLI's source at the matching tag, one page per command or feature. It opens with <code>aws s3 sync</code>.</p>
+    <div class="observed">
+      <dl>
+        <dt>subject</dt><dd>The AWS CLI's high-level <code>s3</code> commands, starting with <code>sync</code>; later pages on S3 itself where a command's behaviour rests on it.</dd>
+        <dt>version observed</dt><dd>AWS CLI <code>2.39.2</code> (<code>aws --version</code>: <code>aws-cli/2.39.2 Python/3.15.2 Darwin/25.6.0 source/arm64</code>), on the author's Mac, 2026-10-31. Source read at the git tag <code>2.39.2</code> of <code>aws/aws-cli</code>, the same day.</dd>
+        <dt>source kinds</dt><dd><span class="kind doc">documented</span> stated in the help text the installed CLI prints or in the CLI's source at the tag; the source is the vendor's own statement of what the command does · <span class="kind obs">observed</span> seen on the author's machine, with its date · <span class="kind unv">unverified</span> a claim the author could not confirm at this version. A row with no mark is documented.</dd>
+        <dt>pages</dt><dd><a href="s3-sync.html">s3 sync</a>. Each page ends with its relationships, its gaps, a change record, and its sources.</dd>
+      </dl>
+    </div>
+  </div>
+</header>
+
+<nav class="toc">
+  <div class="wrap">
+    <ol>
+      <li><a href="#mechanism">The mechanism of a sync, in five stages</a></li>
+      <li><a href="#rule">The rule in one table</a></li>
+      <li><a href="#reading">How to read a page</a></li>
+      <li><a href="#changes">Change record</a></li>
+    </ol>
+  </div>
+</nav>
+
+<section id="mechanism">
+  <div class="wrap">
+    <h2>§1</h2>
+    <p class="h2big">The mechanism of a sync, in five stages</p>
+    <p class="sub">The stages the CLI runs, in its own order (<code>CommandArchitecture.create_instructions</code>). Each links to its section on the <a href="s3-sync.html">s3 sync</a> page.</p>
+    <div class="map">
+      <div class="step"><span class="k">1</span><span class="n"><a href="s3-sync.html#listing">list</a></span><span class="d">Both sides are listed in the same order: the local tree depth-first with each directory's entries sorted, S3 through <code>ListObjectsV2</code>; the next stage assumes the two lists share one order.</span></div>
+      <div class="step"><span class="k">2</span><span class="n"><a href="s3-sync.html#filters">filter</a></span><span class="d"><code>--exclude</code> and <code>--include</code> run over both listings, the last matching pattern deciding.</span></div>
+      <div class="step"><span class="k">3</span><span class="n"><a href="s3-sync.html#compare">pair</a></span><span class="d">One walk down both sorted lists pairs each source file with the destination file of the same relative name, or with nothing.</span></div>
+      <div class="step"><span class="k">4</span><span class="n"><a href="s3-sync.html#decide">decide</a></span><span class="d">A sync strategy says yes or no for each pair: by size and modification time, by default; the rule differs by direction.</span></div>
+      <div class="step"><span class="k">5</span><span class="n"><a href="s3-sync.html#transfer">transfer</a></span><span class="d">The yes items go to the transfer client: uploads, downloads, copies, and with <code>--delete</code> deletions, concurrently, multipart above a threshold.</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="rule">
+  <div class="wrap">
+    <h2>§2</h2>
+    <p class="h2big">The rule in one table</p>
+    <p class="sub">When a file is on both sides, with no flag. The detail, the flags, and the citations are on the <a href="s3-sync.html#decide">s3 sync</a> page.</p>
+    <div class="tbl"><table>
+      <tr><th>direction</th><th>transfers when</th><th>skips a same-sized file when</th></tr>
+      <tr><td>upload (local → S3)</td><td>the sizes differ, or the local file is newer than the object</td><td>the object is as new as the local file or newer</td></tr>
+      <tr><td>copy (S3 → S3)</td><td>the sizes differ, or the source object is newer than the destination object</td><td>the destination is as new as the source or newer</td></tr>
+      <tr><td>download (S3 → local)</td><td>the sizes differ, or the local file is newer than the object</td><td>the local file is as old as the object or older, <strong>including when the object changed after the last download</strong></td></tr>
+    </table></div>
+    <div class="warn"><strong>The one sentence to keep.</strong> A sync compares sizes and times, never contents, and on a download it sends an object again only when the local copy is newer than it, not older; an object rewritten in S3 at the same size is not downloaded unless <code>--exact-timestamps</code> is given (<a href="s3-sync.html#consequences">s3 sync §7</a>).</div>
+  </div>
+</section>
+
+<section id="reading">
+  <div class="wrap">
+    <h2>§3</h2>
+    <p class="h2big">How to read a page</p>
+    <ul>
+      <li>The block under the title names the CLI version the page was read against and when. A fact is true at that version; the change record at the end keeps the old fact when a release changes it.</li>
+      <li>A row's source mark (<span class="src">C2 · compare_time</span>) names a document in the page's sources list and the place in it the fact came from. Verbatim vendor wording, the source's included, is quote-marked or set as code.</li>
+      <li>Where the vendor's help text and its source disagree, the page says so and states which one the command follows: the source is what runs.</li>
+      <li>Each page's gaps section lists what the author knows to be missing, so "not on the page" can be told from "not known".</li>
+    </ul>
+  </div>
+</section>
+
+<section id="changes">
+  <div class="wrap">
+    <h2>§4</h2>
+    <p class="h2big">Change record</p>
+    <div class="tbl"><table>
+      <tr><th>date</th><th>checked against</th><th>change</th></tr>
+      <tr><td>2026-10-31</td><td>AWS CLI 2.39.2</td><td>Atlas opened with the index and the s3 sync page (CSL-0212).</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<footer><div class="wrap">AWS atlas · index · built by Straylight under PRD-0004. No script, no external asset.</div></footer>
+</body>
+</html>
