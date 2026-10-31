@@ -42,6 +42,11 @@ the order you will meet them.
    [[ $PWD == */.claude/worktrees/* ]] || { echo "ERR: expected worktree CWD, got: $PWD" >&2; exit 1; }
    ```
 
+   The sandbox may refuse that compound line as "too complex to
+   verify" (sgp-linebacker-2, 2026-10-28: all five agents). Brief the
+   fallback alongside it: run `pwd` as its own call and stop unless
+   the path contains `/.claude/worktrees/`.
+
 4. **A worktree's base can lag main.** `git worktree add` captures HEAD
    at creation, and empirically that HEAD can predate a cherry-pick that
    already landed — even when the dispatch call is issued afterwards. A
@@ -51,6 +56,17 @@ the order you will meet them.
    dependency's cherry-pick is on main and main is green.** Wave the
    dependency graph; within a wave, nothing depends on anything else in
    it.
+
+   The lag can be the whole unpushed history, not one commit. In a repo
+   where the human pushes after review, the harness cut five worktrees
+   from `origin/master`, **eight commits behind local `HEAD`**
+   (sgp-linebacker-2, 2026-10-20): the prep commit the briefs depended
+   on was in none of them, one agent stopped cleanly, four improvised
+   around the missing scaffolding and every integration needed a
+   cleanup pass. Check `git worktree list` against `git rev-parse HEAD`
+   before reading any report; when the bases lag and a push is not yours
+   to make, run the dependent agent on main without isolation once the
+   tree is otherwise quiet, with its file set disjoint from everything.
 
 5. **Two agents appending to the end of the same file collide.** Git's
    auto-merge alternates their blocks into four-plus conflict zones
@@ -91,6 +107,14 @@ the order you will meet them.
      without having tried, when a brief lists many shell commands and
      sounds uncertain. Say the patterns are pre-approved and to attempt
      each step and report what happens.
+   - **A `Write` allow keyed to the repo root does not match a worktree
+     path.** `Write(//repo/webgame/**)` lets an agent create files on
+     main and silently denies the same path under
+     `.claude/worktrees/<id>/webgame/`; `Edit(//repo/**)` matches both.
+     Either widen the allow to `//repo/**` or pre-create every new file
+     on main as a stub before dispatch, so the agents only edit. Same
+     for `git`: if it is not allowlisted, agents cannot stage — brief
+     them to leave changes in the tree and stage from the orchestrator.
 
 8. **Reported success is not verified success.** Agents, Haiku in
    particular, have reported "cannot run checks due to permissions" while
