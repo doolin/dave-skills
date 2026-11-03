@@ -1,12 +1,12 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# tool-call-ledger — cluster an agent's Bash tool calls by shape and
+# tool-call-ledger — cluster an agent's shell tool calls by shape and
 # propose, per recurring shape, one of: an allowlist entry, something
 # that already exists (a skill grant, a skill, a file tool), a new tool,
 # or keep prompting. Reads the JSONL ledger written by
 # hooks/tool-call-ledger.sh, or Bash tool_use records straight out of
-# Claude Code transcripts (--transcripts DIR) for a dry run over history.
+# Claude Code or Codex transcripts (--transcripts PATH) for a history report.
 #
 # The judgment lives in policy.rb beside this file, written in a small
 # DSL (see Ledger::Rules for the six verbs). This file is the engine and
@@ -14,9 +14,11 @@
 #
 # Usage:
 #   tool-call-ledger.rb [LEDGER ...]          default: <git root>/.claude/tool-calls.jsonl
-#   tool-call-ledger.rb --transcripts DIR     read every *.jsonl transcript in DIR
+#   tool-call-ledger.rb --transcripts PATH    read a JSONL file, or every *.jsonl in a directory
 #
 # Options:
+#   --recursive        with --transcripts DIR, also read *.jsonl in subdirectories
+#                      (Codex keeps rollouts under sessions/YYYY/MM/DD/)
 #   --min N            report clusters seen at least N times (policy default 3)
 #   --all              report every cluster, regardless of --min
 #   --no-hints         ignore the policy's reach_for rules (what would have been proposed
@@ -43,7 +45,8 @@ require 'shellwords'
 # Everything lives under one namespace so the file is loadable for tests
 # without running (see the guard at the bottom).
 module Ledger
-  Record = Struct.new(:ts, :cwd, :session, :command)
+  Record = Struct.new(:ts, :cwd, :session, :command, :client)
+  require_relative 'transcripts'
 
   # The policy DSL. A policy file is instance_eval'd here, so each line
   # of it is one call to one of these verbs.
@@ -119,13 +122,13 @@ module Ledger
   # Command-line parsing. Exits 10 on anything malformed.
   module Options
     DEFAULTS = { min: nil, all: false, hints: true, policy: nil, settings: [], skills: [],
-                 transcripts: nil, root: nil, ledgers: [] }.freeze
+                 transcripts: nil, recursive: false, root: nil, ledgers: [] }.freeze
     VALUED = { '--min' => :min, '--policy' => :policy, '--settings' => :settings, '--skills' => :skills,
                '--transcripts' => :transcripts, '--root' => :root }.freeze
 
     def self.usage
       puts <<~USAGE
-        Usage: tool-call-ledger.rb [--transcripts DIR] [--min N] [--all] [--no-hints] [--policy PATH]
+        Usage: tool-call-ledger.rb [--transcripts PATH [--recursive]] [--min N] [--all] [--no-hints] [--policy PATH]
                                    [--settings PATH]... [--skills DIR]... [--root DIR] [LEDGER ...]
       USAGE
     end
@@ -144,6 +147,7 @@ module Ledger
       return help if ['-h', '--help'].include?(arg)
       return opts[:all] = true if arg == '--all'
       return opts[:hints] = false if arg == '--no-hints'
+      return opts[:recursive] = true if arg == '--recursive'
       return opts[:min] = Regexp.last_match(1).to_i if arg =~ /\A--min=(\d+)\z/
       return valued(opts, args, arg) if VALUED.key?(arg)
       return unknown(arg) if arg.start_with?('-')
@@ -173,7 +177,7 @@ module Ledger
     end
   end
 
-  # Reads records from the hook's ledger or from Claude Code transcripts.
+  # Reads records from the hook's ledger or either client's transcripts.
   module Reader
     def self.ledger(path)
       File.foreach(path).filter_map { |line| record_from_ledger(line) }
@@ -184,35 +188,13 @@ module Ledger
       cmd = h['command']
       return unless cmd.is_a?(String) && !cmd.empty?
 
-      Record.new(h['ts'].to_s, h['cwd'].to_s, h['session'].to_s, cmd)
+      Record.new(h['ts'].to_s, h['cwd'].to_s, h['session'].to_s, cmd, h['client'] || 'claude')
     rescue JSON::ParserError
       nil
     end
 
     def self.transcript(path)
-      session = File.basename(path, '.jsonl')
-      File.foreach(path).flat_map { |line| records_from_transcript_line(line, session) }
-    end
-
-    def self.records_from_transcript_line(line, session)
-      h = JSON.parse(line)
-      return [] unless h['type'] == 'assistant'
-
-      blocks = h.dig('message', 'content')
-      return [] unless blocks.is_a?(Array)
-
-      bash_commands(blocks).map { |cmd| Record.new(h['timestamp'].to_s, h['cwd'].to_s, h['sessionId'] || session, cmd) }
-    rescue JSON::ParserError
-      []
-    end
-
-    def self.bash_commands(blocks)
-      blocks.filter_map do |b|
-        next unless b.is_a?(Hash) && b['type'] == 'tool_use' && b['name'] == 'Bash'
-
-        cmd = b.dig('input', 'command')
-        cmd if cmd.is_a?(String) && !cmd.empty?
-      end
+      Transcripts.new(path).read
     end
   end
 
@@ -391,12 +373,22 @@ module Ledger
       command == prefix || command.start_with?(prefix)
     end
 
+    # The order is Claude Code's contract with the operator; a new client
+    # adds a gated step, never a reordering (see "Adding a client" in SKILL.md).
     def decide(cluster)
-      allowed(cluster) || covered(cluster) || hinted(cluster) || never(cluster) ||
+      grants(cluster) || hinted(cluster) || never(cluster) ||
         env_prefixed(cluster) || chained(cluster) || allowlist(cluster)
     end
 
     private
+
+    # Claude's Bash grants do not describe Codex rules or sandbox permissions,
+    # so a cluster with any Codex record skips them.
+    def grants(cluster)
+      return if cluster[:clients].include?('codex')
+
+      allowed(cluster) || covered(cluster)
+    end
 
     def allowed(cluster)
       segments = cluster[:segments]
@@ -442,6 +434,9 @@ module Ledger
     def allowlist(cluster)
       verb = cluster[:verb]
       return ['keep prompting', "a rule would be the blanket Bash(#{verb} *)"] if @rules.blanket_names.include?(verb)
+      if cluster[:clients].include?('codex')
+        return ['review rule', "#{verb} (Codex rules and sandbox permissions are not inspected)"]
+      end
 
       rule = "#{verb} *"
       if @allow_rules.include?(rule)
@@ -498,7 +493,7 @@ module Ledger
 
     def new_cluster(shape)
       { shape: shape, count: 0, chained: false, env: false, verb: nil,
-        first: nil, last: nil, sessions: {}, examples: [], segments: [] }
+        first: nil, last: nil, sessions: {}, clients: [], examples: [], segments: [] }
     end
 
     def absorb(cluster, record)
@@ -506,6 +501,7 @@ module Ledger
       cluster[:count] += 1
       touch_times(cluster, record.ts)
       cluster[:sessions][record.session] = true unless record.session.empty?
+      cluster[:clients] |= [record.client || 'claude']
       add_example(cluster, record.command)
     end
 
@@ -593,19 +589,28 @@ module Ledger
     end
 
     def self.load_records(opts, root)
-      records = opts[:transcripts] ? transcript_records(opts[:transcripts]) : ledger_records(opts[:ledgers], root)
+      records = if opts[:transcripts]
+                  transcript_records(opts[:transcripts], recursive: opts[:recursive])
+                else
+                  ledger_records(opts[:ledgers], root)
+                end
       return records unless records.empty?
 
-      warn 'tool-call-ledger: no Bash records found'
+      warn 'tool-call-ledger: no shell command records found'
       exit 11
     end
 
-    def self.transcript_records(dir)
-      unless File.directory?(dir)
-        warn "tool-call-ledger: no such directory #{dir}"
+    # A directory reads its own *.jsonl only, as it always has: a Claude
+    # project directory can hold subagent transcripts in subdirectories,
+    # and folding those in would change existing history reports.
+    def self.transcript_records(path, recursive: false)
+      unless File.file?(path) || File.directory?(path)
+        warn "tool-call-ledger: no such transcript path #{path}"
         exit 11
       end
-      Dir.glob(File.join(dir, '*.jsonl')).sort.flat_map { |f| Reader.transcript(f) }
+      pattern = recursive ? File.join(path, '**', '*.jsonl') : File.join(path, '*.jsonl')
+      files = File.file?(path) ? [path] : Dir.glob(pattern).sort
+      files.flat_map { |file| Reader.transcript(file) }
     end
 
     def self.ledger_records(ledgers, root)
