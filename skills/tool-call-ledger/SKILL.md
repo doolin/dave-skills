@@ -1,6 +1,6 @@
 ---
 name: tool-call-ledger
-description: Turn permission prompts into a queue of tools. Reads the per-repo ledger of Bash tool calls written by hooks/tool-call-ledger.sh (or Bash calls straight from Claude Code transcripts with --transcripts), clusters commands by shape, and for each recurring shape proposes one of - an allowlist entry, an existing skill, a new tool, or keep prompting. Run it when prompts have been piling up, at a session close, or as the dry run before building a tool by hand.
+description: Turn permission prompts into a queue of tools. Reads the per-repo ledger of Bash tool calls written by hooks/tool-call-ledger.sh (or shell calls straight from Claude Code or Codex transcripts with --transcripts), clusters commands by shape, and for each recurring shape proposes one of - an allowlist entry (for Codex, a rule to review), an existing skill, a new tool, or keep prompting. Run it when asked to track tool calls, when prompts have been piling up, at a session close, or as the dry run before building a tool by hand.
 allowed-tools: Bash(~/.claude/skills/tool-call-ledger/tool-call-ledger.rb*)
 ---
 
@@ -10,14 +10,39 @@ A permission prompt on a routine command means the shape should have
 been a tool. The prompt used to be consumed by the operator and lost.
 This reads the record instead.
 
-## Two halves
+## Capture and report
 
-**The hook** (`hooks/tool-call-ledger.sh`, PreToolUse on Bash) appends
+**Claude Code hook:** `hooks/tool-call-ledger.sh`, PreToolUse on Bash, appends
 `{ts, cwd, session, command}` to `<repo>/.claude/tool-calls.jsonl`.
 Commands only. Always exits 0. Symlinked per repo, registered with
 matcher `Bash` and no `if`.
 
-**The skill** (this script) clusters that ledger and proposes.
+**Native transcripts:** both clients already record calls. Pass the
+active session's JSONL file with `--transcripts`; a directory reads
+the `*.jsonl` directly in it, and `--recursive` adds its subdirectories
+(Codex keeps rollouts under `sessions/YYYY/MM/DD/`). Prefer the known active file for a
+session question rather than scanning unrelated history. Re-read it at
+checkpoints to include new calls. Reading a transcript does not install
+a hook or start background monitoring.
+
+- Claude: reads `assistant` → `tool_use` → `Bash` command inputs.
+- Codex: reads completed `CommandExecution` items, including commands
+  invoked inside `functions.exec`. Deduplicates item IDs and reports
+  failures too. Without completion items, reads direct `exec_command`,
+  `shell_command`, and `shell` requests, labelled completion unknown.
+- Codex request totals include orchestration and polling calls. They
+  are separate from the shell-command count, not added to it. Embedded
+  JavaScript is never evaluated; missing completion records are reported
+  as incomplete rather than guessed from source code. Neither client's
+  outputs, patches, nor conversation text become ledger commands.
+
+The Codex record shapes were verified locally with CLI 0.166.0 on
+2026-11-02. Unknown record kinds are ignored; do not claim a complete
+count for a format the reader does not recognize. This is a command
+pattern report, not a duration, cost, or complete all-tool audit.
+
+The shared source is `dave-skills/skills/tool-call-ledger/`. Link each
+client's skill directory to that source; do not maintain client copies.
 
 ## Run
 
@@ -27,7 +52,15 @@ matcher `Bash` and no `if`.
 ~/.claude/skills/tool-call-ledger/tool-call-ledger.rb --all             # every shape
 ~/.claude/skills/tool-call-ledger/tool-call-ledger.rb --transcripts ~/.claude/projects/<slug>   # dry run over history
 ~/.claude/skills/tool-call-ledger/tool-call-ledger.rb --transcripts ... --no-hints             # as if today's tools did not exist
+~/.codex/skills/tool-call-ledger/tool-call-ledger.rb --transcripts /path/to/rollout.jsonl
+~/.codex/skills/tool-call-ledger/tool-call-ledger.rb --transcripts /path/to/rollout.jsonl --no-hints
+~/.codex/skills/tool-call-ledger/tool-call-ledger.rb --transcripts ~/.codex/sessions --recursive
 ```
+
+In Codex, use `--transcripts` with the current rollout. The no-argument
+default reads Claude's hook ledger; it is not evidence that Codex calls
+are being captured there. A report over the active transcript stays
+local. Never commit or publish transcripts or command logs.
 
 Output, one block per cluster:
 
@@ -52,6 +85,7 @@ Output, one block per cluster:
 | **covered** | a skill's own grant matches the command | nothing; it is already a tool |
 | **use instead** | a hint says a skill or a file tool answers this shape | use that next time |
 | **allowlist** | one read-only verb, no pipeline | add the printed `Bash(...)` line to settings |
+| **review rule** | a Codex command has a simple recurring shape | review its prefix against Codex rules and sandbox permissions; this tool does not inspect those grants |
 | **new tool** | a pipe, chain, or redirect that recurs | write the tool (dave-skills if generic, `scripts/` if repo-bound) |
 | **keep prompting** | the verb changes state, or a rule would be a blanket `git *` | nothing; the prompt is the point |
 
@@ -59,7 +93,26 @@ A pipeline is allowed only when every segment matches a rule, which is
 how Claude Code judges it; `rubocop 2>&1 | tail -2` prompts on the
 `tail` half, and the report says so.
 
-The skill proposes. Nothing is granted by running it.
+The skill proposes. Nothing is granted by running it. Claude's
+`Bash(...)` grants and `allowed-tools` fields do not grant Codex
+permissions. Mixed-client clusters do not inherit Claude grants, so a
+state-changing Codex command reports keep prompting even where a
+Claude grant would match it. A Claude cluster is judged exactly as
+before Codex support: an existing grant reports allowed.
+
+## Adding a client
+
+Hermes, OpenCode, pi, or any other agent: extending this skill is
+welcome. Add a reader for your transcript format, tag your records
+with your own `client` value, and gate any client-specific judgment
+on that tag, the way `grants` skips Claude grants for Codex clusters.
+
+Do not change existing behavior for another client. On the same input,
+Claude Code and Codex must get the same report they got before your
+change: same records, same order of decisions in `decide`, same
+outcomes. The bats suites in `test/` pin that; if an existing test
+has to change for your client to work, the change belongs behind your
+client's tag instead.
 
 ## The policy file
 
@@ -100,7 +153,7 @@ verbatim examples under it show why.
 
 ## Relation to `/fewer-permission-prompts`
 
-That built-in skill scans transcripts and proposes allowlist entries
+That Claude Code skill scans transcripts and proposes allowlist entries
 only; it cannot say "this is a tool you should build" or "you already
 have one." This skill keeps its guardrail (state-changing verbs are
 never proposed for allowlisting) and adds the other two outcomes. The
@@ -113,7 +166,7 @@ input.
 |------|---------|
 | 0    | report printed |
 | 10   | bad arguments |
-| 11   | no ledger, no transcripts directory, or no Bash records in them |
+| 11   | no ledger, no transcript path, or no shell command records |
 
 ## Tests
 
