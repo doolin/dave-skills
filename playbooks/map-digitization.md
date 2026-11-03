@@ -422,6 +422,56 @@ montage-reading. The transferable design:
 - Session output is raw material only; frozen JSONs still change
   through curation tables + re-freeze.
 
+## Maps from a VASSAL module (Silver Bayonet, 2026-11-02)
+
+Reference implementation: `~/src/silver-bayonet` (`tools/lib.rb`,
+`pitch.rb`, `cut.rb`, `emit.rb`, `overlay.rb`, `underlay.rb`,
+`tiles.rb`, `text.rb`; frozen `map/lattice.json`, `map/pitch.json`,
+`map/<region>-text.json`; notes in
+`.development/observations-pleiku-map.md`).
+
+- **Look for the game's VASSAL module on the operator's machine
+  before scanning, photographing or stitching anything**
+  (`mdfind "kMDItemFSName == '*.vmod'c"`). The `.vmod` is a zip: the
+  map sheet is one image under `images/`, and `buildFile` states the
+  hex grid outright (`HexGrid dx dy x0 y0 sideways`,
+  `HexGridNumbering hOff vOff stagger`), which replaces the lattice
+  fit. Three "phone photos" of a map turned out to be VASSAL window
+  captures of that image.
+- **Verify the stated pitch on the ink with an instrument anyway.**
+  Local-contrast mask (`-lat 25x25-8%`; the interior sides were 25
+  grey levels of contrast and a dark-pixel mask found only the sheet
+  boundary), straight-line openings at the hex-side angles
+  (user-defined `WxH:` kernels; ImageMagick 7 has no `Line` kernel;
+  union with `-evaluate-sequence Max`, not `-flatten`), projections,
+  a line through the peaks. The module's hand-typed 96 px was the
+  print's; the "exact" 95.70 was not, and the printed hex was 0.3 %
+  shorter than regular, so vertices come from dx and dy separately.
+- **The map never rescales: pixels per inch is a measurement.** The
+  sheet image's scale cannot be inferred from a nominal sheet size
+  (34 in width and 22 in height gave 168 vs 150 px/in); one measured
+  hex on the board sets it. Keep the number in the frozen lattice
+  JSON, marked provisional until measured, and have the renderer
+  read it and warn.
+- **Hex numbers over the print's own**: measure at 4× (cap height,
+  width, rise above centre, tracking, ink), then check at 1:1 with
+  the computed label at half opacity in the QA colour.
+- **Painting out the print's own grid and lettering**: a mask drawn
+  from the lattice and the frozen text boxes, made transparent, then
+  ImageMagick's blur on the RGBA image (alpha-weighted, i.e. a
+  normalised convolution over the unmasked neighbours), composited
+  back through the mask. Clean at 1:1 on open terrain; smears under
+  large lettering and across dense town blocks, which is where a
+  texture-aware inpaint or vector town art takes over.
+- **Text harvest on gridded tiles**: 2× tiles, a magenta line every
+  50 sheet px with the coordinate printed at both ends of every line
+  (fontconfig names fail in this ImageMagick; pass a font file), one
+  Opus reader per tile asked for one entry per printed line with the
+  centre in sheet px by interpolation, overlap stated. Four readers
+  landed 47 lines within 1–2 px. The merge imposes one cap height per
+  label kind and carries judgment calls (drop a cut fragment, alias
+  a split group) as tables, so the frozen JSON is never hand-edited.
+
 ## Non-negotiables (any model class)
 
 - **The Ruby tools are the canonical version of the map; the SVG/HTML
