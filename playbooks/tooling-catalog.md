@@ -119,6 +119,13 @@ the class doesn't matter for.
 
 ## Session & project management
 
+- **operator-review-page** (dave-skill) → when work waits on more than
+  a handful of calls only the operator can make (merges, source
+  disagreements, inferences, spellings, placements): one local page,
+  a card per call with verbatim evidence and choices. The answers come
+  back as a decisions file for a tested apply command. Not for one
+  question (ask it). → the lead writes the items; the command fills
+  the page
 - **pause-session** (dave-skill) → before stepping away, write a resume
   brief to `.development/next.md` with a paste-ready starter prompt.
   → Sonnet

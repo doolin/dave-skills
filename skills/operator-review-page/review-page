@@ -1,0 +1,132 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# review-page -- check a review file and fill the operator review page.
+#
+# Reads:  REVIEW.json (the open calls, shape in SKILL.md) and the page
+#         template beside this script (or --template PATH).
+# Writes: OUT.html only. With --check, writes nothing.
+#
+#   review-page REVIEW.json OUT.html
+#   review-page REVIEW.json OUT.html --template my-template.html
+#   review-page REVIEW.json --check
+#
+# Exit codes: 0 written (or valid) · 10 bad arguments · 11 the review
+# file breaks a rule (each problem printed) · 12 a file is unreadable
+# or not JSON.
+
+require "json"
+
+PLACEHOLDER = "/*REVIEW*/"
+
+def usage(code)
+  warn "usage: review-page REVIEW.json OUT.html [--template PATH] | review-page REVIEW.json --check"
+  exit code
+end
+
+def strings?(value) = value.is_a?(Array) && value.all? { |v| v.is_a?(String) }
+
+def present?(value) = value.is_a?(String) && !value.strip.empty?
+
+# Every problem with the review, as "where: what" lines; empty when valid.
+def problems(review)
+  return ["top level: not a JSON object"] unless review.is_a?(Hash)
+
+  out = []
+  %w[title source storage_key].each { |k| out << "top level: #{k} missing or empty" unless present?(review[k]) }
+  out << "top level: kinds must map kind to label" unless review["kinds"].nil? ||
+                                                        (review["kinds"].is_a?(Hash) && review["kinds"].values.all?(String))
+  out << "top level: open_notes must be a list of kinds" unless review["open_notes"].nil? || strings?(review["open_notes"])
+  items = review["items"]
+  return out << "top level: items missing or empty" unless items.is_a?(Array) && !items.empty?
+
+  seen = {}
+  items.each_with_index do |it, i|
+    where = "item #{i + 1}"
+    next out << "#{where}: not an object" unless it.is_a?(Hash)
+
+    where = "item #{i + 1} (#{it["item"]})" if present?(it["item"])
+    %w[item kind name question].each { |k| out << "#{where}: #{k} missing or empty" unless present?(it[k]) }
+    out << "#{where}: item id repeats item #{seen[it["item"]]}" if present?(it["item"]) && seen[it["item"]]
+    seen[it["item"]] ||= i + 1
+    opts = it["options"]
+    if !strings?(opts) || opts.size < 2
+      out << "#{where}: options must be a list of at least two choices"
+    elsif opts.uniq.size != opts.size
+      out << "#{where}: options repeat"
+    elsif !it["current"].nil? && !opts.include?(it["current"])
+      out << "#{where}: current #{it["current"].inspect} is not one of the options"
+    end
+    out << "#{where}: variants must be a list of strings" unless it["variants"].nil? || strings?(it["variants"])
+    out.concat(evidence_problems(it["evidence"], where))
+  end
+  out
+end
+
+def evidence_problems(evidence, where)
+  return [] if evidence.nil?
+  return ["#{where}: evidence must be a list"] unless evidence.is_a?(Array)
+
+  evidence.each_with_index.flat_map do |ev, j|
+    at = "#{where} evidence #{j + 1}"
+    next ["#{at}: not an object"] unless ev.is_a?(Hash)
+
+    errs = []
+    errs << "#{at}: text missing or empty" unless present?(ev["text"])
+    errs << "#{at}: needs a ref (string) or a page (integer) saying where the text was read" unless
+      present?(ev["ref"]) || ev["page"].is_a?(Integer)
+    errs
+  end
+end
+
+def read_json(path)
+  JSON.parse(File.read(path))
+rescue Errno::ENOENT, Errno::EACCES, Errno::EISDIR => e
+  warn "review-page: cannot read #{path}: #{e.message}"
+  exit 12
+rescue JSON::ParserError => e
+  warn "review-page: #{path} is not JSON: #{e.message.lines.first.strip}"
+  exit 12
+end
+
+args = ARGV.dup
+template = File.join(__dir__, "template.html")
+if (t = args.index("--template"))
+  template = args[t + 1] or usage(10)
+  args.slice!(t, 2)
+end
+check = !args.delete("--check").nil?
+usage(10) if args.empty? || args.any? { |a| a.start_with?("-") }
+input, output = args
+usage(10) if check ? !output.nil? : (output.nil? || args.size > 2)
+usage(10) if !check && File.expand_path(output) == File.expand_path(input)
+
+review = read_json(input)
+found = problems(review)
+unless found.empty?
+  warn "review-page: #{input} breaks #{found.size} rule#{"s" unless found.size == 1}:"
+  found.each { |p| warn "  #{p}" }
+  exit 11
+end
+
+kinds = review["items"].map { |it| it["kind"] }.tally.map { |k, n| "#{n} #{k}" }.join(", ")
+if check
+  puts "#{input}: valid, #{review["items"].size} items (#{kinds})"
+  exit 0
+end
+
+begin
+  page = File.read(template)
+rescue Errno::ENOENT, Errno::EACCES => e
+  warn "review-page: cannot read template #{template}: #{e.message}"
+  exit 12
+end
+unless page.scan(PLACEHOLDER).size == 1
+  warn "review-page: template #{template} must hold #{PLACEHOLDER} exactly once"
+  exit 11
+end
+
+# Inside <script>, "</" could close the element early; "<\/" is the same JSON.
+json = JSON.generate(review).gsub("</", "<\\/")
+File.write(output, page.sub(PLACEHOLDER) { json })
+puts "#{output}: #{review["items"].size} items (#{kinds})"

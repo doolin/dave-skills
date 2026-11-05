@@ -201,6 +201,15 @@ Present a recommendation to the human before starting work.
   and propose per recurring shape an allowlist entry, an existing
   skill, a new tool, or keep prompting. The skill proposes; nothing
   is granted by running it.
+- **operator-review-page** — Put a batch of judgment calls only the
+  operator can make in front of them as one local HTML page: one card
+  per call with the question, verbatim evidence and where it was
+  read, the choices with the current state marked, and a note. The
+  page exports a decisions file that a project's tested command
+  applies. `review-page` checks the review file and fills the
+  bundled template. Reference: bong-son's vocabulary review. Also
+  published as a public gist:
+  <https://gist.github.com/doolin/3ab9b735dbc378cca2207497fabfafcd>.
 - **self-host-development-light** — Lightweight self-hosted project
   management using markdown files in `.development/` — one file per
   concern (roadmap, backlog, todo, changelog, decisions, requirements,

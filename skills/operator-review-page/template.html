@@ -1,0 +1,449 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Review</title>
+<style>
+:root {
+  color-scheme: light dark;
+  --bg: #fbfaf6;
+  --fg: #1f1d1a;
+  --muted: #6c675e;
+  --rule: #d8d2c4;
+  --accent: #7a3b1c;
+  --tag-bg: #ebe6da;
+  --tag-fg: #4d4841;
+  --badge-bg: #f2e2c4;
+  --badge-fg: #6a4312;
+  --row-alt: #f4f1e9;
+  --focus: #2d5e8c;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #1c1b19;
+    --fg: #e8e4da;
+    --muted: #a39d91;
+    --rule: #3a3833;
+    --accent: #d99a6c;
+    --tag-bg: #2b2a26;
+    --tag-fg: #c7c1b4;
+    --badge-bg: #4a3a1e;
+    --badge-fg: #f0d29c;
+    --row-alt: #232220;
+    --focus: #8fb8e0;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #1c1b19;
+  --fg: #e8e4da;
+  --muted: #a39d91;
+  --rule: #3a3833;
+  --accent: #d99a6c;
+  --tag-bg: #2b2a26;
+  --tag-fg: #c7c1b4;
+  --badge-bg: #4a3a1e;
+  --badge-fg: #f0d29c;
+  --row-alt: #232220;
+  --focus: #8fb8e0;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  padding: 0 16px;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: Charter, "Iowan Old Style", Georgia, "Times New Roman", serif;
+  font-size: 16px;
+  line-height: 1.6;
+  overflow-wrap: break-word;
+}
+
+.page { max-width: 760px; margin: 0 auto; padding: 32px 0 160px; }
+
+h1, .tag, .badge, .id, .counts, .progress-top, .meta, .chip, .btn, .opt, .note-in,
+.bar, .ev-label, summary, legend, button, input, textarea {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+h1 { font-size: 1.7rem; line-height: 1.25; margin: 0 0 8px; font-weight: 650; }
+@media (min-width: 600px) { body { font-size: 17px; } h1 { font-size: 2rem; } }
+
+.source { margin: 0 0 12px; color: var(--muted); font-size: 0.875rem; line-height: 1.5; }
+.counts { margin: 0 0 2px; color: var(--muted); font-size: 0.875rem; }
+.progress-top { margin: 0 0 16px; font-size: 0.95rem; font-weight: 600; }
+
+.tag {
+  display: inline-block; font-size: 0.75rem; line-height: 1.4; padding: 2px 8px;
+  border-radius: 3px; background: var(--tag-bg); color: var(--tag-fg);
+}
+.badge {
+  display: inline-block; padding: 0 6px; font-size: 0.7rem; line-height: 1.6;
+  border-radius: 3px; background: var(--badge-bg); color: var(--badge-fg); white-space: nowrap;
+}
+
+button:focus-visible, input:focus-visible, summary:focus-visible, label:focus-within {
+  outline: 2px solid var(--focus); outline-offset: 2px;
+}
+
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 20px; }
+.chip {
+  font-size: 0.8rem; padding: 4px 10px; border: 1px solid var(--rule); border-radius: 999px;
+  background: transparent; color: var(--fg); cursor: pointer;
+}
+.chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+
+.card { border-top: 1px solid var(--rule); padding: 16px 0 18px; min-width: 0; }
+.card.answered { padding-left: 12px; box-shadow: inset 3px 0 0 var(--accent); }
+.card[hidden] { display: none; }
+.card-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
+.entry {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 1.05rem; font-weight: 650;
+}
+.id { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.75rem; color: var(--muted); }
+.meta { margin: 2px 0 0; font-size: 0.8rem; color: var(--muted); }
+.question { margin: 8px 0 6px; font-size: 0.95rem; line-height: 1.5; }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
+
+details { margin: 6px 0; font-size: 0.9rem; }
+summary { cursor: pointer; color: var(--accent); font-weight: 550; padding: 4px 0; }
+.notes { margin: 6px 0 0; line-height: 1.5; }
+
+blockquote {
+  margin: 8px 0 0; padding: 2px 0 2px 12px; border-left: 2px solid var(--rule);
+  color: var(--tag-fg); font-size: 0.9rem; line-height: 1.5;
+}
+.ev-label { display: block; font-size: 0.7rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+fieldset { border: 0; margin: 12px 0 0; padding: 0; min-width: 0; }
+legend {
+  padding: 0; margin-bottom: 2px; font-size: 0.75rem; color: var(--muted);
+  text-transform: uppercase; letter-spacing: 0.06em;
+}
+.opt { display: flex; align-items: flex-start; gap: 8px; padding: 6px 0; font-size: 0.95rem; line-height: 1.4; cursor: pointer; }
+.opt input { flex: none; width: 18px; height: 18px; margin: 2px 0 0; accent-color: var(--accent); }
+.cur { color: var(--muted); font-size: 0.85rem; }
+.note-in {
+  display: block; width: 100%; margin-top: 8px; padding: 8px 10px; font-size: 16px;
+  color: var(--fg); background: var(--bg); border: 1px solid var(--rule); border-radius: 4px;
+}
+
+.json-panel { margin-top: 32px; }
+.json-panel textarea {
+  width: 100%; min-height: 12em; margin-top: 8px; padding: 8px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.75rem;
+  color: var(--fg); background: var(--row-alt); border: 1px solid var(--rule); border-radius: 4px;
+}
+
+.bar {
+  position: fixed; left: 0; right: 0; bottom: 0; background: var(--bg);
+  border-top: 1px solid var(--rule); padding: 10px 16px; font-size: 0.875rem;
+}
+.bar-in { max-width: 760px; margin: 0 auto; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.progress { flex: 1 1 auto; font-weight: 600; }
+.status { color: var(--muted); min-height: 1em; }
+.btn {
+  font-size: 0.875rem; padding: 6px 12px; border: 1px solid var(--accent); border-radius: 4px;
+  background: var(--accent); color: var(--bg); cursor: pointer;
+}
+.btn.quiet { background: transparent; color: var(--accent); }
+</style>
+</head>
+<body>
+<main class="page">
+  <h1 id="title">Review</h1>
+  <p class="source" id="source"></p>
+  <p class="counts" id="counts"></p>
+  <p class="progress-top" id="progress-top"></p>
+
+  <div class="chips" id="chips" role="group" aria-label="Filter items"></div>
+
+  <section id="cards"></section>
+
+  <details class="json-panel" id="json-panel">
+    <summary>Decisions JSON</summary>
+    <textarea id="json-out" readonly spellcheck="false" aria-label="Decisions JSON"></textarea>
+  </details>
+</main>
+
+<footer class="bar">
+  <div class="bar-in">
+    <span class="progress" id="progress-bar"></span>
+    <span class="status" id="status" aria-live="polite"></span>
+    <button type="button" class="btn" id="download">Download decisions</button>
+    <button type="button" class="btn quiet" id="copy">Copy JSON</button>
+  </div>
+</footer>
+
+<script id="review" type="application/json">/*REVIEW*/</script>
+<script>
+(function () {
+  "use strict";
+
+  function $(id) { return document.getElementById(id); }
+
+  function el(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text !== undefined && text !== null) n.textContent = text;
+    return n;
+  }
+
+  function pad3(n) {
+    var s = String(n);
+    while (s.length < 3) s = "0" + s;
+    return s;
+  }
+
+  var data = null;
+  try {
+    data = JSON.parse($("review").textContent);
+  } catch (e) {
+    data = null;
+  }
+  if (!data || !Array.isArray(data.items)) {
+    $("cards").appendChild(el("p", "notes", "Review data has not been inserted into this page."));
+    return;
+  }
+
+  var KEY = data.storage_key;
+  var KINDS = data.kinds || {};
+  var OPEN = data.open_notes || [];
+  var FILE = data.decisions_file || "decisions.json";
+
+  function label(kind) { return KINDS[kind] || kind; }
+
+  // Storage may be unavailable (private window, blocked site data): never throw.
+  function loadAnswers() {
+    try {
+      var v = JSON.parse(localStorage.getItem(KEY));
+      return v && typeof v === "object" && !Array.isArray(v) ? v : {};
+    } catch (e) {
+      return {};
+    }
+  }
+
+  function saveAnswers() {
+    try {
+      localStorage.setItem(KEY, JSON.stringify(answers));
+    } catch (e) {
+      /* kept in memory for this page view only */
+    }
+  }
+
+  document.title = data.title;
+  $("title").textContent = data.title;
+  $("source").textContent = data.source_line || "";
+
+  var items = data.items;
+  var answers = loadAnswers();
+  var filter = "all";
+  var cards = [];
+
+  // Kinds in first-seen order, so filters and counts follow the file.
+  var kindOrder = [];
+  items.forEach(function (it) { if (kindOrder.indexOf(it.kind) < 0) kindOrder.push(it.kind); });
+
+  function chosen(item) {
+    var a = answers[item.item];
+    return a && (item.options || []).indexOf(a.choice) >= 0 ? a.choice : null;
+  }
+
+  function visible(item) {
+    if (filter === "all") return true;
+    if (filter === "unanswered") return chosen(item) === null;
+    return item.kind === filter;
+  }
+
+  function setAnswer(item, patch) {
+    var cur = answers[item.item] || { choice: null, note: "" };
+    Object.keys(patch).forEach(function (k) { cur[k] = patch[k]; });
+    if (!cur.choice && !String(cur.note || "").trim()) {
+      delete answers[item.item];
+    } else {
+      answers[item.item] = cur;
+    }
+    saveAnswers();
+    refresh();
+  }
+
+  function evidenceLabel(ev) {
+    if (ev.ref) return String(ev.ref);
+    if (ev.page !== undefined && ev.page !== null) return "p." + pad3(ev.page);
+    return "";
+  }
+
+  function buildCard(item, idx) {
+    var card = el("article", "card");
+    var head = el("div", "card-head");
+    head.appendChild(el("span", "badge", label(item.kind)));
+    head.appendChild(el("span", "entry", item.name));
+    if (item.entry) head.appendChild(el("span", "id", item.entry));
+    card.appendChild(head);
+    if (item.list) card.appendChild(el("p", "meta", "List: " + item.list));
+    card.appendChild(el("p", "question", item.question));
+
+    var variants = item.variants || [];
+    if (variants.length) {
+      var tags = el("div", "tags");
+      variants.slice(0, 8).forEach(function (v) { tags.appendChild(el("span", "tag", v)); });
+      if (variants.length > 8) tags.appendChild(el("span", "tag", "+" + (variants.length - 8) + " more"));
+      card.appendChild(tags);
+    }
+
+    if (item.notes) {
+      var det = el("details");
+      if (OPEN.indexOf(item.kind) >= 0) det.open = true;
+      det.appendChild(el("summary", null, "Notes"));
+      det.appendChild(el("p", "notes", item.notes));
+      card.appendChild(det);
+    }
+
+    (item.evidence || []).forEach(function (ev) {
+      var q = el("blockquote");
+      var lab = evidenceLabel(ev);
+      if (lab) q.appendChild(el("span", "ev-label", lab));
+      q.appendChild(document.createTextNode(String(ev.text)));
+      card.appendChild(q);
+    });
+
+    var fs = el("fieldset");
+    fs.appendChild(el("legend", null, "Decision"));
+    var saved = answers[item.item];
+    var savedChoice = saved && (item.options || []).indexOf(saved.choice) >= 0 ? saved.choice : null;
+    (item.options || []).forEach(function (opt) {
+      var input = el("input");
+      input.type = "radio";
+      input.name = "choice-" + idx;
+      input.value = opt;
+      input.checked = opt === savedChoice;
+      var lab = el("label", "opt");
+      lab.appendChild(input);
+      lab.appendChild(el("span", null, opt));
+      if (opt === item.current) lab.appendChild(el("span", "cur", "(current)"));
+      fs.appendChild(lab);
+    });
+    card.appendChild(fs);
+
+    var note = el("input", "note-in");
+    note.type = "text";
+    note.placeholder = "Note (optional)";
+    note.setAttribute("aria-label", "Note (optional)");
+    note.value = saved ? String(saved.note || "") : "";
+    card.appendChild(note);
+
+    fs.addEventListener("change", function (e) {
+      if (e.target && e.target.type === "radio") setAnswer(item, { choice: e.target.value });
+    });
+    note.addEventListener("input", function () {
+      setAnswer(item, { note: note.value });
+    });
+
+    cards.push({ item: item, el: card });
+    return card;
+  }
+
+  function refresh() {
+    var done = 0;
+    cards.forEach(function (c) {
+      var isDone = chosen(c.item) !== null;
+      if (isDone) done++;
+      c.el.classList.toggle("answered", isDone);
+      c.el.hidden = !visible(c.item);
+    });
+    var text = done + " of " + items.length + " answered";
+    $("progress-top").textContent = text;
+    $("progress-bar").textContent = text;
+  }
+
+  function payload() {
+    var decisions = [];
+    items.forEach(function (it) {
+      var c = chosen(it);
+      if (c === null) return;
+      var d = { item: it.item, kind: it.kind };
+      if (it.entry) d.entry = it.entry;
+      if (it.field) d.field = it.field;
+      d.choice = c;
+      d.note = String(answers[it.item].note || "").trim() || null;
+      decisions.push(d);
+    });
+    return {
+      source: data.source,
+      built: data.built,
+      decided_at: new Date().toISOString(),
+      decisions: decisions
+    };
+  }
+
+  function download() {
+    var blob = new Blob([JSON.stringify(payload(), null, 2) + "\n"], { type: "application/json" });
+    var url = URL.createObjectURL(blob);
+    var a = el("a");
+    a.href = url;
+    a.download = FILE;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+    $("status").textContent = "Downloaded " + FILE + ".";
+  }
+
+  function copyJson() {
+    var text = JSON.stringify(payload(), null, 2);
+    var out = $("json-out");
+    out.value = text;
+    var status = $("status");
+    function fallback() {
+      $("json-panel").open = true;
+      out.focus();
+      out.select();
+      var ok = false;
+      try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+      status.textContent = ok ? "Copied." : "Copy blocked: the JSON is selected below, press Ctrl/Cmd+C.";
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () { status.textContent = "Copied."; }, fallback);
+    } else {
+      fallback();
+    }
+  }
+
+  // Header counts by kind
+  var counts = {};
+  items.forEach(function (it) { counts[it.kind] = (counts[it.kind] || 0) + 1; });
+  $("counts").textContent = kindOrder
+    .map(function (k) { return counts[k] + " " + label(k); })
+    .join(" · ");
+
+  // Filter chips: All, one per kind, Unanswered
+  var filters = [["all", "All"]].concat(kindOrder.map(function (k) { return [k, label(k)]; }), [["unanswered", "Unanswered"]]);
+  var chipHost = $("chips");
+  filters.forEach(function (f) {
+    var b = el("button", "chip", f[1]);
+    b.type = "button";
+    b.setAttribute("aria-pressed", f[0] === filter ? "true" : "false");
+    b.addEventListener("click", function () {
+      filter = f[0];
+      Array.prototype.forEach.call(chipHost.children, function (c) {
+        c.setAttribute("aria-pressed", c === b ? "true" : "false");
+      });
+      refresh();
+    });
+    chipHost.appendChild(b);
+  });
+
+  var host = $("cards");
+  items.forEach(function (item, idx) { host.appendChild(buildCard(item, idx)); });
+
+  $("download").addEventListener("click", download);
+  $("copy").addEventListener("click", copyJson);
+  refresh();
+})();
+</script>
+</body>
+</html>
