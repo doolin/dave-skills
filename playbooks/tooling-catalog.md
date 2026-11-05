@@ -163,6 +163,10 @@ the class doesn't matter for.
 - **html-color-swatches** / **terminal-color-swatches** (dave-skills) →
   render a palette for review — standalone HTML page (browser) or ANSI
   truecolor swatches (terminal). → Haiku
+- **tab-strip-navigation** (dave-skill) → before adding a tab tier, a
+  section's sub-sections, or a switcher above a strip: one `<nav>` per
+  tier, current tab per tier, child tiers rendered by the parent, panel
+  tabs kept apart, request specs per tier. Reference: dbb. → Sonnet+
 - **DesignSync** → sync a claude.ai design system into the project (read
   the `/design-sync` skill before using). → Sonnet+
 

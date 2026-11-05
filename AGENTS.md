@@ -210,6 +210,13 @@ Present a recommendation to the human before starting work.
   bundled template. Reference: bong-son's vocabulary review. Also
   published as a public gist:
   <https://gist.github.com/doolin/3ab9b735dbc378cca2207497fabfafcd>.
+- **tab-strip-navigation** — Hierarchical tab-strip navigation in a
+  server-rendered app: one `<nav>` per tier, one current tab per tier,
+  child tiers rendered by their parent, capability filtering and
+  unavailable entries, URL scheme, styling by depth, panel tabs kept
+  apart, and the request specs that prove each tier. Reference: dbb.
+  Also published as a public gist:
+  <https://gist.github.com/doolin/ff4a291b1d805cf3b3aad451e9036a99>.
 - **self-host-development-light** — Lightweight self-hosted project
   management using markdown files in `.development/` — one file per
   concern (roadmap, backlog, todo, changelog, decisions, requirements,
