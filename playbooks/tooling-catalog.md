@@ -16,7 +16,13 @@ the class doesn't matter for.
 - **Agent** → delegate a scoped sub-task or fan-out search to a fresh
   context (Explore for read-only search, Plan for design, general-purpose
   for multi-step). Reach for it when a job would flood the main context
-  or splits into independent parallel work. → any (picks its own class)
+  or splits into independent parallel work. A background agent's
+  Bash calls prompt the operator just as the lead's do. Before
+  dispatch, check every command shape the brief invites against the
+  allowlist; route text search to the file tools, create the agents'
+  folders yourself, and have them return data in their reply rather
+  than write files (`operation-map-from-topos.md`, "Fanning out
+  readers"). → any (picks its own class)
 - **Workflow** → deterministic multi-agent orchestration (loops, fan-out,
   pipeline/parallel stages, adversarial verify). Use for comprehensive
   sweeps, audits, migrations, or anything one context can't hold. ONLY
