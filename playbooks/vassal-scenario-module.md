@@ -25,8 +25,9 @@ board made from the scenario card. Reference implementation:
    `<VASSAL.build.module.PredefinedSetup file= name= useFile="true"/>`
    line plus its `.vsav`.
 2. A `.vsav` is a zip of `savedGame`, `savedata`, `moduledata`.
-   `savedGame` is "`!VCSK`" + a key byte in hex + hex pairs, each XORed
-   with the key.
+   Older saves obfuscate `savedGame` as "`!VCSK`" + a key byte in hex +
+   hex pairs, each XORed with the key; VASSAL 3.8 writes it
+   xz-compressed instead. Check the first bytes and read both.
 3. Decoded, it is commands split on ESC: `begin_save`, an empty one, a
    nested block of `+/id/type/state` AddPiece commands (each but the
    last ending in a backslash, the escaped ESC), then the windows'
@@ -84,8 +85,27 @@ vision-capable model; the operator verifies play in VASSAL.
 
 ## Logged play
 
-File → Begin Logging before the first move; Save Game at the end of
-each turn; a new numbered log when resuming from a save. Keep logs and
-saves in the repo's deep dive for the scenario. Board images cut from
-a publisher's map make the module copy unshareable; publish the logs,
-the write-up and the builder.
+How VASSAL 3.8 logs (menu text as 3.8 shows it):
+
+- **File → Begin Logfile…** starts a recording in memory; **End
+  Logfile** writes it whole. A crash loses it; it cannot be appended
+  to once written; a new logfile under an existing name overwrites it.
+- A `.vlog` is the whole game state at Begin Logfile followed by one
+  `LOG\t<command>` per step, and replays only its own stretch. A
+  `.vsav` is positions only. No file refers to another and there is no
+  game identifier: a game is a chain of logs, each opening where the
+  last ended, and that chain is ours to keep (a manifest) and check.
+- A drop logs one `M/` move per piece, then the map's report chat
+  line, which carries VASSAL's own location names: check computed
+  hexes against it. Player chat arrives as `<player> - text`.
+
+The routine for the player: Begin Logfile once per sitting; phase
+marker lines (`== <phase>`) and notes typed in chat; dice from the
+module's dice button only; checkpoint at turn ends with End Logfile,
+Begin Logfile under the next number and Save Game. Keep the files in
+the repo's deep dive for the scenario, never edited; decode each into
+a record, replay it onto the matching save, and typeset from the
+records. Board images cut from a publisher's map make the module copy
+unshareable; publish the logs, the record, the write-up and the
+builder. Reference: `~/src/silver-bayonet/tools/vassal_log.rb`,
+`tools/scenario_p_report.rb`, `deep_dives/scenario-p/`.
