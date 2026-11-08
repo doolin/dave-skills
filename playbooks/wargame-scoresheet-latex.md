@@ -40,6 +40,18 @@ and `s11.tex` (39-turn campaign, landscape longtable).
 - `\LTleft`/`\LTright` `0pt plus 1fill` to center a longtable.
 - Faux-Arial: `fontspec` + `\setmainfont{Arial}` with
   `sansmath`; `\rowcolors` from `[table]{xcolor}`.
+- Box and glue traps from the Scenario P cards
+  (`~/src/silver-bayonet/scenarios/pleiku/card/`, 2026-11-07):
+  an empty `minipage` is 0pt wide, so a spacer is `\makebox[w]{}`;
+  `\hspace` right before `\par` is dropped with the paragraph's
+  last glue, so a trailing offset is `\hspace*`; stacked
+  paragraph-level rows of counters get TeX's 1pt `\lineskip` on top
+  of any `\vspace`, so equal gaps need `\nointerlineskip`. Count a
+  frame's rule widths in the column it sits in.
+- Two variants of one card (two-player, solitaire): layout
+  machinery in a `.sty`, scenario text and counters as macros in a
+  shared content file, each card only arranging its panels; prove
+  the split with before/after renders at 0 differing pixels.
 
 ## Verification trap
 
