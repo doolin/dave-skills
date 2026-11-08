@@ -452,7 +452,35 @@ Reference implementation: `~/src/silver-bayonet` (`tools/lib.rb`,
   (34 in width and 22 in height gave 168 vs 150 px/in); one measured
   hex on the board sets it. Keep the number in the frozen lattice
   JSON, marked provisional until measured, and have the renderer
-  read it and warn.
+  read it and warn. Silver Bayonet's mounted map measured 0.75 in
+  flat to flat, so 110.5 / 0.75 = 147.33 px/in: the provisional
+  168 had been drawing hexes at 88 % of the board's. That number is
+  the source's scale; the page scale of a card or sheet is chosen
+  per format by the next rule.
+- **Extract the map for a given counter size at no less than 1:1.**
+  Operator's rule (2026-11-07): "at least 1-1, but larger is ok,
+  smaller is not ok." Meaning, confirmed by the operator: enlarge the
+  map at least as much as the counters, so the hex-to-counter ratio
+  never drops below the printed game's (not merely hex ≥ counter) (Silver Bayonet: 0.75 in hexes, 9/16 in counters,
+  4/3). Minimum hex = counter × that ratio; 3/4 in counters need
+  1.00 in hexes. A letter card that shrank the map to fit broke the
+  rule and was too small for play. Where the format will not hold
+  the map at that size, crop the map (drop columns or rows) or
+  move to a larger page; never reduce it. Enlarging past the
+  source's px/in upsamples the image; no detail is gained.
+- **Hex pitch vocabulary** (flat-top hexes in columns, circumradius
+  R): hex size = flat to flat = √3 R = row pitch `dy` (centre to
+  centre within a column); column pitch `dx` = 1.5 R. Regular hexes
+  have `dy`/`dx` = 2/√3; carry both when the print departs from it.
+  A peak-spacing measurement of the horizontal sides is half a row
+  (`pitch.json`'s `rows.pitch` 55.27 px = `dy`/2). Full definitions:
+  the reference repo's `LEXICON.md`.
+- **A card-only crop lives in every tool that draws on the cropped
+  map.** The card trims the shared map PDF (`\includegraphics trim`)
+  and the setup-flag overlay tool repeats the same cut to place its
+  flags; dropping a column means changing both, then checking that
+  every hex named in the card's rules (entries, setup areas) is
+  still whole on the new cut.
 - **Hex numbers over the print's own**: measure at 4× (cap height,
   width, rise above centre, tracking, ink), then check at 1:1 with
   the computed label at half opacity in the QA colour.
