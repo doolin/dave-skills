@@ -612,13 +612,26 @@ raster heavy lifting, plain Ruby does the logic. Mappings that worked:
   marsh painted sea-teal needed a second term (green-tint g-r AND
   lightness). Expect one painted-color exception per map; calibrate from
   samples, never guess thresholds.
+- **Build a DOM, never strings** (Vietnam L7014 index, 2026-11-09).
+  Read HTML and XML with a parser and write SVG with a builder:
+  Nokogiri's `XML::Builder` for output, `Nokogiri::HTML5` for scraped
+  pages that leave tags open (libxml2's HTML4 parser nests unclosed
+  `<dt>`s and stops at 256 levels, silently dropping entries). The
+  builder escapes text, a layer becomes a method with a block, and
+  nothing is left half-closed. Then lint the output by parsing it
+  back: unique ids, every `url(#id)` and `href="#id"` resolved, no
+  `<` or `>` in text, numeric coordinates. A renderer forgives what a
+  reader sees: there, a lazy regex over the PCL sheet list ran from an
+  entry without a sheet number into the next, and raw HTML rendered
+  as a place name with no error. Moving that SVG from strings to the
+  builder changed no pixel (`compare -metric AE` = 0), so switch early.
 - specs: RSpec + SimpleCov (line+branch 100%) in place of pytest +
   coverage; same fixture-pinning ratchet.
 - **Compositing colored ink onto a grayscale-typed base silently
   downcasts it to gray** — keep the faded base RGB (skip
   `-colorspace Gray`; fade with `-fill white -colorize 55%` alone).
-  Recolor emitted SVG by rewriting its own color strings, not with
-  `-colorize` on the rasterized alpha.
+  Recolor emitted SVG through its DOM (set the fill and stroke
+  attributes), not with `-colorize` on the rasterized alpha.
 - **macOS can EPERM `cp` into ~/Documents** (copyfile syscall
   blocked) while plain open/write succeeds — archive renders with a
   Ruby tool that streams `IO.copy_stream`, not `cp`. Access can also
