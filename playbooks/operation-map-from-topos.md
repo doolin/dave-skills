@@ -33,6 +33,8 @@ Related:
 
 - `battle-book-research.md`, the book-to-data arc this follows. It
   is staged in bong-son's `.development/playbooks/`.
+- `operation-over-time.md`, which builds on this map: the operation
+  day by day, hour by hour and zoomed, from cited day scripts.
 - `historical-research-dossier.md`, for what may be published.
 - `reference-acquisition.md`: check the corpus first.
 - `airfield-geometry.md`, for drawing a real heading on a schematic.
