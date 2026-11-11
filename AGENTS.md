@@ -66,6 +66,16 @@ clubstraylight's `ruby graph/inspect pages --site ../dave-skills/atlases`
 clubstraylight.com, which also owns the tickets; a commit here
 carries the ticket as its subject's prefix and cites it in the body.
 
+## Components
+
+`components/` holds code the family's pages share, one directory per
+component with its test and a README. Components are NOT skills and
+NOT playbooks: they are code a page runs. A consuming repo carries a
+byte-for-byte copy, synced from here and never edited in place, so
+its page builds and opens with no link to this repo. The first is
+`components/nato-symbol/`, the NATO unit symbol the map viewers
+draw (`node --test components/nato-symbol/nato-symbol.test.mjs`).
+
 ## Hooks
 
 `hooks/` holds Claude Code lifecycle hooks shared across repos, with
