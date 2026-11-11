@@ -96,3 +96,12 @@ Reference implementations:
 - Voided counters (struck out) and unfinished boxes are
   content: they record the designer's second thoughts and
   missing pieces (DBP's absent rocket-unit counter).
+- Better to have a counter and not need it. When a roster is
+  drawn up from sources rather than read off a printed sheet,
+  a unit any source attests gets a counter, though no scenario
+  is known to use it, with its evidence and any inference on its
+  row (the operator, 2026-11-11: "the counters don't have to be
+  used, better to have them and not need them"; bong-son's
+  BSN-0035 roster). A sheet supplies the scenarios; it is not
+  any one scenario's roster (`wargame-web-implementation.md`,
+  fact 5).
