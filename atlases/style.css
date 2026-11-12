@@ -529,6 +529,17 @@ ol.recent .forget button:hover, ol.recent .forget button:focus-visible { color: 
 .results .note { font-style: italic; color: var(--quiet); }
 .results .note::before { content: "note: "; font-style: normal; }
 .results .cmd { margin: .35rem 0 0; font-size: .82rem; }
+/* One click selects a whole command (CSL-0222); copy.js adds a Copy
+ * button beside each, in a wrapper, so the button is never selected. */
+.cmd { user-select: all; -webkit-user-select: all; }
+div.copyable { display: flex; align-items: flex-start; gap: .5rem; margin: .35rem 0 0; }
+div.copyable .cmd { flex: 1 1 auto; min-width: 0; margin: 0; overflow-x: auto; }
+span.copyable button.copy { margin-left: .4rem; }
+button.copy {
+  font: inherit; font-size: .8rem; color: var(--quiet); background: none;
+  border: 1px solid var(--rule); border-radius: 3px; padding: .05rem .5rem; cursor: pointer;
+}
+button.copy:hover, button.copy:focus-visible { color: var(--cite); border-color: var(--cite); }
 /* Code hits (CSL-0141): matching lines as written, line numbers in the margin. */
 .results .lines { margin: .25rem 0 0; font-size: .85rem; overflow-x: auto; white-space: pre; }
 .results .lines .n { color: var(--quiet); }
