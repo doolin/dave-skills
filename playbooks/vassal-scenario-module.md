@@ -103,7 +103,8 @@ The routine for the player: Begin Logfile once per sitting; phase
 marker lines (`== <phase>`) and notes typed in chat; dice from the
 module's dice button only; checkpoint at turn ends with End Logfile,
 Begin Logfile under the next number and Save Game. Keep the files in
-the repo's deep dive for the scenario, never edited; decode each into
+one directory per played game, `deep_dives/<scenario>/game-<n>/`
+(`play.yml`, `logs/`, `record/`, `report/`), never edited; decode each into
 a record, replay it onto the matching save, and typeset from the
 records. Board images cut from a publisher's map make the module copy
 unshareable; publish the logs, the record, the write-up and the
