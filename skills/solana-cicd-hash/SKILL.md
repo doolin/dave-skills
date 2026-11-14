@@ -38,7 +38,8 @@ reference implementation.
 1. Copy `scripts/attest.mjs` (or `scripts/attest.rb`) from this skill into
    the target repo at `scripts/attest.mjs`.
 2. For Node: add `@solana/web3.js`, `archiver`, and `pdfkit` to `package.json`.
-   For Ruby: add `ed25519` to `Gemfile`.
+   For Ruby: add `ed25519` to `Gemfile`, and `base64` on Ruby 3.4 or
+   later (see the pitfall below).
 3. Copy `workflow/attest-job.yml` into `.github/workflows/ci.yml` as a
    new job. Replace `<check-jobs>` in `needs:` with the actual check job
    id(s).
@@ -213,6 +214,15 @@ devnet and will fail with `ProgramAccountNotFound`. When hardcoding
 the 32-byte public key (as the Ruby variant does), verify the base58
 round-trips correctly — a single wrong byte silently targets a
 nonexistent program.
+
+## Pitfall: `base64` under Bundler on Ruby 3.4 or later
+
+`scripts/attest.rb` requires `base64`, which Ruby 3.4 moved from the
+default gems to the bundled gems. Run through `bundle exec`, the
+script stops at `cannot load such file -- base64 (LoadError)` before
+it zips anything, unless the Gemfile declares it. Put `gem "base64"`
+in the same group as `ed25519`. Seen in clubstraylight.com's first
+attest run, 2026-11-14, on Ruby 4.0.9.
 
 ## Pitfall: keypair corruption from `echo`
 

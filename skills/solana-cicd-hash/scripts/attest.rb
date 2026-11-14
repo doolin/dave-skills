@@ -5,6 +5,8 @@
 # attestation.json, optional S3 upload.
 # Solana and S3 steps are fault-tolerant: failures are logged, the run
 # completes. Standalone (no Rails); see dbb for the Rails-integrated variant.
+# Gems: ed25519, and base64 on Ruby 3.4 or later, where it is a bundled
+# gem that bundle exec cannot load unless the Gemfile declares it.
 #
 # Environment variables:
 #   GITHUB_SHA            commit hash (falls back to git rev-parse HEAD)
