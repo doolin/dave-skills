@@ -1,8 +1,10 @@
 # Drop-in attest job for .github/workflows/ci.yml.
 #
 # Prerequisites:
-#   - A prior job (or jobs) uploads artifacts with actions/upload-artifact
-#     and retention-days >= 90.
+#   - A prior job (or jobs) uploads artifacts with actions/upload-artifact.
+#     retention-days bounds only GitHub's copy; how long the evidence is
+#     kept is the compliance bucket's, per the governing records schedule
+#     (NARA GRS or another regulatory constraint).
 #   - scripts/attest.mjs from skills/solana-cicd-hash/scripts/ is copied
 #     into the repo at scripts/attest.mjs, with @solana/web3.js, archiver,
 #     and pdfkit in package.json.
@@ -77,6 +79,9 @@ attest:
         path: |
           ci-output/ci-artifacts.zip
           ci-output/attestation.pdf
+        # GitHub's copy only. Retention of the archived evidence is
+        # controlled elsewhere: the compliance bucket's lifecycle and lock
+        # settings, per the governing records schedule.
         retention-days: 90
 
     - name: Cleanup keypair

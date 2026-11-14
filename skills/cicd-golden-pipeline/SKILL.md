@@ -264,7 +264,8 @@ Two scanners, both must pass:
 - **Trivy** — filesystem scan for known CVEs in dependencies and
   configuration files.
 
-Both produce JSON evidence artifacts uploaded with 90-day retention.
+Both produce JSON evidence artifacts, kept for the period the
+governing records schedule sets (see Conventions).
 
 ### 4. SBOM Generation (PW.4)
 
@@ -351,9 +352,12 @@ a normative schema that consuming tools can parse mechanically. At
 minimum, each entry must include: `path`, `size`, `sha256`, and
 `artifact-class` (one of the categories below). The manifest should
 also carry per-artifact `retention-class` metadata binding each
-artifact to its expected GRS item and minimum retention period, so
-that downstream archival can enforce retention without external
-lookup.
+artifact to the records schedule item that governs it (a NARA GRS
+item, or the regulatory requirement that applies instead) and that
+item's disposition, so that downstream archival can enforce retention
+without external lookup. Cite an item only after reading its text:
+the schedule's title and disposition must fit the artifact (see
+Pitfalls).
 
 At a minimum the manifest should track:
 
@@ -468,8 +472,16 @@ full upgrade map and SHA pins.
 
 - **All actions pinned to full 40-character SHAs.** Tags can be
   force-pushed; SHAs cannot.
-- **`retention-days: 90` on every `upload-artifact`.** Evidence must
-  be retained for audit. Never reduce below 90 days.
+- **Retention is governed by the records schedule, not the CI
+  platform.** How long each artifact is kept is set by the NARA
+  General Records Schedule item that covers it, or by the other
+  regulatory constraint that applies (an agency schedule, a contract,
+  a statute). The pipeline's `retention-days` only bounds the CI
+  platform's transient copy; the archive (the compliance bucket's
+  lifecycle and lock settings) enforces the governing period. That
+  bucket retention is controlled outside the pipeline, in the
+  bucket's own configuration, and a workflow never sets it. Say so in
+  a comment beside any `retention-days` value.
 - **Vulnerability scans must fail the build.** No `|| true`, no
   `continue-on-error`. A swallowed finding is a compliance gap.
 - **`--omit=dev` on npm audit.** Only production dependencies are
@@ -519,10 +531,18 @@ false positives in downstream analysis.
 
 ### Evidence artifact retention
 
-GitHub Actions artifacts default to 90-day retention. Do not rely
-on this for long-term compliance storage. The deploy job archives
-evidence to S3, which has indefinite retention with Glacier
-transition at 365 days. GitHub artifacts are a convenience copy.
+GitHub Actions artifacts are a convenience copy with a platform
+expiry; do not rely on them for compliance storage. The attest or
+deploy job archives evidence to S3, and the bucket keeps it for the
+period the governing records schedule (GRS or another regulatory
+constraint) sets.
+
+A schedule citation is a claim to check against the schedule's own
+text. A pipeline was found citing GRS 5.1 ("Common Office Records")
+for permanent retention and GRS 2.7 ("Employee Health and Safety
+Records") for test results and audit events, neither of which covers
+CI evidence. Read the item, its title, and its disposition before
+writing it into a `retention-class`.
 
 ### SSP claims evidence that the bundle does not contain
 
@@ -872,8 +892,9 @@ divergences to watch for:
   GitLab equivalent is the `cosign` or `in-toto` signing step,
   which must produce the same machine-legible provenance JSON.
 - GitLab artifact retention is configured per-job with `expire_in`,
-  not per-upload with `retention-days`. Ensure the compliance jobs
-  set `expire_in: 90 days` or longer.
+  not per-upload with `retention-days`. Like `retention-days`, it
+  bounds only the platform's copy; the governing records schedule
+  sets the archive's period.
 - The structured audit events that use `${{ job.status }}` in GitHub
   Actions must use `$CI_JOB_STATUS` in `after_script` on GitLab
   (see below). The JSON schema should be identical.

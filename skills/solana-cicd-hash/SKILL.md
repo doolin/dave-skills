@@ -273,9 +273,11 @@ aws s3api get-bucket-lifecycle-configuration --bucket <bucket>
 ```
 
 A 24-hour or 7-day expiry (common on transient-output buckets) will
-silently destroy compliance records. Compliance buckets should either
-have no expiration, or transition to Glacier IR after a long retention
-period.
+silently destroy compliance records. A compliance bucket keeps each
+record for the period its governing records schedule sets: the NARA
+General Records Schedule item that covers it, or the other regulatory
+constraint that applies. Its lifecycle rules (expiry, storage-class
+transitions) and any Object Lock settings implement that period.
 
 ## Verification
 
