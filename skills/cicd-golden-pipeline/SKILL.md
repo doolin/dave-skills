@@ -480,8 +480,10 @@ full upgrade map and SHA pins.
   platform's transient copy; the archive (the compliance bucket's
   lifecycle and lock settings) enforces the governing period. That
   bucket retention is controlled outside the pipeline, in the
-  bucket's own configuration, and a workflow never sets it. Say so in
-  a comment beside any `retention-days` value.
+  bucket's own configuration, set from the GRS item (or other
+  regulatory constraint) that covers each artifact, and a workflow
+  never sets it. Say so, citing GRS, in a comment beside any
+  `retention-days` value.
 - **Vulnerability scans must fail the build.** No `|| true`, no
   `continue-on-error`. A swallowed finding is a compliance gap.
 - **`--omit=dev` on npm audit.** Only production dependencies are

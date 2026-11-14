@@ -81,7 +81,8 @@ attest:
           ci-output/attestation.pdf
         # GitHub's copy only. Retention of the archived evidence is
         # controlled elsewhere: the compliance bucket's lifecycle and lock
-        # settings, per the governing records schedule.
+        # settings, per the NARA General Records Schedule (GRS) item that
+        # covers it, or another regulatory constraint where one applies.
         retention-days: 90
 
     - name: Cleanup keypair
