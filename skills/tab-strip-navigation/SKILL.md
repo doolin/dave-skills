@@ -24,6 +24,28 @@ Two principles drive every rule below.
   level, not a menu. This is progressive disclosure: one level at a time,
   and everything at that level on screen.
 
+## The tiers in dbb
+
+![dbb's Development section: the site bar, the repo switcher, and the
+artifact tabs above the ticket filters](images/dbb-development-tiers.png)
+
+dbb's Development page, 2026-11-14, three tiers from the top:
+
+| tier | in the screenshot | current | how it is current |
+| --- | --- | --- | --- |
+| 0, site bar | Straylight, Development, Agent Memory, AWS Billing, AWS Inventory, Solana, Pages, Bookmarks, Inventory, Agent Health, Neural Net, Ports, Notifications | Development, in bold | path prefix |
+| 1, context switcher | DBB, STRAYLIGHT, OPENCLOSE, DREADER: the repositories, small uppercase and letter-spaced | DBB, underlined; the home repo, so its URL has no repo segment | path segment (`repos/:repo`) |
+| 2, artifact tabs | Tickets, PRDs, ADRs, Designs, Presentations, TODOs, Test Prof, Backups | Tickets, underlined | query parameter (`?artifact_type=`) |
+
+The "Development" heading sits between tiers 0 and 1. Tiers 1 and 2
+share one block, the switcher smaller and denser than the tabs it
+scopes. Below tier 2 are the ticket filters (status, type, area,
+component, search, Reset): filter state, which resets when tier 1 or 2
+changes, not a tier.
+
+The dark bar of external links across the top (the thinbar) and the
+Quickbar panel on the left are not part of this skill.
+
 ## Two kinds of tab
 
 Decide which one you are building before writing anything. They look
