@@ -100,7 +100,9 @@ nav.site {
   font-size: .74rem;
 }
 
-nav.site a[aria-current] {
+/* The current tab, in the site row and in a section's row: ink and an
+ * ink underline. On its own page the tab is text, not a link. */
+nav [aria-current] {
   color: var(--ink);
   box-shadow: inset 0 -1px 0 var(--ink);
 }
