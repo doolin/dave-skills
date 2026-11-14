@@ -219,6 +219,24 @@ Ground rules:
   - Normative absence in a spec or contract — "the schema defines
     no `status` field" tells an implementer what not to send.
 
+### defining by prevention
+
+- **Banned:** describing a change or design by what it rules out —
+  "no app's tabs get copied", "nothing leaks between tiers", "never
+  touches the network".
+- **Why:** the reader has to reconstruct the hazard from the denial,
+  and the hazard often lives in a conversation the reader never saw.
+  The sentence documents the author's worries, not the artifact.
+- **Instead:** state what the change does — "labels are
+  placeholders" — and stop. If the hazard matters, state it as a
+  property: "each tier's config is self-contained."
+- **Reference:** *apophasis* in its broad sense, or *via negativa*.
+- **In proper use:** a security spec's threat model, where the
+  enumerated threats are the content: "the token is never written to
+  disk."
+- **Carve-out:** guarantees a reader will rely on, such as API
+  contracts and invariants.
+
 ## Candidates
 
 Proposed, not decreed, and not binding until explicit permission moves one
