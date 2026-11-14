@@ -187,8 +187,8 @@ The extraction can come in steps, each worth shipping alone:
 
 ## How hand-written tiers go wrong
 
-Each of these has a spec that catches it and a fix that does not wait
-for the single mechanism.
+Each of these has a spec that catches it and a fix that ships before
+the single mechanism.
 
 - **A child tier rendered by its pages.** A page added to the section
   later renders the child tier but is missing from the parent's
