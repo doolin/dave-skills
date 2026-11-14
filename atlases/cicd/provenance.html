@@ -48,6 +48,23 @@
     <p class="kicker"><a href="../index.html">Atlases</a> · <a href="index.html">CI/CD</a> · provenance</p>
     <h1>Build provenance and artifact digests</h1>
     <p class="lede">Build provenance is a signed statement, made by the build platform, of how an artifact was built: the platform, the build process, its inputs, and the cryptographic digest of each output. In SLSA it is an in-toto attestation with the predicate type <code>https://slsa.dev/provenance/v1</code>. The artifact digest is the hash of the release file itself, which a recipient recomputes and compares. This page records the <a href="#what">definitions</a>, the <a href="#pipeline">pipeline stage</a> where both are made, the <a href="#nist">NIST</a>, <a href="#stig">STIG</a>, <a href="#dod">Department of Defense</a>, and <a href="#federal">other federal</a> documents that ask for them, and the <a href="#family">portfolio's use</a>. Provenance describes one build. The portfolio's attestation report (<a href="attestation.html">attestation.html</a>) records the evidence of one pipeline run and anchors its hash on Solana; the trusted timestamp is <a href="timestamp.html">timestamp.html</a>.</p>
+    <nav class="toc" aria-label="Contents">
+    <ol>
+        <li><a href="#what">What build provenance and an artifact digest are</a></li>
+        <li><a href="#pipeline">Where in a pipeline they are made</a></li>
+        <li><a href="#nist">NIST: the SSDF tasks and the SP 800-53 controls</a></li>
+        <li><a href="#stig">STIG</a></li>
+        <li><a href="#dod">DoD</a></li>
+        <li><a href="#federal">Other federal documents</a></li>
+        <li><a href="#limits">Limits stated in the sources</a></li>
+        <li><a href="#family">The portfolio's use</a></li>
+        <li><a href="#relations">Relationships</a></li>
+        <li><a href="#observed-facts">Observed</a></li>
+        <li><a href="#gaps">Gaps and unverified claims</a></li>
+        <li><a href="#changes">Change record</a></li>
+        <li><a href="#sources">Sources</a></li>
+      </ol>
+    </nav>
     <div class="observed">
       <dl>
         <dt>subject</dt><dd>SLSA build provenance and the SHA-256 digest of a release artifact: what each holds, where in a pipeline each is made, the NIST, STIG, DoD, and other federal documents that call for them or that they are evidence toward, and what clubstraylight.com, springboard, and slacronym produce.</dd>
@@ -60,25 +77,6 @@
   </div>
 </header>
 
-<nav class="toc">
-  <div class="wrap">
-    <ol>
-      <li><a href="#what">What build provenance and an artifact digest are</a></li>
-      <li><a href="#pipeline">Where in a pipeline they are made</a></li>
-      <li><a href="#nist">NIST: the SSDF tasks and the SP 800-53 controls</a></li>
-      <li><a href="#stig">STIG</a></li>
-      <li><a href="#dod">DoD</a></li>
-      <li><a href="#federal">Other federal documents</a></li>
-      <li><a href="#limits">Limits stated in the sources</a></li>
-      <li><a href="#family">The portfolio's use</a></li>
-      <li><a href="#relations">Relationships</a></li>
-      <li><a href="#observed-facts">Observed</a></li>
-      <li><a href="#gaps">Gaps and unverified claims</a></li>
-      <li><a href="#changes">Change record</a></li>
-      <li><a href="#sources">Sources</a></li>
-    </ol>
-  </div>
-</nav>
 
 <section id="what">
   <div class="wrap">

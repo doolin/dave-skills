@@ -53,6 +53,19 @@ nav.pages { padding: .3rem 1.5rem; border-top: 1px solid var(--rule); }
  * against. The chrome above it is header.chrome and keeps its own
  * rules. */
 header:not(.chrome) { padding: 2rem 0 1.5rem; border-bottom: 1px solid var(--rule); }
+
+/* On a wide screen the observation block stands beside the title and
+ * lede rather than under them; on a narrow one they stack. */
+@media (min-width: 64rem) {
+  header:not(.chrome) .wrap {
+    display: grid;
+    grid-template-columns: minmax(0, 34rem) minmax(0, 1fr);
+    column-gap: 2.5rem;
+    align-items: start;
+  }
+  header:not(.chrome) .wrap > * { grid-column: 1; }
+  header:not(.chrome) .wrap > .observed { grid-column: 2; grid-row: 1 / span 4; }
+}
 .kicker {
   font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
   font-size: .78rem; color: var(--quiet); margin: 0 0 .6rem; max-width: none;
@@ -73,6 +86,10 @@ nav.toc { display: block; padding: .8rem 0; border-bottom: 1px solid var(--rule)
 nav.toc ol { columns: 2; gap: 1.75rem; margin: 0; padding-left: 1.25rem; max-width: none; }
 nav.toc li { margin: .15rem 0; max-width: none; }
 nav.toc a { color: var(--cite); }
+/* In the hero, under the lede, the contents list is part of the left
+ * column: no rule of its own, one column. */
+header:not(.chrome) nav.toc { padding: .4rem 0 0; border-bottom: none; }
+header:not(.chrome) nav.toc ol { columns: 1; }
 
 /* ---- sections ----------------------------------------------------- */
 

@@ -48,6 +48,25 @@
     <p class="kicker"><a href="../index.html">Atlases</a> · <a href="index.html">CI/CD</a> · SBOM</p>
     <h1>Software bill of materials (SBOM)</h1>
     <p class="lede">A software bill of materials (glossary: <a href="../../kb/glossary.html#sbom">SBOM</a>) is a machine-readable list of the components in a piece of software and the dependencies between them. This page records its <a href="#what">definition</a>, its <a href="#origin">history</a>, its <a href="#formats">formats</a>, the <a href="#pipeline">pipeline stage</a> at which each type is produced, and the <a href="#nist">NIST</a>, <a href="#stig">STIG</a>, and <a href="#dod">Department of Defense</a> documents that refer to it. An SBOM is evidence toward a control, and each control also requires a process; <a href="#nist">§6</a> to <a href="#dod">§8</a> give the controls and state whose mapping each is.</p>
+    <nav class="toc" aria-label="Contents">
+    <ol>
+        <li><a href="#what">What an SBOM is</a></li>
+        <li><a href="#origin">Where the notion came from</a></li>
+        <li><a href="#adoption">How it was adopted</a></li>
+        <li><a href="#formats">Formats</a></li>
+        <li><a href="#pipeline">Where in a pipeline an SBOM is made</a></li>
+        <li><a href="#nist">NIST: the SSDF task and the SP 800-53 controls</a></li>
+        <li><a href="#stig">STIG</a></li>
+        <li><a href="#dod">DoD and Air Force continuous authorization</a></li>
+        <li><a href="#limits">Limits stated in the sources</a></li>
+        <li><a href="#family">The portfolio's use</a></li>
+        <li><a href="#relations">Relationships</a></li>
+        <li><a href="#observed-facts">Observed</a></li>
+        <li><a href="#gaps">Gaps and unverified claims</a></li>
+        <li><a href="#changes">Change record</a></li>
+        <li><a href="#sources">Sources</a></li>
+      </ol>
+    </nav>
     <div class="observed">
       <dl>
         <dt>subject</dt><dd>The SBOM as a build artifact: its definition and minimum content, its history, its formats, the point in a pipeline where each kind is made, and the NIST, STIG, and Department of Defense documents that ask for it or that it supports.</dd>
@@ -60,27 +79,6 @@
   </div>
 </header>
 
-<nav class="toc">
-  <div class="wrap">
-    <ol>
-      <li><a href="#what">What an SBOM is</a></li>
-      <li><a href="#origin">Where the notion came from</a></li>
-      <li><a href="#adoption">How it was adopted</a></li>
-      <li><a href="#formats">Formats</a></li>
-      <li><a href="#pipeline">Where in a pipeline an SBOM is made</a></li>
-      <li><a href="#nist">NIST: the SSDF task and the SP 800-53 controls</a></li>
-      <li><a href="#stig">STIG</a></li>
-      <li><a href="#dod">DoD and Air Force continuous authorization</a></li>
-      <li><a href="#limits">Limits stated in the sources</a></li>
-      <li><a href="#family">The portfolio's use</a></li>
-      <li><a href="#relations">Relationships</a></li>
-      <li><a href="#observed-facts">Observed</a></li>
-      <li><a href="#gaps">Gaps and unverified claims</a></li>
-      <li><a href="#changes">Change record</a></li>
-      <li><a href="#sources">Sources</a></li>
-    </ol>
-  </div>
-</nav>
 
 <section id="what">
   <div class="wrap">

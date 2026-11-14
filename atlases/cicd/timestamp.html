@@ -48,6 +48,22 @@
     <p class="kicker"><a href="../index.html">Atlases</a> · <a href="index.html">CI/CD</a> · timestamp</p>
     <h1>Trusted timestamp (RFC 3161 time-stamp token)</h1>
     <p class="lede">A trusted timestamp is a time-stamp token: a structure signed by a time-stamping authority (TSA) that binds a hash of some data to the time the authority issued the token. Kept with the authority's certificate chain, it lets anyone with the data show that the data existed at that time. This page records the token's <a href="#what">definition</a> in RFC 3161 and RFC 5816, its <a href="#pipeline">place in a pipeline</a>, the <a href="#nist">NIST</a>, <a href="#stig">STIG</a>, and <a href="#dod">Department of Defense and other federal</a> documents that bear on it, and how one of the portfolio's three pipelines <a href="#family">makes one</a>. A token is evidence toward a control, and each control also requires a process; <a href="#nist">§3</a> states whose mapping each control is.</p>
+    <nav class="toc" aria-label="Contents">
+    <ol>
+        <li><a href="#what">What a time-stamp token is</a></li>
+        <li><a href="#pipeline">Where in a pipeline it is made</a></li>
+        <li><a href="#nist">NIST: the SSDF tasks and the SP 800-53 controls</a></li>
+        <li><a href="#stig">STIG</a></li>
+        <li><a href="#dod">DoD and other federal documents</a></li>
+        <li><a href="#limits">Limits stated in the sources</a></li>
+        <li><a href="#family">The portfolio's use</a></li>
+        <li><a href="#relations">Relationships</a></li>
+        <li><a href="#observed-facts">Observed</a></li>
+        <li><a href="#gaps">Gaps and unverified claims</a></li>
+        <li><a href="#changes">Change record</a></li>
+        <li><a href="#sources">Sources</a></li>
+      </ol>
+    </nav>
     <div class="observed">
       <dl>
         <dt>subject</dt><dd>The RFC 3161 time-stamp token as a pipeline artifact: what it holds, how it is requested and verified, the controls and rules it is evidence toward, and springboard's <code>timestamp.tsr</code> and <code>tsa-certchain.pem</code>.</dd>
@@ -60,24 +76,6 @@
   </div>
 </header>
 
-<nav class="toc">
-  <div class="wrap">
-    <ol>
-      <li><a href="#what">What a time-stamp token is</a></li>
-      <li><a href="#pipeline">Where in a pipeline it is made</a></li>
-      <li><a href="#nist">NIST: the SSDF tasks and the SP 800-53 controls</a></li>
-      <li><a href="#stig">STIG</a></li>
-      <li><a href="#dod">DoD and other federal documents</a></li>
-      <li><a href="#limits">Limits stated in the sources</a></li>
-      <li><a href="#family">The portfolio's use</a></li>
-      <li><a href="#relations">Relationships</a></li>
-      <li><a href="#observed-facts">Observed</a></li>
-      <li><a href="#gaps">Gaps and unverified claims</a></li>
-      <li><a href="#changes">Change record</a></li>
-      <li><a href="#sources">Sources</a></li>
-    </ol>
-  </div>
-</nav>
 
 <section id="what">
   <div class="wrap">

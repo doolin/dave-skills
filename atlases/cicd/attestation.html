@@ -48,6 +48,23 @@
     <p class="kicker"><a href="../index.html">Atlases</a> · <a href="index.html">CI/CD</a> · attestation</p>
     <h1>Attestation report and evidence archive</h1>
     <p class="lede">The portfolio's record of a pipeline run: every CI artifact of the run zipped into one bundle, the bundle's SHA-256 posted in a Solana Memo transaction, a PDF and a JSON report of the run, and the bundle, its files, and the report copied to an S3 compliance bucket through an OIDC role. clubstraylight.com, springboard, and slacronym each make one. The word "attestation" carries three meanings in the sources, and this page keeps them apart (<a href="#what">§1</a>): this run record; the SLSA and in-toto build attestation (<a href="provenance.html">provenance.html</a>); and the software producer's self-attestation to the federal government (<a href="#federal">§6</a>). The record is evidence toward the controls of <a href="#nist">§3</a>; each control also requires a process, and each mapping states whose it is.</p>
+    <nav class="toc" aria-label="Contents">
+    <ol>
+        <li><a href="#what">What the run record is, and the three senses of "attestation"</a></li>
+        <li><a href="#pipeline">Where in a pipeline it is made</a></li>
+        <li><a href="#nist">NIST: the SSDF tasks and the SP 800-53 controls</a></li>
+        <li><a href="#stig">STIG</a></li>
+        <li><a href="#dod">DoD</a></li>
+        <li><a href="#federal">Other federal documents: the producer's self-attestation</a></li>
+        <li><a href="#limits">Limits stated in the sources</a></li>
+        <li><a href="#family">The portfolio's use</a></li>
+        <li><a href="#relations">Relationships</a></li>
+        <li><a href="#observed-facts">Observed</a></li>
+        <li><a href="#gaps">Gaps and unverified claims</a></li>
+        <li><a href="#changes">Change record</a></li>
+        <li><a href="#sources">Sources</a></li>
+      </ol>
+    </nav>
     <div class="observed">
       <dl>
         <dt>subject</dt><dd>The CI run record made by the solana-cicd-hash pattern: what it holds, where in a pipeline it is made, the NIST, STIG, and DoD texts that bear on archiving and protecting such evidence, the federal self-attestation regime that shares the word, and how the three portfolio scripts differ.</dd>
@@ -60,25 +77,6 @@
   </div>
 </header>
 
-<nav class="toc">
-  <div class="wrap">
-    <ol>
-      <li><a href="#what">What the run record is, and the three senses of "attestation"</a></li>
-      <li><a href="#pipeline">Where in a pipeline it is made</a></li>
-      <li><a href="#nist">NIST: the SSDF tasks and the SP 800-53 controls</a></li>
-      <li><a href="#stig">STIG</a></li>
-      <li><a href="#dod">DoD</a></li>
-      <li><a href="#federal">Other federal documents: the producer's self-attestation</a></li>
-      <li><a href="#limits">Limits stated in the sources</a></li>
-      <li><a href="#family">The portfolio's use</a></li>
-      <li><a href="#relations">Relationships</a></li>
-      <li><a href="#observed-facts">Observed</a></li>
-      <li><a href="#gaps">Gaps and unverified claims</a></li>
-      <li><a href="#changes">Change record</a></li>
-      <li><a href="#sources">Sources</a></li>
-    </ol>
-  </div>
-</nav>
 
 <section id="what">
   <div class="wrap">

@@ -48,6 +48,23 @@
     <p class="kicker"><a href="../index.html">Atlases</a> · <a href="index.html">CI/CD</a> · audit events</p>
     <h1>Pipeline audit events</h1>
     <p class="lede">A pipeline audit event is the structured record a CI/CD job writes of what it did: which job ran, for which commit and run, when, and with what outcome. The sources call such a record an "audit record" or a "log entry". This page records the <a href="#what">definitions</a>, the <a href="#pipeline">pipeline stage</a> at which the records are made, the <a href="#nist">NIST</a>, <a href="#stig">STIG</a>, <a href="#dod">Department of Defense</a>, and <a href="#federal">federal records</a> documents that ask for them or set their retention, and what <a href="#family">the portfolio's pipelines</a> write. An audit event is evidence toward a control; each control also requires a process (event selection, review, protection, retention), and <a href="#nist">§3</a> states whose mapping each control is.</p>
+    <nav class="toc" aria-label="Contents">
+    <ol>
+        <li><a href="#what">What an audit event is</a></li>
+        <li><a href="#pipeline">Where in a pipeline it is made</a></li>
+        <li><a href="#nist">NIST: the SSDF tasks and the SP 800-53 controls</a></li>
+        <li><a href="#stig">STIG</a></li>
+        <li><a href="#dod">DoD</a></li>
+        <li><a href="#federal">Other federal documents and the records schedules</a></li>
+        <li><a href="#limits">Limits stated in the sources</a></li>
+        <li><a href="#family">The portfolio's use</a></li>
+        <li><a href="#relations">Relationships</a></li>
+        <li><a href="#observed-facts">Observed</a></li>
+        <li><a href="#gaps">Gaps and unverified claims</a></li>
+        <li><a href="#changes">Change record</a></li>
+        <li><a href="#sources">Sources</a></li>
+      </ol>
+    </nav>
     <div class="observed">
       <dl>
         <dt>subject</dt><dd>The per-job audit event of a CI/CD pipeline: its definition in the issuing documents, the content they require of an audit record, the stage where it is written, its protection and retention, and the records the portfolio's three pipelines write.</dd>
@@ -60,25 +77,6 @@
   </div>
 </header>
 
-<nav class="toc">
-  <div class="wrap">
-    <ol>
-      <li><a href="#what">What an audit event is</a></li>
-      <li><a href="#pipeline">Where in a pipeline it is made</a></li>
-      <li><a href="#nist">NIST: the SSDF tasks and the SP 800-53 controls</a></li>
-      <li><a href="#stig">STIG</a></li>
-      <li><a href="#dod">DoD</a></li>
-      <li><a href="#federal">Other federal documents and the records schedules</a></li>
-      <li><a href="#limits">Limits stated in the sources</a></li>
-      <li><a href="#family">The portfolio's use</a></li>
-      <li><a href="#relations">Relationships</a></li>
-      <li><a href="#observed-facts">Observed</a></li>
-      <li><a href="#gaps">Gaps and unverified claims</a></li>
-      <li><a href="#changes">Change record</a></li>
-      <li><a href="#sources">Sources</a></li>
-    </ol>
-  </div>
-</nav>
 
 <section id="what">
   <div class="wrap">

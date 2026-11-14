@@ -48,6 +48,23 @@
     <p class="kicker"><a href="../index.html">Atlases</a> · <a href="index.html">CI/CD</a> · OSCAL</p>
     <h1>OSCAL documents</h1>
     <p class="lede">OSCAL, NIST's Open Security Controls Assessment Language, is a set of JSON, XML, and YAML models for control catalogs, baselines, system security plans, assessment plans, assessment results, and plans of action. A pipeline that emits OSCAL writes its scan results and its claims about controls in those models. This page records the <a href="#what">models</a> a pipeline uses, the <a href="#nist">NIST</a>, <a href="#stig">STIG</a>, <a href="#dod">Department of Defense</a>, and <a href="#federal">OMB</a> documents that bear on them, and <a href="#family">what springboard's pipeline writes</a>: three documents per run, read line by line against the OSCAL 1.1.2 schema. The control mappings in <a href="#nist">§3</a> state whose each is.</p>
+    <nav class="toc" aria-label="Contents">
+    <ol>
+        <li><a href="#what">What the OSCAL documents are</a></li>
+        <li><a href="#pipeline">Where in a pipeline they are made</a></li>
+        <li><a href="#nist">NIST: SSDF tasks, SP 800-53 controls, SP 800-53A</a></li>
+        <li><a href="#stig">STIG</a></li>
+        <li><a href="#dod">DoD</a></li>
+        <li><a href="#federal">Other federal documents</a></li>
+        <li><a href="#limits">Limits stated in the sources</a></li>
+        <li><a href="#family">The portfolio's use</a></li>
+        <li><a href="#relations">Relationships</a></li>
+        <li><a href="#observed-facts">Observed</a></li>
+        <li><a href="#gaps">Gaps and unverified claims</a></li>
+        <li><a href="#changes">Change record</a></li>
+        <li><a href="#sources">Sources</a></li>
+      </ol>
+    </nav>
     <div class="observed">
       <dl>
         <dt>subject</dt><dd>OSCAL assessment results, component definitions, and system security plans as CI/CD build artifacts: the model definitions, the federal and DoD documents that call for machine-readable authorization artifacts, the SP 800-53 and SP 800-53A text the documents' content corresponds to, and springboard's <code>scripts/generate-oscal.js</code>.</dd>
@@ -60,25 +77,6 @@
   </div>
 </header>
 
-<nav class="toc">
-  <div class="wrap">
-    <ol>
-      <li><a href="#what">What the OSCAL documents are</a></li>
-      <li><a href="#pipeline">Where in a pipeline they are made</a></li>
-      <li><a href="#nist">NIST: SSDF tasks, SP 800-53 controls, SP 800-53A</a></li>
-      <li><a href="#stig">STIG</a></li>
-      <li><a href="#dod">DoD</a></li>
-      <li><a href="#federal">Other federal documents</a></li>
-      <li><a href="#limits">Limits stated in the sources</a></li>
-      <li><a href="#family">The portfolio's use</a></li>
-      <li><a href="#relations">Relationships</a></li>
-      <li><a href="#observed-facts">Observed</a></li>
-      <li><a href="#gaps">Gaps and unverified claims</a></li>
-      <li><a href="#changes">Change record</a></li>
-      <li><a href="#sources">Sources</a></li>
-    </ol>
-  </div>
-</nav>
 
 <section id="what">
   <div class="wrap">

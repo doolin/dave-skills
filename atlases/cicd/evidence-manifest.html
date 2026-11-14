@@ -48,6 +48,23 @@
     <p class="kicker"><a href="../index.html">Atlases</a> · <a href="index.html">CI/CD</a> · evidence manifest</p>
     <h1>Evidence manifest and retention classes</h1>
     <p class="lede">An evidence manifest is the hashed inventory of the evidence files one pipeline run produced: a path, a size, and a SHA-256 digest per file, with a class for each file and the retention class it is assigned. In the portfolio it is <code>evidence-manifest.json</code>, written by springboard's <code>verify-evidence</code> job, which also copies the pipeline definition into the evidence set. This page records what the issuing documents say about archiving and protecting such evidence (<a href="#nist">NIST</a>, <a href="#stig">STIG</a>, <a href="#dod">DoD</a>), and checks each NARA General Records Schedule citation in the script against the schedule text (<a href="#grs">§6</a>). None of the three citations fits all the evidence assigned to it: GRS 5.1 and GRS 2.7 cover other records and set no permanent or 90-day disposition, and GRS 3.2 covers the scans but gives no 3-to-7-year period.</p>
+    <nav class="toc" aria-label="Contents">
+    <ol>
+        <li><a href="#what">What an evidence manifest is</a></li>
+        <li><a href="#pipeline">Where in a pipeline it is made</a></li>
+        <li><a href="#nist">NIST: the SSDF tasks and the SP 800-53 controls</a></li>
+        <li><a href="#stig">STIG</a></li>
+        <li><a href="#dod">DoD</a></li>
+        <li><a href="#grs">Other federal documents, and the GRS citations checked</a></li>
+        <li><a href="#limits">Limits stated in the sources</a></li>
+        <li><a href="#family">The portfolio's use</a></li>
+        <li><a href="#relations">Relationships</a></li>
+        <li><a href="#observed-facts">Observed</a></li>
+        <li><a href="#gaps">Gaps and unverified claims</a></li>
+        <li><a href="#changes">Change record</a></li>
+        <li><a href="#sources">Sources</a></li>
+      </ol>
+    </nav>
     <div class="observed">
       <dl>
         <dt>subject</dt><dd>The evidence manifest as a pipeline artifact: per-file SHA-256 inventory, completeness check, artifact and retention classes, and the archived pipeline definition; the NIST, STIG, DoD, and federal records documents that bear on archiving, protecting, and retaining pipeline evidence.</dd>
@@ -60,25 +77,6 @@
   </div>
 </header>
 
-<nav class="toc">
-  <div class="wrap">
-    <ol>
-      <li><a href="#what">What an evidence manifest is</a></li>
-      <li><a href="#pipeline">Where in a pipeline it is made</a></li>
-      <li><a href="#nist">NIST: the SSDF tasks and the SP 800-53 controls</a></li>
-      <li><a href="#stig">STIG</a></li>
-      <li><a href="#dod">DoD</a></li>
-      <li><a href="#grs">Other federal documents, and the GRS citations checked</a></li>
-      <li><a href="#limits">Limits stated in the sources</a></li>
-      <li><a href="#family">The portfolio's use</a></li>
-      <li><a href="#relations">Relationships</a></li>
-      <li><a href="#observed-facts">Observed</a></li>
-      <li><a href="#gaps">Gaps and unverified claims</a></li>
-      <li><a href="#changes">Change record</a></li>
-      <li><a href="#sources">Sources</a></li>
-    </ol>
-  </div>
-</nav>
 
 <section id="what">
   <div class="wrap">

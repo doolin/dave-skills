@@ -48,6 +48,23 @@
     <p class="kicker"><a href="../index.html">Atlases</a> · <a href="index.html">CI/CD</a> · static analysis</p>
     <h1>Static analysis and lint results</h1>
     <p class="lede">Static analysis and lint results are the findings a linter or static analyzer reports on source code that is not running, kept as the record of one run: the tool, its configuration, the commit, each finding, and the outcome. This page records the <a href="#what">definitions</a>, the <a href="#pipeline">pipeline stages</a> where the findings are made, and the <a href="#nist">NIST</a>, <a href="#stig">STIG</a>, <a href="#dod">Department of Defense</a>, and <a href="#federal">other federal</a> documents that ask for them or read them, then <a href="#family">what the portfolio's pipelines keep</a>. A findings file is evidence toward a control, and each control also requires a process; <a href="#nist">§3</a> states whose mapping each control is.</p>
+    <nav class="toc" aria-label="Contents">
+    <ol>
+        <li><a href="#what">What static analysis and lint results are</a></li>
+        <li><a href="#pipeline">Where in a pipeline they are made</a></li>
+        <li><a href="#nist">NIST: the SSDF tasks and the SP 800-53 controls</a></li>
+        <li><a href="#stig">STIG</a></li>
+        <li><a href="#dod">DoD</a></li>
+        <li><a href="#federal">Other federal documents</a></li>
+        <li><a href="#limits">Limits stated in the sources</a></li>
+        <li><a href="#family">The portfolio's use</a></li>
+        <li><a href="#relations">Relationships</a></li>
+        <li><a href="#observed-facts">Observed</a></li>
+        <li><a href="#gaps">Gaps and unverified claims</a></li>
+        <li><a href="#changes">Change record</a></li>
+        <li><a href="#sources">Sources</a></li>
+      </ol>
+    </nav>
     <div class="observed">
       <dl>
         <dt>subject</dt><dd>The findings of linters and static analyzers run on source code in a CI/CD pipeline, kept as a record of a run: what the issuing documents call them, where in a pipeline they are made, the controls and STIG rules they are evidence toward, and which portfolio pipelines keep a findings file and which only gate a job on the tool's exit status.</dd>
@@ -60,25 +77,6 @@
   </div>
 </header>
 
-<nav class="toc">
-  <div class="wrap">
-    <ol>
-      <li><a href="#what">What static analysis and lint results are</a></li>
-      <li><a href="#pipeline">Where in a pipeline they are made</a></li>
-      <li><a href="#nist">NIST: the SSDF tasks and the SP 800-53 controls</a></li>
-      <li><a href="#stig">STIG</a></li>
-      <li><a href="#dod">DoD</a></li>
-      <li><a href="#federal">Other federal documents</a></li>
-      <li><a href="#limits">Limits stated in the sources</a></li>
-      <li><a href="#family">The portfolio's use</a></li>
-      <li><a href="#relations">Relationships</a></li>
-      <li><a href="#observed-facts">Observed</a></li>
-      <li><a href="#gaps">Gaps and unverified claims</a></li>
-      <li><a href="#changes">Change record</a></li>
-      <li><a href="#sources">Sources</a></li>
-    </ol>
-  </div>
-</nav>
 
 <section id="what">
   <div class="wrap">
