@@ -85,11 +85,15 @@ h3 { font-size: 1.02rem; margin: 1.6rem 0 .4rem; }
 /* ---- facts -------------------------------------------------------- */
 
 /* A fact table: the source mark in the margin face, the kind mark as
- * the section's one signal, and the header sitting below the chrome:
- * the site row and the atlases row, and on an atlas's pages that
- * atlas's row as well. */
+ * the section's one signal. The wrapper scrolls sideways so a wide
+ * table fits a narrow screen, and a scrolling box is where a sticky
+ * header sticks: the site stylesheet's sticky th, offset to clear the
+ * chrome, would sit that far down inside the table, over its rows; and
+ * outside a wrapper its offset, set for two rows of chrome, slides
+ * under an atlas page's three. So every atlas table's header is an
+ * ordinary row. */
 .tbl { overflow-x: auto; margin: .75rem 0 1.25rem; }
-body:has(nav.pages) th { top: 5.85rem; }
+th { position: static; }
 td code { white-space: nowrap; }
 .src {
   font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
