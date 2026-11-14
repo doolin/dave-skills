@@ -1,6 +1,6 @@
 ---
 name: banned-words
-description: The operator's banned words and banned rhetorical devices — words that read as bafflegab, filler, or euphemism, and argumentative moves that assert more than they establish, with replacements and carve-outs for each. Applies to all prose an agent produces (responses, documents, commit messages, tickets) and to inherited text being edited. Load when writing or reviewing prose, and whenever a listed word or device is about to appear.
+description: Banned words and banned rhetorical devices — words that read as bafflegab, filler, or euphemism, and argumentative moves that assert more than they establish, with replacements and carve-outs for each. Applies to all prose an agent produces (responses, documents, commit messages, tickets) and to inherited text being edited. Load when writing or reviewing prose, and whenever a listed word or device is about to appear.
 ---
 
 # Banned words and rhetorical devices
@@ -22,8 +22,8 @@ Ground rules:
 - When editing text that already contains a banned word, fix it in
   passing, even when that isn't the task. Don't launch sweeps for
   banned words alone.
-- The list grows by operator decree. Don't add entries on your own
-  judgment; do propose candidates when you notice a pattern.
+- Software agents do not add entries without explicit permission.
+  Do propose candidates when you notice a pattern.
 
 ## The list
 
@@ -106,19 +106,19 @@ Ground rules:
 
 - **Banned:** where the agent is the one doing the settling — "that
   settles it", "one call settles it", "this settles whether X".
-- **Why:** closing a question is the operator's act. An agent that
-  reports a matter settled has put its own satisfaction where his
-  decision belongs, and the report is what stops anyone looking
+- **Why:** software agents do not close questions. An agent
+  that reports a matter settled has put its own satisfaction where
+  the decision belongs, and the report is what stops anyone looking
   again. The word is not the problem; the unilateral claim is.
-- **Instead:** report the finding and leave the closing to him —
+- **Instead:** report the finding and leave the question open —
   "the command ran without a prompt, so the allowlist is not the
   cause" — or say who closed it: "you ruled X on 19 September".
 - **Carve-outs:**
-  - **Settlement by the operator, or reached together.** This is
+  - **Settlement by ruling, or reached together.** This is
     the main one, and it is what the ban is for. "Nothing changes
-    until the proposal is settled" is right where only he can
+    until the proposal is settled" is right where the agent cannot
     settle it. "We settled on Marp" is right where the choice was
-    joint. Reporting a real act of his is accurate; claiming the act
+    joint. Reporting a real ruling is accurate; claiming one
     is what the ban catches.
   - The physical and legal senses: a foundation settles, a claim is
     settled out of court, a settlement is a place.
@@ -141,6 +141,21 @@ Ground rules:
   a method's, the `name` field of a record. "The gem's name is
   ostruct" and "renamed the directory" keep it.
 
+### operator
+
+- **Banned:** "operator", "the operator", "the operator's",
+  "operators" and every other form, for the person an agent
+  works for. Always, in every artifact.
+- **Why:** the person it refers to does not want to be referred
+  to in the third person, by role or by name.
+- **Instead:** "you" in conversation. Everywhere else, write the
+  sentence so it refers to no one — "software agents do not add
+  entries without explicit permission", "ruled 19 September",
+  "accepted and closed". Never substitute the person's name,
+  "the user", or another role word.
+- **Carve-out:** operators in code and mathematics — `&&`, a
+  differential operator — are a different word and not covered.
+
 ## Banned rhetorical devices
 
 A device is a *move*, not a word, so no phrase list catches it.
@@ -160,7 +175,8 @@ Ground rules:
 - Each entry gives the device's established term, so it can be
   looked up and argued with, and shows it working — these are real instruments, banned
   here for misuse, not because they are always wrong.
-- The list grows by operator decree. Propose candidates under
+- Software agents do not add entries without explicit permission.
+  Propose candidates under
   `## Candidates` rather than banning on your own judgment.
 
 ### argument from absence
@@ -205,7 +221,7 @@ Ground rules:
 
 ## Candidates
 
-Proposed, not decreed, and not binding until the operator moves one
+Proposed, not decreed, and not binding until explicit permission moves one
 up into a list above. Same fields.
 
 ### the rule of three
@@ -268,18 +284,18 @@ up into a list above. Same fields.
 
 ## Adding an entry
 
-When the operator bans a **word**: add an entry under `## The list`
+When a **word** is banned: add an entry under `## The list`
 with the four fields (banned / why / instead / carve-out if any),
 one entry per word family.
 
-When the operator bans a **device**: add an entry under `## Banned
+When a **device** is banned: add an entry under `## Banned
 rhetorical devices` with those fields plus **Reference** (what the
 move is called, so it can be looked up) and **In proper use** (a
 case, preferably from the classics, where the same move is sound —
 this is what keeps the entry a piece of craft guidance rather than
 a prohibition).
 
-When the operator promotes a candidate, move its entry up and drop
+When a candidate is promoted, move its entry up and drop
 the `Proposed` wording.
 
 Either way, commit. If the ban arrives mid-session, apply it
