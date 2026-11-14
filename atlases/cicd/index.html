@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CI/CD — atlas index</title>
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="../atlas.css">
+</head>
+<body>
+<header class="chrome">
+<nav class="site" aria-label="Straylight">
+<a class="home" href="../../index.html">Straylight</a>
+<a href="../../kb/index.html">knowledge base</a>
+<a href="../../audits/index.html">audits</a>
+<a href="../../atlases/index.html" aria-current="true">atlases</a>
+<a href="../../presentations/index.html">presentations</a>
+<a href="../../search">search</a>
+</nav>
+</header>
+
+<header>
+  <div class="wrap">
+    <p class="kicker"><a href="../index.html">Atlases</a> · CI/CD · index</p>
+    <h1>CI/CD: pipeline artifacts and the documents that require them</h1>
+    <p class="lede">A build and delivery pipeline produces records of what it built, such as component lists, attestations, scan results, and signatures. Federal guidance, Defense Department policy, and security controls refer to these records. Each page of this atlas covers one artifact or practice, read from the issuing bodies' documents: its definition, its history, the documents that refer to it, and the controls it is evidence for. The first page is the <a href="sbom.html">software bill of materials</a> (glossary: <a href="../../kb/glossary.html#sbom">SBOM</a>).</p>
+    <div class="observed">
+      <dl>
+        <dt>subject</dt><dd>Continuous integration and delivery as a source of security evidence. The pages are about the artifacts and the documents that govern them, not about any one CI product.</dd>
+        <dt>versions observed</dt><dd>Each page lists the documents it was read against and the date. The SBOM page: EO 14028; NTIA 2021-07-12; SSDF 1.1 and the 1.2 draft; SP 800-53 Rev. 5; SP 800-204D; ASD STIG V6R4; the DoD cATO memorandum, guide, and evaluation criteria; OMB M-26-05; read 2026-11-14.</dd>
+        <dt>source kinds</dt><dd><span class="kind doc">documented</span> read in the issuing body's own document · <span class="kind obs">observed</span> worked out or seen by the author, with its date · <span class="kind fam">family</span> from a family document, cited by path at a commit · <span class="kind unv">unverified</span> known only from a secondary source, or from a primary one that could not be read.</dd>
+        <dt>pages</dt><dd><a href="sbom.html">SBOM</a>. Each page ends with its relationships, its gaps, a change record, and its sources.</dd>
+      </dl>
+    </div>
+  </div>
+</header>
+
+<nav class="toc">
+  <div class="wrap">
+    <ol>
+      <li><a href="#mechanism">Where evidence arises in a pipeline</a></li>
+      <li><a href="#askers">Documents that refer to an SBOM</a></li>
+      <li><a href="#reading">How to read a page</a></li>
+      <li><a href="#changes">Change record</a></li>
+    </ol>
+  </div>
+</nav>
+
+<section id="mechanism">
+  <div class="wrap">
+    <h2>§1</h2>
+    <p class="h2big">Where evidence arises in a pipeline</p>
+    <p class="sub">The stages are the ones <a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-204D.pdf">NIST SP 800-204D</a> gives a pipeline: "source code through the build, test, package, and deployment stages" (<a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-204D.pdf#page=11">§1.1</a>). The evidence at each stage links to its page where one exists.</p>
+    <div class="map">
+      <div class="step"><span class="k">1</span><span class="n">source</span><span class="d">Dependencies are declared and locked. A <a href="sbom.html#pipeline">Source SBOM</a> is read from them.</span></div>
+      <div class="step"><span class="k">2</span><span class="n">build</span><span class="d">The artifact is made. A <a href="sbom.html#pipeline">Build SBOM</a> records what went into it; a build attestation records how it was made. Attestation has no page yet.</span></div>
+      <div class="step"><span class="k">3</span><span class="n">test</span><span class="d">Scanners read the component list against advisories; static and dynamic analysis read the code. No page yet.</span></div>
+      <div class="step"><span class="k">4</span><span class="n">package</span><span class="d">The release is hashed and signed, the SBOM with it. An <a href="sbom.html#pipeline">Analyzed SBOM</a> can be made from the package by a third party.</span></div>
+      <div class="step"><span class="k">5</span><span class="n">deploy</span><span class="d">What is installed is recorded: a <a href="sbom.html#pipeline">Deployed or Runtime SBOM</a>, and the system's component inventory.</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="askers">
+  <div class="wrap">
+    <h2>§2</h2>
+    <p class="h2big">Documents that refer to an SBOM</p>
+    <p class="sub">The citations and the wording are on the <a href="sbom.html">SBOM</a> page.</p>
+    <div class="tbl"><table>
+      <tr><th>body</th><th>document</th><th>what it says of an SBOM</th><th>on the page</th></tr>
+      <tr><td>The President</td><td><a href="https://www.govinfo.gov/content/pkg/FR-2021-05-17/pdf/2021-10460.pdf#page=14">Executive Order 14028</a>, 2021</td><td>defines it; has NIST guidance include providing one to a purchaser</td><td><a href="sbom.html#what">§1</a>, <a href="sbom.html#adoption">§3</a></td></tr>
+      <tr><td>NTIA</td><td><a href="https://www.ntia.gov/files/ntia/publications/sbom_minimum_elements_report.pdf#page=8"><cite>Minimum Elements</cite></a>, 2021</td><td>seven data fields, automation, practices</td><td><a href="sbom.html#what">§1</a></td></tr>
+      <tr><td>NIST</td><td><a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-218.pdf#page=19">SP 800-218 (SSDF) 1.1</a></td><td>task <a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-218.pdf#page=19">PS.3.2</a>, mapped by NIST to SP 800-53 SA-8, <a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r5.pdf#page=392">SR-3</a>, <a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r5.pdf#page=393">SR-4</a>; the <a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-218r1.ipd.pdf#page=30">1.2 draft</a> adds <a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r5.pdf#page=134">CM-8</a> and CM-12</td><td><a href="sbom.html#nist">§6</a></td></tr>
+      <tr><td>NIST</td><td><a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r5.pdf#page=393">SP 800-53 Rev. 5</a></td><td>does not use the term in the text read; <a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r5.pdf#page=395">SR-4(4)</a> and <a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r5.pdf#page=134">CM-8</a> describe what one holds</td><td><a href="sbom.html#nist">§6</a></td></tr>
+      <tr><td>DISA</td><td><a href="https://www.stigviewer.com/stigs/application_security_and_development">Application Security and Development STIG</a> V6R4</td><td>no rule requires one; seven findings start from a component list</td><td><a href="sbom.html#stig">§7</a></td></tr>
+      <tr><td>DoD CIO</td><td><a href="https://dodcio.defense.gov/Portals/0/Documents/Library/20220204-cATO-memo-Signed-Cleared.pdf#page=2">cATO memorandum</a>, 2022</td><td>an approved DevSecOps pipeline is needed to "support the creation of a software bill of materials"</td><td><a href="sbom.html#dod">§8</a></td></tr>
+      <tr><td>DoD CIO</td><td><a href="https://dodcio.defense.gov/Portals/0/Documents/Library/cATO-EvaluationCriteria.pdf#page=14">cATO Evaluation Criteria</a>, 2024</td><td>requires an SBOM of the platform, an automated SBOM export per product, a stated format and frequency, an archive, and CVE analysis against it</td><td><a href="sbom.html#dod">§8</a></td></tr>
+      <tr><td>OMB</td><td><a href="https://www.whitehouse.gov/wp-content/uploads/2026/01/M-26-05-Adopting-a-Risk-based-Approach-to-Software-and-Hardware-Security.pdf">M-26-05</a>, 2026</td><td>agencies "may" require one by contract; the attestation memoranda rescinded</td><td><a href="sbom.html#adoption">§3</a></td></tr>
+    </table></div>
+  </div>
+</section>
+
+<section id="reading">
+  <div class="wrap">
+    <h2>§3</h2>
+    <p class="h2big">How to read a page</p>
+    <ul>
+      <li>The block under the title lists the documents the page was read against and when. The change record at the end keeps the old fact when a new document replaces it.</li>
+      <li>A row's source mark links to the document in the page's sources list and gives the place in it. Verbatim wording is quote-marked.</li>
+      <li>A control mapping says whose it is: the issuing body's own cross-reference, or the page's reading of the control text. An artifact is evidence toward a control; the control also asks for a process.</li>
+      <li>A row marked unverified says why: a secondary source, or a primary one that refused the fetch. Each page's gaps section lists what the author knows to be missing.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="changes">
+  <div class="wrap">
+    <h2>§4</h2>
+    <p class="h2big">Change record</p>
+    <div class="tbl"><table>
+      <tr><th>date</th><th>checked against</th><th>change</th></tr>
+      <tr><td>2026-11-14</td><td>the SBOM page's documents</td><td>Atlas opened with the index and the SBOM page (CSL-0224).</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<footer><div class="wrap">CI/CD atlas · index · built by Straylight under <a href="../../kb/prds/PRD-0004.html">PRD-0004</a>. No script, no external asset.</div></footer>
+</body>
+</html>
