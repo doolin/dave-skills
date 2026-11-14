@@ -86,7 +86,7 @@ gitignored, so it is a local-only edit.
 - **Ruby/Bundler binstubs** are relative and come through untouched. In
   the reference run the engine gate passed unchanged, first try.
 - **The git remote** is a URL, not a path.
-- **The family graph** (`knowledge.json`) and the cross-project playbooks
+- **The knowledge graph** (`knowledge.json`) and the cross-project playbooks
   are usually already correct, especially if the rename was planned.
 - **`~/.claude/history.jsonl`** records the old path forever. It is an
   append-only log. Leave it.
@@ -117,6 +117,6 @@ it will drift from the live set. Decide explicitly: delete it, or
 knowingly keep it.
 
 **Check the commons/onboarding state while you are here.** A repo whose
-identity just changed is worth checking against whatever family-wide
+identity just changed is worth checking against whatever portfolio-wide
 provisioning exists (`COMMONS.md` and friends). A rename does not break
 it, but the audit is free once you are already looking.

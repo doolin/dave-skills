@@ -1,12 +1,12 @@
 ---
-name: update-family-graph-entry
-description: Update your own entry in the Straylight family knowledge graph (knowledge.json in clubstraylight.com) — mechanical corrections only, committed under the standing CSL-0027 ticket. Rarely needed; load only when your graph entry has drifted from reality and the operator asks you to bring it current.
+name: update-graph-entry
+description: Update your own entry in the Straylight knowledge graph (knowledge.json in clubstraylight.com) — mechanical corrections only, committed under the standing CSL-0027 ticket. Rarely needed; load only when your graph entry has drifted from reality and you are asked to bring it current.
 disable-model-invocation: true
 ---
 
-# Update your family graph entry
+# Update your graph entry
 
-The family knowledge graph — `knowledge.json` in
+The Straylight knowledge graph — `knowledge.json` in
 `~/src/clubstraylight.com` — describes every member and every
 repository in the Straylight portfolio. Straylight curates it, but
 you may correct **your own entry** directly when it has drifted

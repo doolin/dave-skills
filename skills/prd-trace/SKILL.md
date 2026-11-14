@@ -70,7 +70,7 @@ PRD-0001  Knowledge graph construction from the real world
 
 ## Why this is a tool
 
-The family's PRDs grow a Work to Date section and re-check
+The portfolio's PRDs grow a Work to Date section and re-check
 requirements in prose ("FR-004 is demonstrated"); tickets cite the
 PRD loosely. A decomposition step that writes every ticket up front
 was rejected as big design up front. What was missing was two

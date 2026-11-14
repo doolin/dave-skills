@@ -28,7 +28,7 @@
       <dl>
         <dt>subject</dt><dd>The SBOM as a build artifact: its definition and minimum content, its history, its formats, the point in a pipeline where each kind is made, and the NIST, STIG, and Department of Defense documents that ask for it or that it supports.</dd>
         <dt>versions observed</dt><dd>Executive Order 14028 as printed at 86 FR 26633; NTIA <cite>Minimum Elements</cite> of 2021-07-12; NIST SP 800-218 (SSDF) version 1.1, final, and the version 1.2 initial public draft of December 2025; NIST SP 800-53 Rev. 5 with updates to 2020-12-10, and the list of changes in Release 5.2.0; NIST SP 800-204D of February 2024; the Application Security and Development STIG, Version 6 Release 4, 2025-09-09; the DoD CIO cATO memorandum of 2022-02-02, implementation guide version 1.0 of March 2024, and evaluation criteria of 2024-05-29; OMB M-26-05 of 2026-01-23. All read 2026-11-14.</dd>
-        <dt>source kinds</dt><dd><span class="kind doc">documented</span> read in the issuing body's own document · <span class="kind obs">observed</span> worked out or seen by the author, with its date · <span class="kind fam">family</span> from a family document, cited by path at a commit · <span class="kind unv">unverified</span> known only from a secondary source, or from a primary one that could not be read for this page. The reason is on the row.</dd>
+        <dt>source kinds</dt><dd><span class="kind doc">documented</span> read in the issuing body's own document · <span class="kind obs">observed</span> worked out or seen by the author, with its date · <span class="kind fam">portfolio</span> from a portfolio document, cited by path at a commit · <span class="kind unv">unverified</span> known only from a secondary source, or from a primary one that could not be read for this page. The reason is on the row.</dd>
         <dt>sources</dt><dd>The marks in each row (<a href="#E1">E1</a>, <a href="#N1">N1</a>, and so on) link to the document in <a href="#sources">§15</a>.</dd>
         <dt>change record</dt><dd><a href="#changes">§14</a>.</dd>
       </dl>
@@ -48,7 +48,7 @@
       <li><a href="#stig">STIG</a></li>
       <li><a href="#dod">DoD and Air Force continuous authorization</a></li>
       <li><a href="#limits">Limits stated in the sources</a></li>
-      <li><a href="#family">The family's use</a></li>
+      <li><a href="#family">The portfolio's use</a></li>
       <li><a href="#relations">Relationships</a></li>
       <li><a href="#observed-facts">Observed</a></li>
       <li><a href="#gaps">Gaps and unverified claims</a></li>
@@ -278,13 +278,13 @@
 <section id="family">
   <div class="wrap">
     <h2>§10</h2>
-    <p class="h2big">The family's use</p>
+    <p class="h2big">The portfolio's use</p>
     <div class="tbl"><table>
       <tr><th>fact</th><th>kind</th><th>source</th></tr>
-      <tr><td>A spike is in the backlog: one SBOM per repository across the portfolio, so that "which repositories carry component X at version Y" is a query. Its open questions are the format (CycloneDX or SPDX), the generator (<code>syft</code> against per-ecosystem generators), storage under <code>graph/sbom/</code>, and refresh.</td><td><span class="kind fam">family</span></td><td class="src">clubstraylight.com · .development/backlog/CSL-0153 · 700b961</td></tr>
-      <tr><td>The spike already states the limit of the Source type for old sites: "An SBOM sees manifests and lockfiles. It does not see" a CDN tag or a vendored stylesheet. Those deliveries stay with the survey rules of <code>bin/check-component</code>.</td><td><span class="kind fam">family</span></td><td class="src">CSL-0153 · 700b961</td></tr>
-      <tr><td>"Where a bill of materials exists under <code>graph/sbom/</code> (CSL-0153) it stands in for the gem and npm rules."</td><td><span class="kind fam">family</span></td><td class="src">clubstraylight.com · AGENTS.md · 700b961</td></tr>
-      <tr><td>Syft, Anchore's generator, is in the bookmarked reading as reference 434, unread.</td><td><span class="kind fam">family</span></td><td class="src">dbb reference corpus · 2026-11-14</td></tr>
+      <tr><td>A spike is in the backlog: one SBOM per repository across the portfolio, so that "which repositories carry component X at version Y" is a query. Its open questions are the format (CycloneDX or SPDX), the generator (<code>syft</code> against per-ecosystem generators), storage under <code>graph/sbom/</code>, and refresh.</td><td><span class="kind fam">portfolio</span></td><td class="src">clubstraylight.com · .development/backlog/CSL-0153 · 700b961</td></tr>
+      <tr><td>The spike already states the limit of the Source type for old sites: "An SBOM sees manifests and lockfiles. It does not see" a CDN tag or a vendored stylesheet. Those deliveries stay with the survey rules of <code>bin/check-component</code>.</td><td><span class="kind fam">portfolio</span></td><td class="src">CSL-0153 · 700b961</td></tr>
+      <tr><td>"Where a bill of materials exists under <code>graph/sbom/</code> (CSL-0153) it stands in for the gem and npm rules."</td><td><span class="kind fam">portfolio</span></td><td class="src">clubstraylight.com · AGENTS.md · 700b961</td></tr>
+      <tr><td>Syft, Anchore's generator, is in the bookmarked reading as reference 434, unread.</td><td><span class="kind fam">portfolio</span></td><td class="src">dbb reference corpus · 2026-11-14</td></tr>
     </table></div>
   </div>
 </section>
@@ -296,7 +296,7 @@
     <ul>
       <li><strong>Provenance and attestation.</strong> An SBOM says what is in a release. A build attestation says how the release was made: SP 800-204D lists environment, process, and materials attestations signed by a part of the build "not under the control of the developers" (<a href="#S4">S4</a> · <a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-204D.pdf#page=25">§5.1.1</a>). The SSDF files both under provenance data (PS.3.1, PS.3.2). A later page.</li>
       <li><strong>VEX.</strong> Reads an SBOM's component list and adds, per vulnerability, whether the product is affected (<a href="#limits">§9</a>). A later page.</li>
-      <li><strong>Vulnerability scanning.</strong> Consumes an SBOM; the family's <code>bin/check-bundle-audit</code> does the same job from lockfiles for Ruby alone (<a href="#family">§10</a>).</li>
+      <li><strong>Vulnerability scanning.</strong> Consumes an SBOM; the portfolio's <code>bin/check-bundle-audit</code> does the same job from lockfiles for Ruby alone (<a href="#family">§10</a>).</li>
       <li><strong>The component inventory.</strong> CM-8's inventory is of a system; an SBOM is of a release. A Deployed SBOM (<a href="#pipeline">§5</a>) is where the two meet.</li>
       <li><strong>HBOM.</strong> The 2021 report set hardware aside as deserving "its own treatment"; M-26-05 points agencies to CISA's 2023 hardware bill of materials framework (<a href="#N1">N1</a> · <a href="https://www.ntia.gov/files/ntia/publications/sbom_minimum_elements_report.pdf#page=7">III</a>; <a href="#O1">O1</a> · <a href="https://www.whitehouse.gov/wp-content/uploads/2026/01/M-26-05-Adopting-a-Risk-based-Approach-to-Software-and-Hardware-Security.pdf#page=2">p. 2</a>).</li>
     </ul>

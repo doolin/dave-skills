@@ -29,7 +29,7 @@
         <dt>client</dt><dd>Claude Code (CLI). Where the VS Code extension, desktop app, or web sessions differ, the row says so.</dd>
         <dt>version observed</dt><dd><code>2.1.268</code>, from <code>claude --version</code> on the author's machine, 2026-09-11</dd>
         <dt>sources</dt><dd><a href="#sources">D1 Configure permissions</a>, <a href="#sources">D2 Choose a permission mode</a>, <a href="#sources">D3 Settings files and precedence</a>, all read 2026-09-11 as the vendor served them that day. A row's source mark names the document and its section.</dd>
-        <dt>source kinds</dt><dd><span class="kind doc">documented</span> stated in the vendor documentation · <span class="kind obs">observed</span> seen in a test the family ran, with its date · <span class="kind unv">unverified</span> a claim the author could not confirm at this version. A fact with no mark is documented.</dd>
+        <dt>source kinds</dt><dd><span class="kind doc">documented</span> stated in the vendor documentation · <span class="kind obs">observed</span> seen in a test run in the portfolio, with its date · <span class="kind unv">unverified</span> a claim the author could not confirm at this version. A fact with no mark is documented.</dd>
         <dt>change record</dt><dd><a href="#changes">§14</a>. Facts this page carries at other versions keep their version range there.</dd>
       </dl>
     </div>
@@ -56,7 +56,7 @@
       <li><a href="#layers">The layers around the rules</a></li>
       <li><a href="#safety">Protected and critical paths</a></li>
       <li><a href="#relations">Relationships</a></li>
-      <li><a href="#observed">Observed by the family</a></li>
+      <li><a href="#observed">Observed in the portfolio</a></li>
       <li><a href="#gaps">Gaps and unverified claims</a></li>
       <li><a href="#changes">Change record</a></li>
       <li><a href="#sources">Sources</a></li>
@@ -359,7 +359,7 @@
         <tbody>
           <tr><td><strong>permission modes</strong></td><td>Modes set the baseline for calls no rule settled; rules layer on top. Deny wins in every mode; ask prompts in every mode and is denied in <code>dontAsk</code>; allow has no effect in <code>bypassPermissions</code> and its broad forms are suspended in <code>auto</code>. Entering auto or bypass is itself gated by settings (<code>disableAutoMode</code>, <code>disableBypassPermissionsMode</code>) and by which file may set <code>defaultMode</code>.</td><td class="src">D2 · Available modes; D2 · Which mode a session starts in</td><td>modes (not yet written)</td></tr>
           <tr><td><strong>hooks</strong></td><td>A PreToolUse hook runs before the prompt and can block ahead of any rule (exit 2) or ask for a prompt; it cannot lift a deny, skip an ask, or approve a critical-path removal. A PermissionRequest hook answers prompts. Hooks in a project's settings run before trust; project allow rules do not.</td><td class="src">D1 · Extend permissions with hooks; D1 · What runs before you trust a folder</td><td>hooks (not yet written)</td></tr>
-          <tr><td><strong>gates</strong></td><td>A gate the family builds is assembled from these primitives: a deny or ask rule (matches the command as written), a hook (sees the full text and can block), the sandbox (OS boundary), a mode (baseline), and the two safety checks (outrank allow and hook). Which primitive holds against which evasion is the gates page's subject.</td><td class="src">D1 · What a Bash rule doesn't match; D1 · How permissions interact with sandboxing</td><td>gates (not yet written)</td></tr>
+          <tr><td><strong>gates</strong></td><td>A gate the portfolio builds is assembled from these primitives: a deny or ask rule (matches the command as written), a hook (sees the full text and can block), the sandbox (OS boundary), a mode (baseline), and the two safety checks (outrank allow and hook). Which primitive holds against which evasion is the gates page's subject.</td><td class="src">D1 · What a Bash rule doesn't match; D1 · How permissions interact with sandboxing</td><td>gates (not yet written)</td></tr>
           <tr><td><strong>the sandbox</strong></td><td>Complementary: permissions bound what Claude attempts, the sandbox bounds what the OS lets a Bash command and its children do. Permission paths and domains feed the sandbox configuration; a sandbox in auto-allow mode replaces the bare <code>Bash</code> ask prompt but not content-scoped asks or denies.</td><td class="src">D1 · How permissions interact with sandboxing</td><td>sandbox (future subject)</td></tr>
           <tr><td><strong>settings files</strong></td><td>Rules live under <code>permissions</code> in five scopes with fixed precedence; a deny anywhere wins; project allow rules and additional directories wait for trust; project files cannot start a session in auto or bypass.</td><td class="src">D1 · Settings precedence; D3 · Settings precedence</td><td>this page, §8</td></tr>
           <tr><td><strong>working directories</strong></td><td>Reads inside the working directory and <code>additionalDirectories</code> need no prompt; edits there follow the mode; a directory added by flag or command also loads some configuration, one listed in settings grants file access only. <code>permissions.blockReadsOutsideWorkingDirectories</code> makes the file tools refuse outside paths in every mode.</td><td class="src">D1 · Working directories; D1 · Additional directories grant file access, not configuration</td><td>this page</td></tr>
@@ -373,15 +373,15 @@
 <!-- 12 OBSERVED -->
 <section id="observed">
   <div class="wrap">
-    <h2>12 · observed by the family</h2>
-    <p class="h2big">Behaviour seen in the family's own tests</p>
+    <h2>12 · observed in the portfolio</h2>
+    <p class="h2big">Behaviour seen in the portfolio's own tests</p>
     <div class="tbl">
       <table>
         <thead><tr><th>Kind</th><th>Observation</th><th>When, where</th><th>Documentation now</th></tr></thead>
         <tbody>
           <tr><td><span class="kind obs">observed</span></td><td>A PreToolUse hook returning <code>permissionDecision: "ask"</code> produced a consent prompt while the session ran in auto mode. The hook layer held regardless of the mode default.</td><td>2026-08-29, verified by the operator, clubstraylight.com commit-confirm hook; Claude Code version not recorded.</td><td>Consistent with D2, which says auto mode still shows prompts forced by an ask rule or a hook, and with D1's statement that hook decisions do not bypass rules.</td></tr>
           <tr><td><span class="kind obs">observed</span></td><td>A gate keyed on the command prefix <code>git commit</code> was bypassed by <code>git -C &lt;dir&gt; commit</code>. The fix was a content-aware matcher in the hook.</td><td>2026-08-29, clubstraylight.com, hardening recorded under ticket CSL-0051; version not recorded.</td><td>Now documented at D1 · What a Bash rule doesn't match, which lists <code>git -C . push</code> as a form a <code>Bash(git push *)</code> rule does not stop.</td></tr>
-          <tr><td><span class="kind obs">observed</span></td><td>An agent acting under the auto-mode default pushed to the main branch of a family repository; the family's rule was that the operator pushes. Remediation pinned Manual mode account-wide and disabled auto and bypass.</td><td>2026-08-17 incident, fix 2026-08-29; version not recorded.</td><td>D2 lists "pushing to any branch of the repository you're working in, including the default branch" as allowed by default in auto mode from v2.1.211, and names an ask rule as the way to require a human checkpoint while staying in auto.</td></tr>
+          <tr><td><span class="kind obs">observed</span></td><td>An agent acting under the auto-mode default pushed to the main branch of a portfolio repository; the portfolio's rule was that the human pushes. Remediation pinned Manual mode account-wide and disabled auto and bypass.</td><td>2026-08-17 incident, fix 2026-08-29; version not recorded.</td><td>D2 lists "pushing to any branch of the repository you're working in, including the default branch" as allowed by default in auto mode from v2.1.211, and names an ask rule as the way to require a human checkpoint while staying in auto.</td></tr>
         </tbody>
       </table>
     </div>
@@ -397,7 +397,7 @@
       <li><span class="kind unv">unverified</span> The exact position of the protected-path and critical-path checks relative to ask rules (§1 note). Outcomes are documented per mode; ordering against ask is inferred.</li>
       <li><span class="kind unv">unverified</span> Whether an allow rule can override plan mode's block on edits. D2 says edits "stay blocked until you approve the plan" and does not mention allow rules there. The operator's draft asserted "regardless of allow rules"; this page does not.</li>
       <li><strong>Not covered here:</strong> the hooks contract itself (events, input JSON, output fields, exit codes), the auto-mode classifier's block and allow lists in full, sandbox configuration, the Agent SDK's permission options, managed-settings delivery and the managed-only keys, and the behaviour of Cowork, cloud, and Remote Control sessions beyond the rows that name them. Each is a page of its own.</li>
-      <li><strong>Not tested by the family at this version:</strong> none of the facts above were re-run against v2.1.268; the three observations in §12 predate it. The documented and observed marks are therefore about sources, not about a fresh test.</li>
+      <li><strong>Not tested in the portfolio at this version:</strong> none of the facts above were re-run against v2.1.268; the three observations in §12 predate it. The documented and observed marks are therefore about sources, not about a fresh test.</li>
       <li><strong>Version-gated facts</strong> keep their version on the row. A reader on an older client should check each such row before relying on it.</li>
     </ul>
   </div>
@@ -432,7 +432,7 @@
           <tr><td><strong>D1</strong></td><td>Configure permissions</td><td><a href="https://code.claude.com/docs/en/permissions">code.claude.com/docs/en/permissions</a></td><td>2026-09-11</td><td>Fetched as markdown with <code>Accept: text/markdown</code>. Section names on this page are the document's own headings.</td></tr>
           <tr><td><strong>D2</strong></td><td>Choose a permission mode</td><td><a href="https://code.claude.com/docs/en/permission-modes">code.claude.com/docs/en/permission-modes</a></td><td>2026-09-11</td><td>Same fetch. Includes the protected-path and critical-path sections.</td></tr>
           <tr><td><strong>D3</strong></td><td>Settings files and precedence</td><td><a href="https://code.claude.com/docs/en/settings">code.claude.com/docs/en/settings</a></td><td>2026-09-11</td><td>Same fetch. Used for the five-level precedence order and the note that allow rules merge across scopes.</td></tr>
-          <tr><td><strong>family</strong></td><td>Observations in §12</td><td>clubstraylight.com repository: ADR-0002, ticket CSL-0051, and the auto-mode remediation record of 2026-08-29</td><td>2026-09-11</td><td>Private repository; cited for provenance, not reproduced.</td></tr>
+          <tr><td><strong>portfolio</strong></td><td>Observations in §12</td><td>clubstraylight.com repository: ADR-0002, ticket CSL-0051, and the auto-mode remediation record of 2026-08-29</td><td>2026-09-11</td><td>Private repository; cited for provenance, not reproduced.</td></tr>
         </tbody>
       </table>
     </div>
@@ -442,7 +442,7 @@
 
 <footer>
   <div class="wrap">
-    Harness atlas, Straylight family. Hand-written HTML, no script, no external assets; opens from the file system and prints. The pattern this page follows will be stated on the atlas's pattern page once written.
+    Harness atlas, Straylight portfolio. Hand-written HTML, no script, no external assets; opens from the file system and prints. The pattern this page follows will be stated on the atlas's pattern page once written.
   </div>
 </footer>
 

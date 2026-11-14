@@ -57,7 +57,7 @@
       <li><a href="#enforcement">OS enforcement and the network</a></li>
       <li><a href="#relations">Relationships</a></li>
       <li><a href="#claude">Beside Claude Code</a></li>
-      <li><a href="#observed">Observed by the family</a></li>
+      <li><a href="#observed">Observed in the portfolio</a></li>
       <li><a href="#gaps">Gaps and unverified claims</a></li>
       <li><a href="#changes">Change record</a></li>
       <li><a href="#sources">Sources</a></li>
@@ -377,7 +377,7 @@
           <tr><td><strong>permission profiles</strong></td><td>A profile replaces <code>sandbox_mode</code> and <code>sandbox_workspace_write</code> with finer filesystem and network rules; the approval policy, rules, and hooks are unchanged by the choice.</td><td class="src">C3 · Migrate from older sandbox settings</td><td>this page, §6</td></tr>
           <tr><td><strong>hooks</strong></td><td>A PreToolUse hook can deny or rewrite a call before the rules and the sandbox see it; a PermissionRequest hook can answer the prompt the policy would show. Neither can force a prompt, and project hooks run only in a trusted project.</td><td class="src">C5 · PreToolUse; C5 · PermissionRequest</td><td>this page, §8</td></tr>
           <tr><td><strong>configuration files</strong></td><td>Every control is a key in the seven-layer ladder; a trusted project may set its own sandbox, policy, rules, and hooks, and an organisation's requirements file narrows the allowed values of each.</td><td class="src">C7 · Configuration precedence; C7 · Managed configuration</td><td>this page, §9</td></tr>
-          <tr><td><strong>gates</strong></td><td>A gate the family builds from Codex's primitives: a <code>forbidden</code> or <code>prompt</code> rule (matches the argument list), a PreToolUse hook (sees the call, can deny), the sandbox (the OS boundary), and the policy (what happens at the edge). Which holds against which evasion is the gates page's subject.</td><td class="src">C4; C5; C1</td><td>gates (not yet written)</td></tr>
+          <tr><td><strong>gates</strong></td><td>A gate the portfolio builds from Codex's primitives: a <code>forbidden</code> or <code>prompt</code> rule (matches the argument list), a PreToolUse hook (sees the call, can deny), the sandbox (the OS boundary), and the policy (what happens at the edge). Which holds against which evasion is the gates page's subject.</td><td class="src">C4; C5; C1</td><td>gates (not yet written)</td></tr>
         </tbody>
       </table>
     </div>
@@ -416,9 +416,9 @@
 <!-- 13 OBSERVED -->
 <section id="observed">
   <div class="wrap">
-    <h2>13 · observed by the family</h2>
+    <h2>13 · observed in the portfolio</h2>
     <p class="h2big">What the installed client says about itself</p>
-    <p class="sub">No test of Codex's behaviour has been run by the family. The observations below are readings of the client's own help text and feature list at 0.162.0 on 2026-10-15; they say what the client offers, not what it does.</p>
+    <p class="sub">No test of Codex's behaviour has been run in the portfolio. The observations below are readings of the client's own help text and feature list at 0.162.0 on 2026-10-15; they say what the client offers, not what it does.</p>
     <div class="tbl">
       <table>
         <thead><tr><th>Kind</th><th>Observation</th><th>Where</th><th>Documentation now</th></tr></thead>
@@ -450,7 +450,7 @@
       <li><span class="kind unv">unverified</span> The <code>sandbox_permissions</code> key in the <code>-c</code> example.</li>
       <li><strong>No critical-path check found.</strong> The documents read describe protected paths inside writable roots and nothing that outranks <code>danger-full-access</code> with <code>never</code> for a removal of the home directory or a root. Compare the Claude Code page §10. The list searched is closed: the eight documents in §16.</li>
       <li><strong>Not covered here:</strong> the safety monitoring and paused-task table (C1), the guardian and <code>guardian_policy_config</code>, MCP server and app approval modes beyond their names, the <code>request_permissions</code> tool, skills approval, Work Cloud and the desktop app's own permission menus, Codex cloud environments, telemetry. Each is a page of its own or a later row.</li>
-      <li><strong>Not tested by the family at this version:</strong> none of the facts above were run against 0.162.0; §13 reads the client, it does not exercise it.</li>
+      <li><strong>Not tested in the portfolio at this version:</strong> none of the facts above were run against 0.162.0; §13 reads the client, it does not exercise it.</li>
       <li><strong>The vendor's pages moved while this page was written.</strong> Every <code>developers.openai.com/codex/…</code> address answered 308 to <code>learn.chatgpt.com/docs/…</code> on 2026-10-15; §16 records the address that served the text. The GitHub repository's <code>docs/</code> copies are stubs pointing at the site.</li>
       <li><strong>Version-gated facts</strong> keep their version on the row (profiles at 0.134.0). The documents carry no version marker of their own.</li>
     </ul>
@@ -500,7 +500,7 @@
 
 <footer>
   <div class="wrap">
-    Harness atlas, Straylight family. Hand-written HTML, no script, no external assets; opens from the file system and prints. The pattern this page follows will be stated on the atlas's pattern page once written.
+    Harness atlas, Straylight portfolio. Hand-written HTML, no script, no external assets; opens from the file system and prints. The pattern this page follows will be stated on the atlas's pattern page once written.
   </div>
 </footer>
 

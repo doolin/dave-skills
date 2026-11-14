@@ -5,8 +5,8 @@ delivered how" across a whole portfolio, and turn the answer into a
 managed fact rather than a one-off survey. Read BEFORE surveying any
 dependency, framework, or tool across `~/src` by hand. Reference run:
 clubstraylight CSL-0152 (`bin/check-component`, 2026-10-10), the
-fourth time the family had built such an inventory (bundler-audit,
-the Ruby version, Bootstrap, then Tailwind) and the first time as one
+fourth such inventory built across the portfolio (bundler-audit, the
+Ruby version, Bootstrap, then Tailwind) and the first built as one
 reader over a registry.
 
 ## The facts that shape it
@@ -57,7 +57,7 @@ reader over a registry.
 1. **Survey by hand once, with the code index** (Zoekt, four queries:
    manifests and lockfiles, files named for the component, CDN
    hosts, template and stylesheet mentions). Write the table with
-   group (family or fleet), delivery, version, remote class. This is
+   group (engaged or fleet), delivery, version, remote class. This is
    the fixture the tool's first run is checked against.
 2. **Fetch the vendor's own migration guide** for the version in
    question and record its facts in the epic: browser floor,

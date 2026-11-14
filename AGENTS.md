@@ -31,8 +31,8 @@ references, so treat filenames as public API.
 
 ## Atlases
 
-`atlases/` holds the family's atlases: cited reference pages on a
-subject the family does not control and must keep current, one
+`atlases/` holds the portfolio's atlases: cited reference pages on a
+subject the portfolio does not control and must keep current, one
 directory per atlas, one hand-written HTML page per feature of the
 subject. Every fact on a page carries the client, the version it
 was read or observed in, the source, and the date; observed and
@@ -40,8 +40,8 @@ unverified facts are marked; each page keeps a change record and
 draws its relationships to the other pages. No script, no external
 asset, no build step: a page opens from the file system and prints.
 Atlases are NOT skills and NOT playbooks: they state what a vendor's
-tool does, not how the family works; a fact taken from a family
-document is marked `family` and cited by path at a commit.
+tool does, not how the portfolio works; a fact taken from a portfolio
+document is marked `portfolio` and cited by path at a commit.
 `atlases/index.html` lists them. The first is `atlases/harness/`, on
 how agent clients construct and manage a session: one page per
 client on permissions so far, `claude-code-permissions.html` and
@@ -232,12 +232,11 @@ Present a recommendation to the human before starting work.
   agent efficacy review: session boundaries, commits, ticket
   transitions, blockers, and lapses, with a hypothesis-report
   stopping rule. Status: proposal.
-- **update-family-graph-entry** — Correct your own entry in the family
+- **update-graph-entry** — Correct your own entry in the Straylight
   knowledge graph (knowledge.json in clubstraylight.com): mechanical
   corrections only, every graph location, validated, one
   CSL-0027-prefixed commit, never pushed. Manual-load and rarely
-  needed — only when the operator asks you to bring your entry
-  current.
+  needed — only when asked to bring your entry current.
 
 ## Conventions
 
