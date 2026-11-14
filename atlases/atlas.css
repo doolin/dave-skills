@@ -37,8 +37,13 @@
 
 .wrap { max-width: 76rem; margin: 0 auto; padding: 0 1.5rem; }
 
+/* An atlas's row of pages, beneath the atlases row and written with it
+ * by clubstraylight's ruby site/atlas-chrome: denser than the row
+ * above it, so it reads as the level below. */
+nav.pages { padding: .3rem 1.5rem; border-top: 1px solid var(--rule); }
+
 /* The hero: the page's subject, its scope, and what it was read
- * against. The site row above it is header.chrome and keeps its own
+ * against. The chrome above it is header.chrome and keeps its own
  * rules. */
 header:not(.chrome) { padding: 2rem 0 1.5rem; border-bottom: 1px solid var(--rule); }
 .kicker {
@@ -80,10 +85,11 @@ h3 { font-size: 1.02rem; margin: 1.6rem 0 .4rem; }
 /* ---- facts -------------------------------------------------------- */
 
 /* A fact table: the source mark in the margin face, the kind mark as
- * the section's one signal, and the header sitting below the site
- * row, which is the only row of chrome an atlas page has. */
+ * the section's one signal, and the header sitting below the chrome:
+ * the site row and the atlases row, and on an atlas's pages that
+ * atlas's row as well. */
 .tbl { overflow-x: auto; margin: .75rem 0 1.25rem; }
-th { top: 1.65rem; }
+body:has(nav.pages) th { top: 5.85rem; }
 td code { white-space: nowrap; }
 .src {
   font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;

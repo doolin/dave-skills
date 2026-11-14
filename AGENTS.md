@@ -58,11 +58,15 @@ The atlases are one section of clubstraylight's local site
 directory: `style.css` is the site's, mirrored here by
 clubstraylight's `ruby site/build` and never edited by hand (its
 first line says so); `atlas.css` is the atlases' own rules on top of
-it. Every page links both, by relative path, and opens with the
-site row, the five-link navigation every page of the site carries,
-written by hand here since the atlases have no build and checked by
-clubstraylight's `ruby graph/inspect pages --site ../dave-skills/atlases`
-(the `site-nav` rule). The pattern is defined by PRD-0004 in
+it. Every page links both, by relative path, and opens with its
+chrome: the site row, the atlases row (a tab per atlas), and on an
+atlas's pages that atlas's row of pages. The chrome is not written
+by hand: a new page or atlas is declared in clubstraylight's
+`KB::Chrome::ATLASES`, `ruby site/atlas-chrome` there writes the
+chrome block into every page, and `ruby graph/inspect atlases`
+reports a page that differs or that no tab reaches. A new page is
+written with an empty `<header class="chrome"></header>` for the
+tool to fill. The pattern is defined by PRD-0004 in
 clubstraylight.com, which also owns the tickets; a commit here
 carries the ticket as its subject's prefix and cites it in the body.
 
