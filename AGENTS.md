@@ -51,6 +51,10 @@ with dreader mapped onto it for its release (index plus places,
 arrival, gate, removal, dreader). The third is `atlases/aws/`, on
 what the AWS CLI's commands do, read from the installed help and
 the CLI's source at the matching tag (index plus `s3-sync.html`).
+The fourth is `atlases/cicd/`, on the artifacts a CI/CD pipeline
+produces and the federal and Defense Department documents that call
+for them: an index and one page per artifact, from `secrets-scan.html`
+to `attestation.html`.
 
 The atlases are one section of clubstraylight's local site
 (DES-0001 and ADR-0007 there), served at

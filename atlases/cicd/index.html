@@ -28,7 +28,18 @@
 </nav>
 <nav class="pages" aria-label="cicd atlas">
 <span aria-current="page">index</span>
+<a href="secrets-scan.html">secrets scan</a>
+<a href="static-analysis.html">static analysis</a>
+<a href="test-results.html">test results</a>
+<a href="coverage.html">coverage</a>
+<a href="vulnerability-scan.html">vulnerability scan</a>
 <a href="sbom.html">SBOM</a>
+<a href="provenance.html">provenance</a>
+<a href="audit-events.html">audit events</a>
+<a href="evidence-manifest.html">evidence manifest</a>
+<a href="oscal.html">OSCAL</a>
+<a href="timestamp.html">timestamp</a>
+<a href="attestation.html">attestation</a>
 </nav>
 </header>
 
@@ -36,13 +47,13 @@
   <div class="wrap">
     <p class="kicker"><a href="../index.html">Atlases</a> · CI/CD · index</p>
     <h1>CI/CD: pipeline artifacts and the documents that require them</h1>
-    <p class="lede">A build and delivery pipeline produces records of what it built, such as component lists, attestations, scan results, and signatures. Federal guidance, Defense Department policy, and security controls refer to these records. Each page of this atlas covers one artifact or practice, read from the issuing bodies' documents: its definition, its history, the documents that refer to it, and the controls it is evidence for. The first page is the <a href="sbom.html">software bill of materials</a> (glossary: <a href="../../kb/glossary.html#sbom">SBOM</a>).</p>
+    <p class="lede">A build and delivery pipeline produces records of what it built, such as component lists, attestations, scan results, and signatures. Federal guidance, Defense Department policy, and security controls refer to these records. Each page of this atlas covers one artifact or practice, read from the issuing bodies' documents: its definition, its history, the documents that refer to it, and the controls it is evidence for. Twelve pages so far, one per artifact the portfolio's three pipelines produce (<a href="#pages">§2</a>), starting with the <a href="sbom.html">software bill of materials</a> (glossary: <a href="../../kb/glossary.html#sbom">SBOM</a>).</p>
     <div class="observed">
       <dl>
         <dt>subject</dt><dd>Continuous integration and delivery as a source of security evidence. The pages are about the artifacts and the documents that govern them, not about any one CI product.</dd>
-        <dt>versions observed</dt><dd>Each page lists the documents it was read against and the date. The SBOM page: EO 14028; NTIA 2021-07-12; SSDF 1.1 and the 1.2 draft; SP 800-53 Rev. 5; SP 800-204D; ASD STIG V6R4; the DoD cATO memorandum, guide, and evaluation criteria; OMB M-26-05; read 2026-11-14.</dd>
+        <dt>versions observed</dt><dd>Each page lists the documents it was read against and the date. The SBOM page: EO 14028; NTIA 2021-07-12; SSDF 1.1 and the 1.2 draft; SP 800-53 Rev. 5; SP 800-204D; ASD STIG V6R4; the DoD cATO memorandum, guide, and evaluation criteria; OMB M-26-05; read 2026-11-14. The other eleven pages add the SP 800-53 Rev. 5 catalog at release 5.2.0, SP 800-53A Rev. 5, the ASD STIG V6R5 (DISA no longer posts V6R4), the DoD DevSecOps documents, the NARA General Records Schedules, and the specifications each artifact follows; read 2026-11-14.</dd>
         <dt>source kinds</dt><dd><span class="kind doc">documented</span> read in the issuing body's own document · <span class="kind obs">observed</span> worked out or seen by the author, with its date · <span class="kind fam">portfolio</span> from a portfolio document, cited by path at a commit · <span class="kind unv">unverified</span> known only from a secondary source, or from a primary one that could not be read.</dd>
-        <dt>pages</dt><dd><a href="sbom.html">SBOM</a>. Each page ends with its relationships, its gaps, a change record, and its sources.</dd>
+        <dt>pages</dt><dd>Twelve, in the order of <a href="#pages">§2</a>. Each page ends with its relationships, its gaps, a change record, and its sources.</dd>
       </dl>
     </div>
   </div>
@@ -52,6 +63,7 @@
   <div class="wrap">
     <ol>
       <li><a href="#mechanism">Where evidence arises in a pipeline</a></li>
+      <li><a href="#pages">The pages</a></li>
       <li><a href="#askers">Documents that refer to an SBOM</a></li>
       <li><a href="#reading">How to read a page</a></li>
       <li><a href="#changes">Change record</a></li>
@@ -65,18 +77,42 @@
     <p class="h2big">Where evidence arises in a pipeline</p>
     <p class="sub">The stages are the ones <a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-204D.pdf">NIST SP 800-204D</a> gives a pipeline: "source code through the build, test, package, and deployment stages" (<a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-204D.pdf#page=11">§1.1</a>). The evidence at each stage links to its page where one exists.</p>
     <div class="map">
-      <div class="step"><span class="k">1</span><span class="n">source</span><span class="d">Dependencies are declared and locked. A <a href="sbom.html#pipeline">Source SBOM</a> is read from them.</span></div>
-      <div class="step"><span class="k">2</span><span class="n">build</span><span class="d">The artifact is made. A <a href="sbom.html#pipeline">Build SBOM</a> records what went into it; a build attestation records how it was made. Attestation has no page yet.</span></div>
-      <div class="step"><span class="k">3</span><span class="n">test</span><span class="d">Scanners read the component list against advisories; static and dynamic analysis read the code. No page yet.</span></div>
-      <div class="step"><span class="k">4</span><span class="n">package</span><span class="d">The release is hashed and signed, the SBOM with it. An <a href="sbom.html#pipeline">Analyzed SBOM</a> can be made from the package by a third party.</span></div>
+      <div class="step"><span class="k">1</span><span class="n">source</span><span class="d">The repository and its history are scanned for credentials (<a href="secrets-scan.html">secrets scan</a>) and the code is linted and analyzed (<a href="static-analysis.html">static analysis</a>). Dependencies are declared and locked; a <a href="sbom.html#pipeline">Source SBOM</a> is read from them.</span></div>
+      <div class="step"><span class="k">2</span><span class="n">build</span><span class="d">The artifact is made. A <a href="sbom.html#pipeline">Build SBOM</a> records what went into it; <a href="provenance.html">build provenance</a> records how it was made.</span></div>
+      <div class="step"><span class="k">3</span><span class="n">test</span><span class="d">The tests run (<a href="test-results.html">test results</a>), with the code they executed measured (<a href="coverage.html">coverage</a>); scanners read the dependencies against advisories (<a href="vulnerability-scan.html">vulnerability scan</a>).</span></div>
+      <div class="step"><span class="k">4</span><span class="n">package</span><span class="d">The release is hashed and signed, its digest with the <a href="provenance.html">provenance</a>. An <a href="sbom.html#pipeline">Analyzed SBOM</a> can be made from the package by a third party.</span></div>
       <div class="step"><span class="k">5</span><span class="n">deploy</span><span class="d">What is installed is recorded: a <a href="sbom.html#pipeline">Deployed or Runtime SBOM</a>, and the system's component inventory.</span></div>
     </div>
+    <p class="sub">Across the stages, a run keeps a record of itself: each job's <a href="audit-events.html">audit events</a>, a hashed <a href="evidence-manifest.html">evidence manifest</a> of everything it produced, <a href="oscal.html">OSCAL</a> documents stating which controls the evidence supports, a <a href="timestamp.html">trusted timestamp</a>, and the <a href="attestation.html">attestation</a> that archives the bundle and anchors its hash.</p>
+  </div>
+</section>
+
+<section id="pages">
+  <div class="wrap">
+    <h2>§2</h2>
+    <p class="h2big">The pages</p>
+    <p class="sub">One page per artifact, in pipeline order. The last column gives the portfolio's repositories that produce it, as each page's "portfolio's use" section records from their workflow files.</p>
+    <div class="tbl"><table>
+      <tr><th>page</th><th>artifact</th><th>produced by</th></tr>
+      <tr><td><a href="secrets-scan.html">secrets scan</a></td><td>A scan of the repository and its history for committed credentials.</td><td>springboard</td></tr>
+      <tr><td><a href="static-analysis.html">static analysis</a></td><td>Linter and static analyzer findings on the source.</td><td>springboard (pass or fail only), slacronym</td></tr>
+      <tr><td><a href="test-results.html">test results</a></td><td>The machine-readable record of a test run.</td><td>clubstraylight.com, springboard, slacronym</td></tr>
+      <tr><td><a href="coverage.html">coverage</a></td><td>Which code the tests executed.</td><td>clubstraylight.com, springboard</td></tr>
+      <tr><td><a href="vulnerability-scan.html">vulnerability scan</a></td><td>Declared dependencies matched against advisory databases.</td><td>clubstraylight.com, springboard, slacronym</td></tr>
+      <tr><td><a href="sbom.html">SBOM</a></td><td>The machine-readable list of a release's components.</td><td>clubstraylight.com, springboard</td></tr>
+      <tr><td><a href="provenance.html">provenance</a></td><td>The signed statement of how a release was built, and the digest of what was built.</td><td>springboard</td></tr>
+      <tr><td><a href="audit-events.html">audit events</a></td><td>The structured record each job emits of what it did.</td><td>springboard, slacronym</td></tr>
+      <tr><td><a href="evidence-manifest.html">evidence manifest</a></td><td>The hashed inventory of a run's evidence, with retention classes.</td><td>springboard</td></tr>
+      <tr><td><a href="oscal.html">OSCAL</a></td><td>Assessment results, component definition, and security plan fragment in NIST's machine-readable language.</td><td>springboard</td></tr>
+      <tr><td><a href="timestamp.html">timestamp</a></td><td>An RFC 3161 time-stamp token over the evidence.</td><td>springboard</td></tr>
+      <tr><td><a href="attestation.html">attestation</a></td><td>The run's evidence bundle, its hash anchored in a Solana memo, a report, and the archive in S3.</td><td>clubstraylight.com, springboard, slacronym</td></tr>
+    </table></div>
   </div>
 </section>
 
 <section id="askers">
   <div class="wrap">
-    <h2>§2</h2>
+    <h2>§3</h2>
     <p class="h2big">Documents that refer to an SBOM</p>
     <p class="sub">The citations and the wording are on the <a href="sbom.html">SBOM</a> page.</p>
     <div class="tbl"><table>
@@ -95,7 +131,7 @@
 
 <section id="reading">
   <div class="wrap">
-    <h2>§3</h2>
+    <h2>§4</h2>
     <p class="h2big">How to read a page</p>
     <ul>
       <li>The block under the title lists the documents the page was read against and when. The change record at the end keeps the old fact when a new document replaces it.</li>
@@ -108,11 +144,12 @@
 
 <section id="changes">
   <div class="wrap">
-    <h2>§4</h2>
+    <h2>§5</h2>
     <p class="h2big">Change record</p>
     <div class="tbl"><table>
       <tr><th>date</th><th>checked against</th><th>change</th></tr>
       <tr><td>2026-11-14</td><td>the SBOM page's documents</td><td>Atlas opened with the index and the SBOM page (CSL-0224).</td></tr>
+      <tr><td>2026-11-14</td><td>each new page's documents</td><td>Eleven pages added, one per pipeline artifact (CSL-0233 to CSL-0243); §1's map links them and §2 lists them (CSL-0232).</td></tr>
     </table></div>
   </div>
 </section>
