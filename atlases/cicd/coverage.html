@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Code coverage reports — CI/CD atlas</title>
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="../atlas.css">
+</head>
+<body>
+<header class="chrome">
+<nav class="site" aria-label="Straylight">
+<a class="home" href="../../index.html">Straylight</a>
+<a href="../../kb/index.html">knowledge base</a>
+<a href="../../audits/index.html">audits</a>
+<a href="../../atlases/index.html" aria-current="true">atlases</a>
+<a href="../../presentations/index.html">presentations</a>
+<a href="../../search">search</a>
+</nav>
+<nav aria-label="Atlases">
+<a class="home" href="../index.html">atlases</a>
+<span class="group">
+<a href="../harness/claude-code-permissions.html">harness</a>
+<a href="../macos-apps/index.html">macos-apps</a>
+<a href="../aws/index.html">aws</a>
+<a href="../cicd/index.html" aria-current="true">cicd</a>
+</span>
+</nav>
+<nav class="pages" aria-label="cicd atlas">
+<a href="index.html">index</a>
+<a href="secrets-scan.html">secrets scan</a>
+<a href="static-analysis.html">static analysis</a>
+<a href="test-results.html">test results</a>
+<span aria-current="page">coverage</span>
+<a href="vulnerability-scan.html">vulnerability scan</a>
+<a href="sbom.html">SBOM</a>
+<a href="provenance.html">provenance</a>
+<a href="audit-events.html">audit events</a>
+<a href="evidence-manifest.html">evidence manifest</a>
+<a href="oscal.html">OSCAL</a>
+<a href="timestamp.html">timestamp</a>
+<a href="attestation.html">attestation</a>
+</nav>
+</header>
+
+<header>
+  <div class="wrap">
+    <p class="kicker"><a href="../index.html">Atlases</a> · <a href="index.html">CI/CD</a> · coverage</p>
+    <h1>Code coverage reports</h1>
+    <p class="lede">A code coverage report is the measurement of which code a test run executed, kept as a file: per source file, the lines, branches, statements, or functions that ran, and their totals as percentages. This page records its <a href="#what">definition</a>, the <a href="#pipeline">pipeline stage</a> where it is made, the <a href="#nist">NIST</a>, <a href="#stig">STIG</a>, <a href="#dod">Department of Defense</a>, and <a href="#federal">other federal</a> documents that speak of it, and what the <a href="#family">portfolio</a> produces. A coverage report is evidence toward a control, and each control also requires a process; <a href="#nist">§3</a> to <a href="#dod">§5</a> state whose mapping each is.</p>
+    <div class="observed">
+      <dl>
+        <dt>subject</dt><dd>The code coverage report as a CI artifact: what the sources call it, where it is produced, the controls and STIG rule it is evidence toward, and the coverage reports of clubstraylight.com, springboard, and slacronym.</dd>
+        <dt>versions observed</dt><dd>NIST SP 800-218 (SSDF) version 1.1, final, and the version 1.2 initial public draft of December 2025; NIST SP 800-53 Rev. 5 (2020-12-10) and its OSCAL catalog, release 5.2.0; NIST SP 800-53A Rev. 5; NIST SP 800-204D of February 2024; the Application Security and Development STIG, Version 6 Release 5, benchmark date 2026-09-30; the DoD Enterprise DevSecOps Activities &amp; Tools Guidebook version 2.5 (April 2025) and its tables; DevSecOps Fundamentals version 2.5; the DoD CIO cATO memorandum, implementation guide, and evaluation criteria; the ESF developers' guide of August 2022. All read 2026-11-14.</dd>
+        <dt>source kinds</dt><dd><span class="kind doc">documented</span> read in the issuing body's own document · <span class="kind obs">observed</span> worked out or seen by the author, with its date · <span class="kind fam">portfolio</span> from a portfolio document, cited by path at a commit · <span class="kind unv">unverified</span> known only from a secondary source, or read from code without a run to confirm it. The reason is on the row.</dd>
+        <dt>sources</dt><dd>The marks in each row (<a href="#S1">S1</a>, <a href="#T1">T1</a>, and so on) link to the document in <a href="#sources">§13</a>.</dd>
+        <dt>change record</dt><dd><a href="#changes">§12</a>.</dd>
+      </dl>
+    </div>
+  </div>
+</header>
+
+<nav class="toc">
+  <div class="wrap">
+    <ol>
+      <li><a href="#what">What a code coverage report is</a></li>
+      <li><a href="#pipeline">Where in a pipeline it is made</a></li>
+      <li><a href="#nist">NIST: the SSDF tasks and the SP 800-53 controls</a></li>
+      <li><a href="#stig">STIG</a></li>
+      <li><a href="#dod">DoD</a></li>
+      <li><a href="#federal">Other federal documents</a></li>
+      <li><a href="#limits">Limits stated in the sources</a></li>
+      <li><a href="#family">The portfolio's use</a></li>
+      <li><a href="#relations">Relationships</a></li>
+      <li><a href="#observed-facts">Observed</a></li>
+      <li><a href="#gaps">Gaps and unverified claims</a></li>
+      <li><a href="#changes">Change record</a></li>
+      <li><a href="#sources">Sources</a></li>
+    </ol>
+  </div>
+</nav>
+
+<section id="what">
+  <div class="wrap">
+    <h2>§1</h2>
+    <p class="h2big">What a code coverage report is</p>
+    <div class="tbl"><table>
+      <tr><th>fact</th><th>kind</th><th>source</th></tr>
+      <tr><td>SP 800-53's one description of code coverage, in the discussion of dynamic code analysis: organizations "may also consider conducting code coverage analysis (i.e., checking the degree to which the code has been tested using metrics such as percent of subroutines tested or percent of program statements called during execution of the test suite)".</td><td><span class="kind doc">documented</span></td><td class="src"><a href="#S2">S2</a> · <a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r5.pdf#page=306">SA-11(8)</a></td></tr>
+      <tr><td>The DoD tool category. "Test coverage tool": features "Measures how much code is exercised while the automated tests are running"; benefits "Shows the fidelity of the test results"; inputs "Application code, Automated tests"; outputs "The percentage of code that is exercised by the tests."</td><td><span class="kind doc">documented</span></td><td class="src"><a href="#D7">D7</a> · <a href="https://dodcio.defense.gov/Portals/0/Documents/Library/DevSecOpsActivitesToolsGuidebook.pdf#page=63">Table 14</a></td></tr>
+      <tr><td>DISA's wording: "Code coverage statistics describes the overall functionality provided by the application and how much of the source code has been tested during the release cycle." And: "Application developers should keep statistics that show all of the modules of the application and identify which modules were tested and when."</td><td><span class="kind doc">documented</span></td><td class="src"><a href="#T1">T1</a> · V-222649</td></tr>
+      <tr><td>The ESF guide: "Test coverage should identify the percentage of code paths the test plan covers as well as the types of test tools used."</td><td><span class="kind doc">documented</span></td><td class="src"><a href="#G1">G1</a> · <a href="https://media.defense.gov/2022/Sep/01/2003068942/-1/-1/0/ESF_SECURING_THE_SOFTWARE_SUPPLY_CHAIN_DEVELOPERS.PDF#page=11">§2.1, p. 7</a></td></tr>
+      <tr><td>What the report holds, from the portfolio's tools: SimpleCov's result set with line and branch counts (clubstraylight.com); JaCoCo's report directory, whose XML carries "LINE" and "BRANCH" counters of "missed" and "covered" (springboard backend); karma-coverage (Istanbul) output as HTML, <code>lcov.info</code>, and <code>coverage-summary.json</code> with statements, branches, functions, and lines (springboard frontend). Details and commits in <a href="#family">§8</a>.</td><td><span class="kind fam">portfolio</span></td><td class="src">springboard · scripts/pr-summary.mjs, src/main/frontend/karma.conf.js · b2fdcb9</td></tr>
+    </table></div>
+    <div class="note"><strong>Three other senses of "coverage".</strong> The documents use the word for other measures, and the controls of <a href="#nist">§3</a> mostly mean these. SA-11: "The coverage of testing and evaluation refers to the scope (i.e., number and type) of the artifacts included in the assessment process." SA-11(7): testing that "provides complete coverage of the required controls". RA-5(3): "the breadth and depth of vulnerability scanning coverage". SP 800-53A gives coverage as an assessment attribute with the values "basic, focused, and comprehensive". Only the SA-11(8) passage, the STIG rule, the DoD tool row, and the ESF and SP 800-204D sentences mean code coverage (<a href="#S2">S2</a>; <a href="#S6">S6</a> · <a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53Ar5.pdf#page=725">App. C</a>).</div>
+  </div>
+</section>
+
+<section id="pipeline">
+  <div class="wrap">
+    <h2>§2</h2>
+    <p class="h2big">Where in a pipeline it is made</p>
+    <p class="sub">The DoD guidebook places the test coverage tool beside the test tool suite in the Develop and Build phases; the Fundamentals glossary lists test coverage among the scans of continuous integration.</p>
+    <div class="map">
+      <div class="step"><span class="k">1</span><span class="n">Develop: unit test</span><span class="d">Tool dependencies "Test tool suite; Test coverage tool" (Table 2). The Develop-phase row "Unit test", baseline REQUIRED, SSDF PW.8.1 and PW.8.2, output "Test report to determine whether the individual software unit performs as designed." (Table 5).</span></div>
+      <div class="step"><span class="k">2</span><span class="n">Develop and Build: component test</span><span class="d">"Closed-box testing, evaluating the behavior of the program without considering the details of the underlying code", tools "Test tool suite, Test coverage tool": PREFERRED in Develop, REQUIRED in Build (Tables 5 and 6). "Database Component Test", REQUIRED in Develop, lists the same tools.</span></div>
+      <div class="step"><span class="k">3</span><span class="n">Continuous integration</span><span class="d">"The security scans include, but are not limited to, dynamic code analysis, test coverage, dependency/BOM checking, and compliance checking." "The trigger to the automated tests and security scan is a successful build." (Fundamentals, Glossary).</span></div>
+      <div class="step"><span class="k">4</span><span class="n">Code commit gate</span><span class="d">"SAST and DAST tools (covering all languages used in development) should be run in CI/CD pipelines with code coverage reports being provided to developers and security personnel." (SP 800-204D §5.1.4).</span></div>
+    </div>
+    <div class="tbl"><table>
+      <tr><th>fact</th><th>kind</th><th>source</th></tr>
+      <tr><td>The guidebook's tables, Develop and Build phases, as in the map above.</td><td><span class="kind doc">documented</span></td><td class="src"><a href="#D7">D7</a> · <a href="https://dodcio.defense.gov/Portals/0/Documents/Library/DevSecOpsActivitesToolsGuidebook.pdf#page=14">Table 2</a>, <a href="https://dodcio.defense.gov/Portals/0/Documents/Library/DevSecOpsActivitesToolsGuidebook.pdf#page=23">Table 5</a>, <a href="https://dodcio.defense.gov/Portals/0/Documents/Library/DevSecOpsActivitesToolsGuidebook.pdf#page=26">Table 6</a>; <a href="#D8">D8</a> Develop and Build sheets</td></tr>
+      <tr><td>"Automation will help achieve high test coverage and make continuous ATO practicable, as well as significantly increase the quality of delivered software."</td><td><span class="kind doc">documented</span></td><td class="src"><a href="#D7">D7</a> · <a href="https://dodcio.defense.gov/Portals/0/Documents/Library/DevSecOpsActivitesToolsGuidebook.pdf#page=29">§3.5</a></td></tr>
+      <tr><td>Continuous integration, glossary entry, as in the map above.</td><td><span class="kind doc">documented</span></td><td class="src"><a href="#D9">D9</a> · <a href="https://dodcio.defense.gov/Portals/0/Documents/Library/DoD%20Enterprise%20DevSecOps%20Fundamentals%20v2.5.pdf#page=41">Glossary</a></td></tr>
+      <tr><td>SP 800-204D, "5.1.4. Secure Code Commits": "Appropriate forms of testing should be performed before code commits", and the coverage-report sentence quoted above. The same sentence is in the section's summary table.</td><td><span class="kind doc">documented</span></td><td class="src"><a href="#S4">S4</a> · <a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-204D.pdf#page=28">§5.1.4, p. 19</a>, <a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-204D.pdf#page=37">table</a></td></tr>
+      <tr><td>A second table in SP 800-204D gives the requirement as language coverage of the scanners: "Both SAST and DAST tools used in CI/CD pipelines must provide coverage for the different language systems used in cloud-native applications."</td><td><span class="kind doc">documented</span></td><td class="src"><a href="#S4">S4</a> · <a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-204D.pdf#page=40">table</a></td></tr>
+      <tr><td>The ESF guide's security test plan strategies: "Code coverage, which is integrated into each build and tracked as part of implementing the test and development plan," and "Baseline levels of code coverage should ideally be achieved on all code that is checked in, before new code is committed," and "Policies should be defined to maximize code coverage and address the SSDF tasks defined in PO.2.1, PW.5.2 and PW.8.2" of SP 800-218.</td><td><span class="kind doc">documented</span></td><td class="src"><a href="#G1">G1</a> · <a href="https://media.defense.gov/2022/Sep/01/2003068942/-1/-1/0/ESF_SECURING_THE_SOFTWARE_SUPPLY_CHAIN_DEVELOPERS.PDF#page=11">§2.1, p. 7</a></td></tr>
+      <tr><td>Among the ESF's recommended artifacts, "High-level Software Security Test Plan and Results": "High-level, system and unit level test plan and results", with "Coverage details" first in its list.</td><td><span class="kind doc">documented</span></td><td class="src"><a href="#G1">G1</a> · <a href="https://media.defense.gov/2022/Sep/01/2003068942/-1/-1/0/ESF_SECURING_THE_SOFTWARE_SUPPLY_CHAIN_DEVELOPERS.PDF#page=48">App. D, p. 44</a></td></tr>
+    </table></div>
+  </div>
+</section>
+
+<section id="nist">
+  <div class="wrap">
+    <h2>§3</h2>
+    <p class="h2big">NIST: the SSDF tasks and the SP 800-53 controls</p>
+    <p class="sub">Neither version of the SSDF uses the words "code coverage". The tie between a coverage report and PW.8 is the ESF's (it cites PW.8.2) and the DoD guidebook's (its unit test row maps to PW.8.1 and PW.8.2); the SP 800-53 controls in the first table are NIST's mapping from the SSDF's reference column. Controls in bold are new to the 1.2 draft's mapping.</p>
+    <h3>The SSDF tasks</h3>
+    <div class="tbl"><table>
+      <tr><th>task</th><th>text, verbatim</th><th>SP 800-53 controls, SSDF 1.1 (final)</th><th>SP 800-53 controls, SSDF 1.2 (draft)</th><th>source</th></tr>
+      <tr><td><a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-218.pdf#page=24">PW.8.1</a></td><td>"Determine whether executable code testing should be performed to find vulnerabilities not identified by previous reviews, analysis, or testing and, if so, which types of testing should be used." Unchanged in 1.2.</td><td>SA-11</td><td><strong>RA-05</strong>, SA-11, <strong>SA-15</strong></td><td class="src"><a href="#S1">S1</a> · <a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-218.pdf#page=24">p. 15</a>; <a href="#S5">S5</a> · <a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-218r1.ipd.pdf#page=41">p. 31</a></td></tr>
+      <tr><td><a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-218.pdf#page=24">PW.8.2</a></td><td>"Scope the testing, design the tests, perform the testing, and document the results, including recording and triaging all discovered issues and recommended remediations in the development team's workflow or issue tracking system." Example 2: "Integrate dynamic vulnerability testing into the project's automated test suite." 1.2 rewords Example 1 ("including failure path testing") and adds Example 10: "Identify third-party dependencies, and conduct robust tests to exercise the functionality that uses these dependencies."</td><td>SA-11, SA-11(5), SA-11(8), SA-15(7)</td><td><strong>CA-02</strong>, <strong>CM-03</strong>, <strong>CM-09</strong>, <strong>RA-05</strong>, <strong>RA-05(03)</strong>, SA-11, SA-11(05), SA-11(08), <strong>SA-15</strong>, SA-15(07), <strong>SI-02</strong></td><td class="src"><a href="#S1">S1</a> · <a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-218.pdf#page=24">p. 15</a>; <a href="#S5">S5</a> · <a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-218r1.ipd.pdf#page=42">p. 32</a>, <a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-218r1.ipd.pdf#page=56">App. B</a></td></tr>
+      <tr><td><a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-218r1.ipd.pdf#page=28">PO.6.2</a> (1.2 draft only)</td><td>"Identify new processes, tools, and techniques that can help avoid software errors (see PW.7, RV.3.3)." Example 2: "Evaluate and adopt tools that expand testing coverage in response to known vulnerabilities." PO.6 is one of "Two new practices" in the draft. The draft's only use of "coverage".</td><td>— (not in 1.1)</td><td>SA-15</td><td class="src"><a href="#S5">S5</a> · <a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-218r1.ipd.pdf#page=28">PO.6.2</a></td></tr>
+    </table></div>
+    <h3>The controls, as written</h3>
+    <p class="sub">Control text from the OSCAL catalog, release 5.2.0. Each control asks for a process (a plan, a frequency, a depth and coverage the organization defines, remediation), so a coverage report is evidence toward it and does not meet it alone.</p>
+    <div class="tbl"><table>
+      <tr><th>control</th><th>what it asks, verbatim</th><th>what a coverage report supplies</th><th>basis</th><th>source</th></tr>
+      <tr><td><a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r5.pdf#page=303">SA-11</a> Developer Testing and Evaluation</td><td>"Require the developer of the system, system component, or system service, at all post-design stages of the system development life cycle, to: … b. Perform [Selection (one-or-more): unit; integration; system; regression] testing/evaluation [Assignment: frequency to conduct] at [Assignment: depth and coverage]; c. Produce evidence of the execution of the assessment plan and the results of the testing and evaluation".</td><td>Part of the evidence of item c for unit and integration testing, measured on each run; and a figure against which an organization can state the "depth and coverage" of item b.</td><td>NIST's mapping (PW.8.1, PW.8.2, both versions). The STIG's CCI-003173 ties SA-11 b's "depth and coverage" to a different rule (<a href="#stig">§4</a>).</td><td class="src"><a href="#S2">S2</a> · SA-11</td></tr>
+      <tr><td><a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r5.pdf#page=306">SA-11(8)</a> Dynamic Code Analysis</td><td>"Require the developer of the system, system component, or system service to employ dynamic code analysis tools to identify common flaws and document the results of the analysis." The discussion's code coverage passage is quoted in <a href="#what">§1</a>.</td><td>The coverage analysis the discussion offers "To understand the scope of dynamic code analysis and the assurance provided".</td><td>NIST's mapping (PW.8.2, both versions); the coverage passage is in the discussion, not the statement.</td><td class="src"><a href="#S2">S2</a> · <a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r5.pdf#page=306">SA-11(8)</a></td></tr>
+      <tr><td><a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r5.pdf#page=306">SA-11(7)</a> Verify Scope of Testing and Evaluation</td><td>"Require the developer of the system, system component, or system service to verify that the scope of testing and evaluation provides complete coverage of the required controls at the following level of rigor: [Assignment: organization-defined breadth and depth of testing and evaluation]." Discussion: "including correlation between control implementation and corresponding test cases."</td><td>Which code implementing a control the tests executed, as one input to the correlation; control coverage itself is a different measure.</td><td>this page's reading</td><td class="src"><a href="#S2">S2</a> · SA-11(7)</td></tr>
+      <tr><td><a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r5.pdf#page=305">SA-11(4)</a> Manual Code Reviews</td><td>"Require the developer of the system, system component, or system service to perform a manual code review of [Assignment: organization-defined specific code] using the following processes, procedures, and/or techniques".</td><td>Untested code, as one way to choose the "specific code" to review.</td><td>DISA's CCI assignment for V-222649 (CCI-003188); not in NIST's mapping from PW.8. The use is this page's reading.</td><td class="src"><a href="#S2">S2</a> · SA-11(4); <a href="#T1">T1</a> · V-222649</td></tr>
+      <tr><td><a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r5.pdf#page=270">RA-5(3)</a> Breadth and Depth of Coverage</td><td>"Define the breadth and depth of vulnerability scanning coverage." Breadth "can be expressed as a percentage of components within the system".</td><td>Nothing direct: the measure is of vulnerability scanning, not of tests. Listed because NIST's draft mapping reaches it from PW.8.2.</td><td>NIST's draft mapping (SSDF 1.2, PW.8.2); not in 1.1</td><td class="src"><a href="#S2">S2</a> · <a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r5.pdf#page=270">RA-5(3)</a></td></tr>
+    </table></div>
+    <h3>SP 800-53A</h3>
+    <div class="tbl"><table>
+      <tr><th>fact</th><th>kind</th><th>source</th></tr>
+      <tr><td>SA-11's assessment objective includes the parameter "SA-11_ODP[03] depth and coverage of &lt;SA-11_ODP[01] SELECTED PARAMETER VALUE(S)&gt; testing/evaluation is defined" and the determination SA-11c.[02], that the developer is required "to produce the results of the testing and evaluation".</td><td><span class="kind doc">documented</span></td><td class="src"><a href="#S6">S6</a> · <a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53Ar5.pdf#page=502">SA-11</a>, <a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53Ar5.pdf#page=503">SA-11c.[02]</a></td></tr>
+      <tr><td>SA-11-Examine objects include "system developer security and privacy assessment plans; results of developer security and privacy assessments for the system, system component, or system service; security and privacy flaw and remediation tracking records". SA-11(07)-Examine includes "system developer security testing and evaluation plans; system developer security testing and evaluation results". A coverage report would be examined as part of those results; 800-53A does not list it by kind.</td><td><span class="kind doc">documented</span></td><td class="src"><a href="#S6">S6</a> · <a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53Ar5.pdf#page=503">SA-11</a>, <a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53Ar5.pdf#page=509">SA-11(07)</a></td></tr>
+      <tr><td>For the Test method, the coverage attribute of an assessment "includes the types of assessment objects to be tested, the number of objects to be tested (by type), and specific objects to be tested", and footnote 57: "For mechanism-related testing, the coverage attribute also addresses the extent of the testing conducted (e.g., for software, the number of test cases and modules tested".</td><td><span class="kind doc">documented</span></td><td class="src"><a href="#S6">S6</a> · <a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53Ar5.pdf#page=725">App. C, p. 714</a></td></tr>
+    </table></div>
+  </div>
+</section>
+
+<section id="stig">
+  <div class="wrap">
+    <h2>§4</h2>
+    <p class="h2big">STIG</p>
+    <p class="sub">The Application Security and Development STIG, Version 6 Release 5, from DISA's package (<a href="#T1">T1</a>). One rule asks for code coverage by title. The CCI line is as the STIG prints it, with its SP 800-53 Rev. 5 reference; DISA's separate CCI list was not opened. Rules can be browsed at <a href="https://www.stigviewer.com/stigs/application_security_and_development">stigviewer.com</a>.</p>
+    <div class="tbl"><table>
+      <tr><th>finding</th><th>rule and check, verbatim</th><th>severity, CCI</th><th>what a coverage report supplies</th></tr>
+      <tr><td>V-222649<br><span class="src">APSC-DV-003180</span></td><td>"Code coverage statistics must be maintained for each release of the application." Check: "If the organization does not do or manage the application development work for the application, this requirement is not applicable. Ask the application representative to provide code coverage statistics maintained for the application. If these code coverage statistics do not exist, this is a finding." Fix: "Track application testing and maintain statistics that show how much of the application function was tested."</td><td>low (CAT III). CCI-003188 [800-53r5: SA-11 (4)] "Defines the specific code for which the developer of the system, system component, or system service is required to perform a manual code review using organization-defined process, procedures, and/or techniques."</td><td>The statistics themselves, one report per release, kept.</td></tr>
+    </table></div>
+    <div class="tbl"><table>
+      <tr><th>fact</th><th>kind</th><th>source</th></tr>
+      <tr><td>The CCI on V-222649 is a manual code review CCI (SA-11(4)), not SA-11 b. CCI-003173, "[800-53r5: SA-11 b] … at an organization-defined depth and coverage", is carried by V-222651 (APSC-DV-003200, medium), "The changes to the application must be assessed for IA and accreditation impact prior to implementation."</td><td><span class="kind obs">observed</span></td><td class="src"><a href="#T1">T1</a> · V-222649, V-222651</td></tr>
+      <tr><td>The neighbouring rule V-222644 (APSC-DV-003130, low) asks for "tests plans, procedures, and results" for each release, under CCI-003004 [800-53r5: PM-14 a 2]; it is the rule of <a href="test-results.html">test-results.html</a>.</td><td><span class="kind doc">documented</span></td><td class="src"><a href="#T1">T1</a> · V-222644</td></tr>
+      <tr><td>V-222515 (APSC-DV-001460, medium), "An application vulnerability assessment must be conducted.", checks scan coverage: "Review scan configurations and ensure coverage of all application architecture has been tested." That is scanning coverage, the sense of RA-5(3).</td><td><span class="kind doc">documented</span></td><td class="src"><a href="#T1">T1</a> · V-222515</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<section id="dod">
+  <div class="wrap">
+    <h2>§5</h2>
+    <p class="h2big">DoD</p>
+    <div class="tbl"><table>
+      <tr><th>fact</th><th>kind</th><th>source</th></tr>
+      <tr><td>The cATO evaluation criteria, Appendix D, "1.0 Continuous Monitoring", item "Security Assessment": "Ensure it covers the DSOP supporting full lifecycle, including the delivery pipeline and addresses:" a list that includes "Manual code reviews", "Verifying the scope of Testing and Evaluation (T&amp;E)", "Static Application Security Testing (SAST)", "Dynamic Application Security Testing (DAST)", and "Interactive Application Security Testing (IAST)". The criteria cite no control here; the items track the titles of SA-11(1) to SA-11(9) (this page's reading). Code coverage is not among them.</td><td><span class="kind doc">documented</span></td><td class="src"><a href="#D3">D3</a> · <a href="https://dodcio.defense.gov/Portals/0/Documents/Library/cATO-EvaluationCriteria.pdf#page=11">App. D 1.0, pp. 11–12</a></td></tr>
+      <tr><td>The cATO implementation guide's metrics: "Test Metrics - percentage of test coverage passed, percentage of passing functional tests, count of various severity level findings, percentage of threat actor actions mitigated, security findings compared to risk tolerance, and percentage of passing security control compliance." The guide's one use of "coverage".</td><td><span class="kind doc">documented</span></td><td class="src"><a href="#D2">D2</a> · <a href="https://dodcio.defense.gov/Portals/0/Documents/Library/DoDCIO-ContinuousAuthorizationImplementationGuide.pdf#page=15">p. 11</a></td></tr>
+      <tr><td>The guidebook's activity tables give the test coverage tool as a dependency of unit and component tests (<a href="#pipeline">§2</a>), and map the unit test to SSDF PW.8.1 and PW.8.2. That mapping is DoD's.</td><td><span class="kind doc">documented</span></td><td class="src"><a href="#D7">D7</a> · <a href="https://dodcio.defense.gov/Portals/0/Documents/Library/DevSecOpsActivitesToolsGuidebook.pdf#page=24">Table 5</a></td></tr>
+      <tr><td>The component test rows (Develop and Build), the Build-phase regression test, and the software integration test map to "RV.8.1, RV.8.2". The SSDF has no RV.8 practice in version 1.1 or the 1.2 draft; the RV practices stop at RV.3.</td><td><span class="kind obs">observed</span></td><td class="src"><a href="#D7">D7</a> · <a href="https://dodcio.defense.gov/Portals/0/Documents/Library/DevSecOpsActivitesToolsGuidebook.pdf#page=23">Table 5</a>, <a href="https://dodcio.defense.gov/Portals/0/Documents/Library/DevSecOpsActivitesToolsGuidebook.pdf#page=26">Table 6</a>; <a href="#S1">S1</a>; <a href="#S5">S5</a></td></tr>
+      <tr><td>Searched for "coverage" with no occurrence: the cATO memorandum of 2022-02-02, the cATO evaluation criteria (outside the word "covers"), the DevSecOps Playbook, the CNCF Kubernetes reference design, the Pathway to a Reference Design, DoDI 8510.01, the Software Acquisition Pathway integration with the RMF, and the reseller's copy of the April 2025 "Accelerating Secure Software" memorandum.</td><td><span class="kind obs">observed</span></td><td class="src"><a href="#D1">D1</a>, <a href="#D3">D3</a>, <a href="#D10">D10</a>, <a href="#D11">D11</a>, <a href="#D12">D12</a>, <a href="#D13">D13</a>, <a href="#D14">D14</a>, <a href="#D4">D4</a></td></tr>
+    </table></div>
+  </div>
+</section>
+
+<section id="federal">
+  <div class="wrap">
+    <h2>§6</h2>
+    <p class="h2big">Other federal documents</p>
+    <div class="tbl"><table>
+      <tr><th>fact</th><th>kind</th><th>source</th></tr>
+      <tr><td>SSDF PW.8.2 references "EO14028: 4e(iv), 4e(v), 4e(ix)". Section 4(e)(iv): "employing automated tools, or comparable processes, that check for known and potential vulnerabilities and remediate them, which shall operate regularly, or at a minimum prior to product, version, or update release"; 4(e)(v): "providing, when requested by a purchaser, artifacts of the execution of the tools and processes described in subsection (e)(iii) and (iv) of this section". The link from PW.8.2 is NIST's; whether a coverage report is such an artifact is this page's reading.</td><td><span class="kind doc">documented</span></td><td class="src"><a href="#E1">E1</a> · <a href="https://www.govinfo.gov/content/pkg/FR-2021-05-17/pdf/2021-10460.pdf#page=6">Sec. 4(e)</a>; <a href="#S1">S1</a> · PW.8.2</td></tr>
+      <tr><td>NARA GRS 3.1 item 011, "System development records": records of development "through their initial stages up until hand-off to production which includes planning, requirements analysis, design, verification and testing, procurement, and installation". A coverage report of a development pipeline falls under this description (this page's reading); the disposition was not read reliably from the extracted text.</td><td><span class="kind doc">documented</span></td><td class="src"><a href="#R1">R1</a> · <a href="https://www.archives.gov/files/records-mgmt/grs/grs03-1.pdf#page=2">item 011</a></td></tr>
+      <tr><td>Searched for "coverage": EO 14144 has one, "gaps or overlaps in oversight coverage"; the NSA/CISA CI/CD guide has one, "Consider including coverage for emergency patch updates in service level agreements (SLA)." Neither is code coverage. No occurrence in EO 14306, OMB M-22-18, M-23-16, M-24-15, M-26-05, the CISA attestation form, or NARA GRS 2.7, 3.1, 3.2, 5.1.</td><td><span class="kind obs">observed</span></td><td class="src"><a href="#E2">E2</a>, <a href="#G2">G2</a>, <a href="#E3">E3</a>, <a href="#O2">O2</a>, <a href="#O3">O3</a>, <a href="#O4">O4</a>, <a href="#O1">O1</a>, <a href="#C3">C3</a>, <a href="#R1">R1</a>, <a href="#R2">R2</a></td></tr>
+    </table></div>
+  </div>
+</section>
+
+<section id="limits">
+  <div class="wrap">
+    <h2>§7</h2>
+    <p class="h2big">Limits stated in the sources</p>
+    <div class="tbl"><table>
+      <tr><th>fact</th><th>kind</th><th>source</th></tr>
+      <tr><td>Full coverage is not required of large applications: "Some applications are so large that it is not feasible to test every last bit of the application code on one release cycle. In those instances, it is acceptable to prioritize and identify the modules that are critical to the applications security posture and test those first." And: "If the application is smaller in nature and all aspects of the application can be tested, the code coverage statistics would be 100%."</td><td><span class="kind doc">documented</span></td><td class="src"><a href="#T1">T1</a> · V-222649</td></tr>
+      <tr><td>In SP 800-53 coverage analysis is optional and supporting: organizations "may also consider" it "To understand the scope of dynamic code analysis and the assurance provided".</td><td><span class="kind doc">documented</span></td><td class="src"><a href="#S2">S2</a> · SA-11(8)</td></tr>
+      <tr><td>The DoD tool row gives the benefit as "Shows the fidelity of the test results": a statement about the tests, not about the code's security.</td><td><span class="kind doc">documented</span></td><td class="src"><a href="#D7">D7</a> · Table 14</td></tr>
+      <tr><td>The ESF's baseline is hedged: "Baseline levels of code coverage should ideally be achieved".</td><td><span class="kind doc">documented</span></td><td class="src"><a href="#G1">G1</a> · §2.1</td></tr>
+      <tr><td>SP 800-53A leaves the extent to the organization, which "provides direction on the type, number, and specific objects to be tested".</td><td><span class="kind doc">documented</span></td><td class="src"><a href="#S6">S6</a> · App. C, fn. 57</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<section id="family">
+  <div class="wrap">
+    <h2>§8</h2>
+    <p class="h2big">The portfolio's use</p>
+    <div class="tbl"><table>
+      <tr><th>fact</th><th>kind</th><th>source</th></tr>
+      <tr><td>clubstraylight.com: <code>bin/test</code> runs two rspec suites, <code>audit</code> at the root (coverage in <code>coverage/</code>) and <code>graph</code> under <code>graph/</code> (coverage in <code>graph/coverage/</code>). Both spec helpers start SimpleCov with <code>enable_coverage :branch</code> and <code>minimum_coverage line: 100, branch: 100</code>. SimpleCov 0.22.0, simplecov-html 0.13.2, rspec-core 3.13.6, from <code>Gemfile.lock</code>.</td><td><span class="kind fam">portfolio</span></td><td class="src">clubstraylight.com · audit/lib/audit/suites.rb, audit/spec/spec_helper.rb, graph/spec/spec_helper.rb, Gemfile.lock · b9235b2</td></tr>
+      <tr><td>Each suite's result set is deleted before its run: "SimpleCov merges result sets written within a time window, so a narrow run left behind would blend into this one and the figure would not be a measurement." The digest prints SimpleCov's "Line Coverage" and "Branch Coverage" lines and any floor breach; the exit status is the worst across the suites.</td><td><span class="kind fam">portfolio</span></td><td class="src">clubstraylight.com · audit/lib/audit/suites.rb · b9235b2</td></tr>
+      <tr><td><code>bin/test --results DIR</code> copies each suite's <code>.resultset.json</code> to <code>&lt;suite&gt;-coverage.json</code> beside <code>&lt;suite&gt;-rspec.json</code>. "SimpleCov writes no result set when the run aborts, and a coverage figure from an aborted run is not one, so nothing is copied then." The non-hidden name follows the golden pipeline skill: "<code>upload-artifact</code> skips dotfiles."</td><td><span class="kind fam">portfolio</span></td><td class="src">clubstraylight.com · audit/lib/audit/suites.rb · b9235b2; dave-skills · skills/cicd-golden-pipeline/SKILL.md · 96d1f33</td></tr>
+      <tr><td>The <code>test</code> job, on every pull request and push to main: <code>bin/test --results test-results</code>, then <code>actions/upload-artifact@v7</code> with <code>if: always()</code>, artifact <code>test-results</code>, path <code>test-results/</code>, <code>retention-days: 90</code>. The artifact holds <code>audit-coverage.json</code> and <code>graph-coverage.json</code>; the HTML report SimpleCov writes is not uploaded.</td><td><span class="kind fam">portfolio</span></td><td class="src">clubstraylight.com · .github/workflows/ci.yml · b9235b2</td></tr>
+      <tr><td>The <code>attest</code> job, pushes to main only, after <code>scan_ruby</code>, <code>test</code>, and <code>sbom</code>, downloads every artifact into one directory (<code>merge-multiple: true</code>); <code>ci/attest.mjs</code> zips the regular files at its top level, records the zip's SHA-256 in a Solana memo, and uploads the files and zip to S3 when <code>S3_COMPLIANCE_BUCKET</code> is set. Only the SBOM is given S3 tags; the coverage files are not.</td><td><span class="kind fam">portfolio</span></td><td class="src">clubstraylight.com · .github/workflows/ci.yml, ci/attest.mjs · b9235b2</td></tr>
+      <tr><td>springboard backend: <code>jacoco-maven-plugin</code> 0.8.16 with <code>prepare-agent</code>, <code>report</code> at the <code>test</code> phase, and <code>check</code> at <code>verify</code> on the BUNDLE: LINE COVEREDRATIO minimum 0.99, BRANCH 0.88. The golden pipeline's <code>test</code> job runs <code>./mvnw -B -ntp verify</code>. AGENTS.md: floors "are set to the *current measured* coverage, rounded down to two decimals" and "SHALL be ratcheted upward (never downward)".</td><td><span class="kind fam">portfolio</span></td><td class="src">springboard · pom.xml, .github/workflows/golden-pipeline.yml, AGENTS.md · b2fdcb9</td></tr>
+      <tr><td>springboard frontend: <code>npm test -- --watch=false --browsers=ChromeHeadless --code-coverage &amp;&amp; node scripts/check-coverage.mjs</code> in <code>src/main/frontend</code>. karma-coverage ~2.2.0 writes <code>html</code>, <code>lcovonly</code>, <code>json-summary</code>, and <code>text-summary</code> to <code>coverage/todo-app-frontend</code>, with floors statements 98, branches 55, functions 100, lines 98. <code>check-coverage.mjs</code> reads <code>coverage-summary.json</code> and exits non-zero below a floor, because "the Angular CLI's karma builder does not propagate that as a non-zero exit code." AGENTS.md: frontend branch coverage "sits on a small denominator (~9 total branches) and is structurally fragile".</td><td><span class="kind fam">portfolio</span></td><td class="src">springboard · src/main/frontend/karma.conf.js, src/main/frontend/scripts/check-coverage.mjs, src/main/frontend/package.json, AGENTS.md · b2fdcb9</td></tr>
+      <tr><td>springboard uploads <code>jacoco-report</code> (<code>target/site/jacoco/</code>) and <code>frontend-coverage</code> (<code>src/main/frontend/coverage/</code>) with <code>actions/upload-artifact</code> pinned to 043fb46… (v7.0.1), <code>if: always()</code>, <code>if-no-files-found: ignore</code>, retention from the <code>evidence-retention-days</code> input, default 90.</td><td><span class="kind fam">portfolio</span></td><td class="src">springboard · .github/workflows/golden-pipeline.yml · b2fdcb9</td></tr>
+      <tr><td>On pull requests, <code>publish-pr-reports</code> downloads <code>jacoco-report</code>, <code>frontend-coverage</code>, and <code>playwright-html-report</code>, stages them under <code>pr/&lt;N&gt;/</code>, and publishes to the <code>gh-pages</code> branch with <code>peaceiris/actions-gh-pages</code> pinned to 4f9cc66… (v4.0.0), <code>keep_files: true</code>. <code>pr-summary.mjs</code> reads JaCoCo's bundle LINE and BRANCH counters and the frontend summary into a sticky PR comment.</td><td><span class="kind fam">portfolio</span></td><td class="src">springboard · .github/workflows/golden-pipeline.yml, scripts/pr-summary.mjs · b2fdcb9</td></tr>
+      <tr><td><code>verify-evidence.js</code> fails the job if either coverage directory is missing and classes both <code>artifact-class</code> "coverage", <code>retention-class</code> "standard", glossed "test results, coverage, audit events (90 days, GRS 2.7)". The OSCAL SSP fragment's <code>sa-11</code> statement: "The CI/CD pipeline runs automated tests (JUnit, Karma, Playwright) on every push. Test results and coverage reports are retained as compliance evidence."</td><td><span class="kind fam">portfolio</span></td><td class="src">springboard · scripts/verify-evidence.js, scripts/generate-oscal.js · b2fdcb9</td></tr>
+      <tr><td>slacronym produces no coverage report. <code>test:ci</code> runs <code>scripts/test-ci.sh</code>, which calls <code>node --test</code> with the TAP reporter and writes <code>test-results.tap</code> and a one-line <code>test-results.json</code> (timestamp, exit code, commit); no coverage flag is passed, and <code>package.json</code> lists no coverage tool. <code>ci.yml</code> uploads <code>test-results</code>, <code>lint-results</code>, and <code>audit-results</code>.</td><td><span class="kind fam">portfolio</span></td><td class="src">slacronym · package.json, scripts/test-ci.sh, .github/workflows/ci.yml · a9fb65d</td></tr>
+      <tr><td>The golden pipeline skill's STIG table maps "V-222649 | Maintain code coverage statistics for each release | Raw coverage artifacts" and requires "machine-legible coverage output: Cobertura XML, JaCoCo XML, LCOV, SimpleCov JSON, or the language-appropriate equivalent". "Raw test and coverage artifacts are mandatory evidence. A green check alone is not evidence."</td><td><span class="kind fam">portfolio</span></td><td class="src">dave-skills · skills/cicd-golden-pipeline/SKILL.md · 96d1f33</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<section id="relations">
+  <div class="wrap">
+    <h2>§9</h2>
+    <p class="h2big">Relationships</p>
+    <ul>
+      <li><strong>Test results</strong> (<a href="test-results.html">test-results.html</a>). The same test run produces both. In clubstraylight.com they share one artifact, <code>test-results</code>; springboard uploads them separately (<code>surefire-reports</code> beside the two coverage artifacts). Shared control: SA-11. STIG: V-222644 for results, V-222649 for coverage.</li>
+      <li><strong>Static analysis</strong> (<a href="static-analysis.html">static-analysis.html</a>). SP 800-204D puts SAST, DAST, and coverage reports in one sentence (<a href="#pipeline">§2</a>). Shared control family: SA-11, with SA-11(1) for static and SA-11(8) for dynamic analysis.</li>
+      <li><strong>Vulnerability scan</strong> (<a href="vulnerability-scan.html">vulnerability-scan.html</a>). RA-5(3) and STIG V-222515 use "coverage" for scanning; NIST's 1.2 draft maps PW.8.2 to RA-05 and RA-05(03).</li>
+      <li><strong>Evidence manifest</strong> (<a href="evidence-manifest.html">evidence-manifest.html</a>) and <strong>attestation</strong> (<a href="attestation.html">attestation.html</a>). springboard's manifest checks and classes the coverage directories; both repositories' attest zips take files from the merged artifact directory (<a href="#family">§8</a>).</li>
+      <li><strong>OSCAL</strong> (<a href="oscal.html">oscal.html</a>). springboard's SSP fragment cites coverage reports under <code>sa-11</code>. <strong>Audit events</strong> (<a href="audit-events.html">audit-events.html</a>): springboard's <code>test</code> job emits <code>audit-event-test.json</code>.</li>
+      <li><strong>SBOM</strong> (<a href="sbom.html">sbom.html</a>). No control is NIST-mapped to both in SSDF 1.1. In the 1.2 draft, PW.8.2 adds RA-05 and SI-02, which <a href="sbom.html#nist">the SBOM page's §6</a> lists as its own reading for the SBOM.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="observed-facts">
+  <div class="wrap">
+    <h2>§10</h2>
+    <p class="h2big">Observed</p>
+    <ul>
+      <li>Search log, 2026-11-14, <code>rg -c -i "coverage"</code> over every extracted reference text and the SP 800-53 control files. Hits: SP 800-53 Rev. 5, 26 (code coverage in SA-11(8) only; the rest monitoring, contingency, incident response, program management, RA-5(3), SA-11, SA-11(7), SA-17(8)); SP 800-53A, 61 (the assessment attribute, plus SA-11, SA-11(07), RA-05(03)); SP 800-161 Rev. 1, 8 (none code coverage); SP 800-204D, 3; SP 800-218r1 ipd, 1 (PO.6.2); ESF guide, 6; DoD guidebook, 7, and its tables, 6; DevSecOps Fundamentals, 1; cATO guide, 1; ASD STIG V6R5, 9; NSA/CISA, 1; EO 14144, 1; SP 800-60 Vol. 2, 1. No hit in SP 800-218 v1.1 or in the other documents of <a href="#dod">§5</a> and <a href="#federal">§6</a>.</li>
+      <li>Search log, 2026-11-14, <code>rg -c -i "jacoco|simplecov|istanbul|lcov|cobertura|statement coverage|branch coverage"</code> over the same texts: no hit in any document.</li>
+      <li>Search log, 2026-11-14, <code>rg -n "RV\.[4-9]"</code> over both SSDF texts: no hit, so the guidebook's "RV.8.1, RV.8.2" refer to no SSDF task.</li>
+      <li>The ESF guide cites "PW.5.2"; SSDF 1.1 records "PW.5.2: Moved to PW.5.1 as example" (<a href="#S1">S1</a> · <a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-218.pdf#page=23">p. 14</a>).</li>
+      <li>SA-11's parameters read "[Assignment: organization-defined frequency] at [Assignment: organization-defined depth and coverage]" in the 2020 PDF and "[Assignment: frequency to conduct] at [Assignment: depth and coverage]" in the 5.2.0 OSCAL catalog. Quotations in <a href="#nist">§3</a> follow the catalog.</li>
+      <li>The text extracted from the SP 800-53A PDF drops the "ti", "fi", and "fl" ligatures ("tesng", "idenfy"). Quotations from S6 restore the printed words.</li>
+      <li>Reading springboard's code: karma writes <code>coverage/todo-app-frontend/coverage-summary.json</code>, so the <code>frontend-coverage</code> artifact holds it one directory down, while <code>pr-summary.mjs</code> looks for <code>frontend-coverage/coverage-summary.json</code> and <code>frontend-coverage/coverage-final.json</code>. The same extra directory sits under the gh-pages <code>pr/&lt;N&gt;/frontend-coverage/</code> link. Not checked against a run.</li>
+      <li>Reading springboard's attest job: <code>scripts/attest.mjs</code> keeps only regular files at the top of the merged directory, so JaCoCo's top-level report files would enter the zip and the frontend coverage, one directory down, would not. Not checked against a run.</li>
+      <li>NARA GRS 2.7, which springboard's <code>verify-evidence.js</code> cites for coverage retention, is "Employee Health and Safety Records" (<a href="#R2">R2</a>). GRS 3.1 item 011 is the schedule whose description covers testing records (<a href="#federal">§6</a>).</li>
+      <li>The portfolio files were read from the working trees on 2026-11-14 and are cited at the commits the atlas brief gives; clubstraylight.com's tree was clean at cd82593, two commits after b9235b2.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="gaps">
+  <div class="wrap">
+    <h2>§11</h2>
+    <p class="h2big">Gaps and unverified claims</p>
+    <ul>
+      <li>DISA's CCI list (U_CCI_List.zip) was not opened; the CCI text and SP 800-53 references in <a href="#stig">§4</a> are as the STIG prints them.</li>
+      <li>No CI run's artifacts were downloaded. The contents of clubstraylight.com's <code>test-results</code>, springboard's <code>jacoco-report</code> and <code>frontend-coverage</code>, the attest zips, and the gh-pages reports are read from workflow and script code only.</li>
+      <li>That the working trees of springboard and slacronym match b2fdcb9 and a9fb65d was not checked.</li>
+      <li>The file formats (SimpleCov's result set, JaCoCo XML, Istanbul's summary and LCOV) are described only from the portfolio's code; no format documentation is among the local sources.</li>
+      <li>The disposition of GRS 3.1 item 011 was not read: the extracted table's columns are out of order.</li>
+      <li>SSDF 1.2 is a draft; its mappings for PW.8.1 and PW.8.2 may change in the final.</li>
+      <li>Other STIGs and SRGs (application server, container platform, Kubernetes) were not searched for coverage rules.</li>
+      <li>No document among the sources sets a numeric coverage threshold; the STIG's "100%" is for applications where "all aspects of the application can be tested".</li>
+    </ul>
+  </div>
+</section>
+
+<section id="changes">
+  <div class="wrap">
+    <h2>§12</h2>
+    <p class="h2big">Change record</p>
+    <div class="tbl"><table>
+      <tr><th>date</th><th>checked against</th><th>change</th></tr>
+      <tr><td>2026-11-14</td><td>SSDF 1.1 and 1.2 draft; SP 800-53 Rev. 5 and the 5.2.0 catalog (SA-11, SA-11(4), (5), (7), (8), SA-15(7), RA-5(3)); SP 800-53A Rev. 5; SP 800-204D; SP 800-161 Rev. 1; ASD STIG V6R5; DoD guidebook, tables, Fundamentals, cATO memo, guide, criteria, and the other DoD documents searched; ESF and NSA/CISA guides; EO 14028, 14144, 14306; OMB memoranda; CISA form; NARA GRS</td><td>Page written (CSL-0236).</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<section id="sources">
+  <div class="wrap">
+    <h2>§13</h2>
+    <p class="h2big">Sources</p>
+    <div class="tbl"><table>
+      <tr><th>id</th><th>document</th><th>read</th></tr>
+      <tr id="S1"><td>S1</td><td>NIST SP 800-218, <cite>Secure Software Development Framework (SSDF) Version 1.1: Recommendations for Mitigating the Risk of Software Vulnerabilities</cite>, Souppaya, Scarfone, Dodson; February 2022. <a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-218.pdf">nvlpubs.nist.gov/…/NIST.SP.800-218.pdf</a></td><td>2026-11-14, PW.5, PW.8; full text searched</td></tr>
+      <tr id="S5"><td>S5</td><td>NIST SP 800-218r1 ipd, <cite>Secure Software Development Framework (SSDF) Version 1.2</cite>, Initial Public Draft, December 2025. <a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-218r1.ipd.pdf">nvlpubs.nist.gov/…/NIST.SP.800-218r1.ipd.pdf</a></td><td>2026-11-14, PO.6, PW.8, App. B; full text searched</td></tr>
+      <tr id="S2"><td>S2</td><td>NIST SP 800-53 Rev. 5, <cite>Security and Privacy Controls for Information Systems and Organizations</cite>, September 2020 with updates to 10 December 2020. <a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53r5.pdf">nvlpubs.nist.gov/…/NIST.SP.800-53r5.pdf</a>. Control text from the OSCAL catalog, <a href="https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json">usnistgov/oscal-content</a>, release 5.2.0.</td><td>2026-11-14, SA-11 and enhancements, SA-15(7), RA-5(3); full text searched</td></tr>
+      <tr id="S6"><td>S6</td><td>NIST SP 800-53A Rev. 5, <cite>Assessing Security and Privacy Controls in Information Systems and Organizations</cite>. <a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-53Ar5.pdf">nvlpubs.nist.gov/…/NIST.SP.800-53Ar5.pdf</a></td><td>2026-11-14, SA-11, SA-11(07), App. C</td></tr>
+      <tr id="S4"><td>S4</td><td>NIST SP 800-204D, <cite>Strategies for the Integration of Software Supply Chain Security in DevSecOps CI/CD Pipelines</cite>, Chandramouli, Kautz, Torres-Arias, February 2024. <a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-204D.pdf">nvlpubs.nist.gov/…/NIST.SP.800-204D.pdf</a></td><td>2026-11-14, §5.1.4 and tables</td></tr>
+      <tr id="N3"><td>N3</td><td>NIST SP 800-161 Rev. 1 (update 1), <cite>Cybersecurity Supply Chain Risk Management Practices for Systems and Organizations</cite>. <a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-161r1-upd1.pdf">nvlpubs.nist.gov/…/NIST.SP.800-161r1-upd1.pdf</a></td><td>2026-11-14, SA-11; searched</td></tr>
+      <tr id="T1"><td>T1</td><td>DISA, Application Security and Development Security Technical Implementation Guide, Version 6 Release 5, benchmark date 30 September 2026. <a href="https://dl.dod.cyber.mil/wp-content/uploads/stigs/zip/U_ASD_V6R5_STIG.zip">dl.dod.cyber.mil/…/U_ASD_V6R5_STIG.zip</a></td><td>2026-11-14, V-222515, V-222644, V-222648 to V-222651; full text searched</td></tr>
+      <tr id="D1"><td>D1</td><td>Office of the Secretary of Defense, memorandum "Continuous Authorization To Operate (cATO)", 2 February 2022. <a href="https://dodcio.defense.gov/Portals/0/Documents/Library/20220204-cATO-memo-Signed-Cleared.pdf">dodcio.defense.gov/…/20220204-cATO-memo-Signed-Cleared.pdf</a></td><td>2026-11-14, searched</td></tr>
+      <tr id="D2"><td>D2</td><td>DoD CIO, <cite>DevSecOps Continuous Authorization Implementation Guide</cite>, version 1.0, March 2024. <a href="https://dodcio.defense.gov/Portals/0/Documents/Library/DoDCIO-ContinuousAuthorizationImplementationGuide.pdf">dodcio.defense.gov/…/DoDCIO-ContinuousAuthorizationImplementationGuide.pdf</a></td><td>2026-11-14, metrics; searched</td></tr>
+      <tr id="D3"><td>D3</td><td>DoD CIO, <cite>Continuous Authorization to Operate (cATO) Evaluation Criteria</cite>, DevSecOps Use Case, 29 May 2024. <a href="https://dodcio.defense.gov/Portals/0/Documents/Library/cATO-EvaluationCriteria.pdf">dodcio.defense.gov/…/cATO-EvaluationCriteria.pdf</a></td><td>2026-11-14, App. D 1.0; searched</td></tr>
+      <tr id="D4"><td>D4</td><td>Carahsoft's copy of the memorandum "Accelerating Secure Software", 24 April 2025; a reseller's copy, not the issuer's. <a href="https://static.carahsoft.com/concrete/files/8617/6703/0246/Memorandum_Accelerating_Secure_Software.pdf">static.carahsoft.com/…/Memorandum_Accelerating_Secure_Software.pdf</a></td><td>2026-11-14, searched</td></tr>
+      <tr id="D7"><td>D7</td><td>DoD CIO, <cite>DoD Enterprise DevSecOps Activities &amp; Tools Guidebook</cite>, version 2.5, April 2025, cleared 15 September 2025. <a href="https://dodcio.defense.gov/Portals/0/Documents/Library/DevSecOpsActivitesToolsGuidebook.pdf">dodcio.defense.gov/…/DevSecOpsActivitesToolsGuidebook.pdf</a></td><td>2026-11-14, Tables 2, 5, 6, 14, §3.5</td></tr>
+      <tr id="D8"><td>D8</td><td>DoD CIO, DevSecOps Activities &amp; Tools Guidebook tables (spreadsheet). <a href="https://dodcio.defense.gov/Portals/0/Documents/Library/DevSecOpsActivitesToolsGuidebookTables.xlsx">dodcio.defense.gov/…/DevSecOpsActivitesToolsGuidebookTables.xlsx</a></td><td>2026-11-14, Continuous Activities, Develop, Build, Tools sheets</td></tr>
+      <tr id="D9"><td>D9</td><td>DoD, <cite>DoD Enterprise DevSecOps Fundamentals</cite>, version 2.5, approved 16 October 2024. <a href="https://dodcio.defense.gov/Portals/0/Documents/Library/DoD%20Enterprise%20DevSecOps%20Fundamentals%20v2.5.pdf">dodcio.defense.gov/…/DoD Enterprise DevSecOps Fundamentals v2.5.pdf</a></td><td>2026-11-14, Glossary; searched</td></tr>
+      <tr id="D10"><td>D10</td><td>DoD CIO, <cite>DevSecOps Playbook</cite>, 19 October 2021. <a href="https://dodcio.defense.gov/Portals/0/Documents/Library/DevSecOps%20Playbook_DoD-CIO_20211019.pdf">dodcio.defense.gov/…/DevSecOps Playbook_DoD-CIO_20211019.pdf</a></td><td>2026-11-14, searched</td></tr>
+      <tr id="D11"><td>D11</td><td>DoD, <cite>DoD Enterprise DevSecOps Reference Design: CNCF Kubernetes</cite>, 22 October 2021. <a href="https://dodcio.defense.gov/Portals/0/Documents/Library/DoD%20Enterprise%20DevSecOps%20Reference%20Design%20-%20CNCF%20Kubernetes%20w-DD1910_cleared_20211022.pdf">dodcio.defense.gov/…/Reference Design - CNCF Kubernetes….pdf</a></td><td>2026-11-14, searched</td></tr>
+      <tr id="D12"><td>D12</td><td>DoD, <cite>DoD Enterprise DevSecOps: Pathway to a Reference Design</cite>, 18 October 2021. <a href="https://dodcio.defense.gov/Portals/0/Documents/Library/DoD%20Enterprise%20DevSecOps-Pathway%20to%20a%20Reference%20Design_DoD-CIO_20211018.pdf">dodcio.defense.gov/…/Pathway to a Reference Design….pdf</a></td><td>2026-11-14, searched</td></tr>
+      <tr id="D13"><td>D13</td><td>DoD Instruction 8510.01, <cite>Risk Management Framework for DoD Systems</cite>. <a href="https://www.esd.whs.mil/Portals/54/Documents/DD/issuances/dodi/851001p.pdf">esd.whs.mil/…/851001p.pdf</a></td><td>2026-11-14, searched</td></tr>
+      <tr id="D14"><td>D14</td><td>DoD CIO, <cite>Software Acquisition Pathway Integration with the Risk Management Framework</cite>. <a href="https://dodcio.defense.gov/Portals/0/Documents/Library/SWAPathwayIntegration-RMF.pdf">dodcio.defense.gov/…/SWAPathwayIntegration-RMF.pdf</a></td><td>2026-11-14, searched</td></tr>
+      <tr id="G1"><td>G1</td><td>Enduring Security Framework, <cite>Securing the Software Supply Chain: Recommended Practices Guide for Developers</cite>, August 2022. <a href="https://media.defense.gov/2022/Sep/01/2003068942/-1/-1/0/ESF_SECURING_THE_SOFTWARE_SUPPLY_CHAIN_DEVELOPERS.PDF">media.defense.gov/…/ESF_SECURING_THE_SOFTWARE_SUPPLY_CHAIN_DEVELOPERS.PDF</a></td><td>2026-11-14, §2.1, App. D; searched</td></tr>
+      <tr id="G2"><td>G2</td><td>NSA and CISA, <cite>Defending Continuous Integration/Continuous Delivery (CI/CD) Environments</cite>, June 2023. <a href="https://media.defense.gov/2023/Jun/28/2003249466/-1/-1/0/CSI_DEFENDING_CI_CD_ENVIRONMENTS.PDF">media.defense.gov/…/CSI_DEFENDING_CI_CD_ENVIRONMENTS.PDF</a></td><td>2026-11-14, searched</td></tr>
+      <tr id="E1"><td>E1</td><td>Executive Order 14028, "Improving the Nation's Cybersecurity", 12 May 2021. 86 FR 26633. <a href="https://www.govinfo.gov/content/pkg/FR-2021-05-17/pdf/2021-10460.pdf">govinfo.gov/…/2021-10460.pdf</a></td><td>2026-11-14, Sec. 4(e); searched</td></tr>
+      <tr id="E2"><td>E2</td><td>Executive Order 14144, "Strengthening and Promoting Innovation in the Nation's Cybersecurity", 16 January 2025. <a href="https://www.govinfo.gov/content/pkg/FR-2025-01-17/pdf/2025-01470.pdf">govinfo.gov/…/2025-01470.pdf</a></td><td>2026-11-14, searched</td></tr>
+      <tr id="E3"><td>E3</td><td>Executive Order 14306, "Sustaining Select Efforts To Strengthen the Nation's Cybersecurity and Amending Executive Order 13694 and Executive Order 14144", 6 June 2025. <a href="https://www.govinfo.gov/content/pkg/FR-2025-06-11/pdf/2025-10804.pdf">govinfo.gov/…/2025-10804.pdf</a></td><td>2026-11-14, searched</td></tr>
+      <tr id="O1"><td>O1</td><td>OMB Memorandum M-26-05, "Adopting a Risk-based Approach to Software and Hardware Security", 23 January 2026. <a href="https://www.whitehouse.gov/wp-content/uploads/2026/01/M-26-05-Adopting-a-Risk-based-Approach-to-Software-and-Hardware-Security.pdf">whitehouse.gov/…/M-26-05-….pdf</a></td><td>2026-11-14, searched</td></tr>
+      <tr id="O2"><td>O2</td><td>OMB Memorandum M-22-18, "Enhancing the Security of the Software Supply Chain through Secure Software Development Practices"; rescinded by M-26-05. <a href="https://bidenwhitehouse.archives.gov/wp-content/uploads/2022/09/M-22-18.pdf">bidenwhitehouse.archives.gov/…/M-22-18.pdf</a></td><td>2026-11-14, searched</td></tr>
+      <tr id="O3"><td>O3</td><td>OMB Memorandum M-23-16, "Update to Memorandum M-22-18"; rescinded by M-26-05. <a href="https://bidenwhitehouse.archives.gov/wp-content/uploads/2023/06/M-23-16-Update-to-M-22-18-Enhancing-Software-Security.pdf">bidenwhitehouse.archives.gov/…/M-23-16-….pdf</a></td><td>2026-11-14, searched</td></tr>
+      <tr id="O4"><td>O4</td><td>OMB Memorandum M-24-15, "Modernizing the Federal Risk and Authorization Management Program (FedRAMP)". <a href="https://www.whitehouse.gov/wp-content/uploads/2024/07/M-24-15-Modernizing-the-Federal-Risk-and-Authorization-Management-Program.pdf">whitehouse.gov/…/M-24-15-….pdf</a></td><td>2026-11-14, searched</td></tr>
+      <tr id="C3"><td>C3</td><td>CISA, Secure Software Development Attestation Form, OMB Control 1670-0052. <a href="https://www.cisa.gov/sites/default/files/2024-04/Self_Attestation_Common_Form_FINAL_508c.pdf">cisa.gov/…/Self_Attestation_Common_Form_FINAL_508c.pdf</a></td><td>2026-11-14, searched</td></tr>
+      <tr id="R1"><td>R1</td><td>NARA, General Records Schedule 3.1, "General Technology Management Records", Transmittal No. 30, November 2019; with GRS 3.2 and 5.1 searched beside it. <a href="https://www.archives.gov/files/records-mgmt/grs/grs03-1.pdf">archives.gov/…/grs03-1.pdf</a>; <a href="https://www.archives.gov/files/records-mgmt/grs/grs03-2.pdf">grs03-2.pdf</a>; <a href="https://www.archives.gov/files/records-mgmt/grs/grs05-1.pdf">grs05-1.pdf</a></td><td>2026-11-14, GRS 3.1 items 010–011; searched</td></tr>
+      <tr id="R2"><td>R2</td><td>NARA, General Records Schedule 2.7, "Employee Health and Safety Records". <a href="https://www.archives.gov/files/records-mgmt/grs/grs02-7.pdf">archives.gov/…/grs02-7.pdf</a></td><td>2026-11-14, title; searched</td></tr>
+    </table></div>
+    <p class="sub">The PDFs were read from the copies the addresses above served on 2026-11-14, searched as text extracted page by page; a <code>#page=N</code> link opens the PDF page.</p>
+  </div>
+</section>
+</body>
+</html>
