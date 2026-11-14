@@ -35,6 +35,13 @@
 
 /* ---- the page ----------------------------------------------------- */
 
+/* A link to a section (the table of contents, a source mark) stops it
+ * below the sticky chrome, not under it: two rows on the atlases'
+ * index, three on an atlas's pages, whose pages row can wrap to a
+ * fourth line. */
+html { scroll-padding-top: 5rem; }
+html:has(nav.pages) { scroll-padding-top: 8.5rem; }
+
 .wrap { max-width: 76rem; margin: 0 auto; padding: 0 1.5rem; }
 
 /* An atlas's row of pages, beneath the atlases row and written with it
