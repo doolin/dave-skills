@@ -272,6 +272,45 @@ Generates a CycloneDX JSON SBOM from production dependencies
 (`npm ci --omit=dev`). Uses `anchore/sbom-action`. Runs after test
 to avoid generating SBOMs for broken builds.
 
+Set `upload-artifact: false` on the action and upload
+`sbom.cyclonedx.json` with `upload-artifact` and
+`if-no-files-found: error`, so a missing SBOM fails the job and the
+file lands under the artifact name the attest and verify jobs expect
+(springboard's `golden-pipeline.yml`).
+
+#### Tagging the SBOM in the evidence bucket
+
+Once archived to S3, tag the SBOM object with the SP 800-53 controls
+NIST maps to SSDF task PS.3.2, the task that cites an SBOM, so the
+evidence can be found by control:
+
+| tag | value |
+| --- | --- |
+| `artifact-class` | `sbom` |
+| `sbom-format` | `cyclonedx-json` |
+| `ssdf-task` | `PS.3.2` |
+| `sp800-53-ssdf-1.1` | `sa-8 sr-3 sr-4` |
+| `sp800-53-ssdf-1.2-draft` | `cm-8 cm-12 sa-8 sr-3 sr-4` |
+
+The 1.1 row is SSDF 1.1 Table 1 (final); the 1.2 row is SP 800-218r1,
+initial public draft of 2025-12-17. Both are NIST's mapping, recorded
+in the CI/CD atlas's SBOM page (`atlases/cicd/sbom.html` §6); the
+atlas's own readings (RA-5, SI-2, SA-22, CM-10) are not NIST's and are
+left off.
+
+- **Control ids in OSCAL catalog form** (`sr-4`, `sr-4.4`). S3 tag
+  values may hold letters, digits, spaces and `+ - = . _ : / @`, so
+  `SR-4(4)` is refused.
+- **At most ten tags per object**; the set above is five.
+- **The OIDC role needs `s3:PutObjectTagging`** beside
+  `s3:PutObject` on the evidence prefix.
+- **Tag after upload** with `aws s3api put-object-tagging`. The Ruby
+  attest script uploads every artifact beside the zip, so the SBOM's
+  key is the directory of `attestation.json`'s `s3_key`.
+
+Reference: clubstraylight.com `.github/workflows/ci.yml`, the
+"Tag the SBOM in S3 with its NIST controls" step.
+
 ### 5. OSCAL Generation (M-24-15)
 
 Consumes vulnerability scan results and secrets scan results,
@@ -542,6 +581,30 @@ file own the datasource config. Same principle applies to Rails
 `RAILS_ENV=test` vs `DATABASE_URL`, Django `DJANGO_SETTINGS_MODULE`
 vs `DATABASE_URL`.
 
+### Specs that pass only on the developer's machine
+
+A suite green on a laptop can fail on its first runner for reasons
+that are not bugs in the code under test. Two seen on
+clubstraylight.com's first run (2026-11-14):
+
+- **No Git identity on Linux.** A spec that runs a tool which commits,
+  under a temporary `HOME`, gets no identity from a global config.
+  macOS makes one up from the user and host; a Linux runner refuses
+  the commit. Give the identity in the spec's environment
+  (`GIT_AUTHOR_NAME`, `GIT_AUTHOR_EMAIL`, `GIT_COMMITTER_NAME`,
+  `GIT_COMMITTER_EMAIL`) where it runs the tool, not in the workflow,
+  so the spec is right everywhere.
+- **Paths the checkout does not hold.** A drift spec that checks cited
+  paths exist fails on paths under gitignored build outputs and in
+  sibling checkouts (`../other-repo/...`). Check only what a fresh
+  clone holds, and count the rest.
+
+Imitating a runner by hiding the global Git config
+(`GIT_CONFIG_GLOBAL=/dev/null`) does not reproduce either: it removes
+more than a runner lacks and keeps macOS's made-up identity. A clone
+into a scratch directory reproduces the second; only a run on the
+runner shows the first.
+
 ### Findings visible only to desktop reviewers
 
 The human-readable Trivy table and surefire reports are behind a
@@ -591,6 +654,27 @@ The golden pipeline is Node.js-oriented but the structure adapts:
 Replace the test and audit commands via `workflow_call` inputs. The
 SBOM generation step may need a different action. Secrets scan,
 OSCAL generation, and evidence verification are language-agnostic.
+
+### Ruby specifics
+
+- **SBOM from the lockfile.** syft reads `Gemfile.lock` directly, so
+  there is no production-only install to run first. Where nothing
+  is deployed and every gem is test tooling, the result is a source
+  SBOM of the repository's toolchain, not of a release.
+- **Ruby version from `.ruby-version`.** `ruby/setup-ruby` with
+  `bundler-cache: true` reads it; do not repeat it in the workflow.
+- **Gems only the attest job needs** go in an optional group
+  (`group :attest, optional: true`) that the job enables with
+  `BUNDLE_WITH: attest`. The Ruby attest script needs `ed25519`, and
+  `base64` on Ruby 3.4 or later (see `solana-cicd-hash`).
+- **Raw results from the gate command.** If one command runs several
+  suites, have it write each suite's `--format json --out` file and
+  copy SimpleCov's `coverage/.resultset.json` to a non-hidden name;
+  `upload-artifact` skips dotfiles. Naming `--format` on the command
+  line replaces the formatters in `.rspec`, so name the console
+  formatter again.
+- Reference: clubstraylight.com `.github/workflows/ci.yml` and
+  `bin/test --results` (CSL-0227).
 
 ### Multi-language projects (e.g. Spring Boot + Angular)
 
@@ -827,6 +911,13 @@ reviewers understand the actual dependency.
 - `CM02/scripts/generate-oscal.js` — OSCAL artifact generation
 - `CM02/scripts/verify-evidence.js` — evidence manifest + drift detection
 - `CM02/scripts/attest.mjs` — Solana attestation script
+
+### Ruby, single workflow
+
+- `clubstraylight.com/.github/workflows/ci.yml` — bundle-audit,
+  `bin/test` with raw results, a CycloneDX SBOM, and the Ruby attest
+  job with S3 archival and SBOM control tags. No secrets scan, OSCAL
+  or evidence manifest; dbb's `ci.yml` has the same shape.
 
 ### GitLab CI
 

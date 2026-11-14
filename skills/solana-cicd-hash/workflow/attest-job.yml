@@ -11,6 +11,10 @@
 #     AWS_REGION, SOLANA_NETWORK.
 #
 # Replace <check-jobs> with the id(s) the check phase produces (e.g. [test, lint]).
+#
+# Node variant as written. For scripts/attest.rb: run it with
+# `bundle exec ruby`, and upload ci-artifacts.zip and attestation.json
+# from the working directory; it ignores OUTPUT_DIR and renders no PDF.
 
 attest:
   name: Attest CI Artifacts

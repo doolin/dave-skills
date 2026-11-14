@@ -75,6 +75,13 @@ for the full, copy-paste-ready version):
 The job downloads every artifact uploaded by check jobs
 (`merge-multiple: true`), then runs `node scripts/attest.mjs`.
 
+For the Ruby variant, run `bundle exec ruby scripts/attest.rb` and
+upload `ci-artifacts.zip` and `attestation.json` from the working
+directory: `attest.rb` ignores `OUTPUT_DIR` and renders no PDF, so the
+`ci-output/` paths in `workflow/attest-job.yml` match nothing and the
+upload step only warns. Reference: clubstraylight.com
+`.github/workflows/ci.yml`.
+
 ## S3 layout
 
 The script derives the S3 key as:
