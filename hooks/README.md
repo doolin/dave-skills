@@ -56,6 +56,17 @@ public API.
   unreadable stdin, or a broken policy: one line to stderr and no
   decision. Always exits 0.
 
+- **pushed-watch-ci.rb** — `UserPromptSubmit`, registered once in
+  `~/.claude/settings.json` by its path here
+  (`~/src/dave-skills/hooks/pushed-watch-ci.rb`), not linked per repo,
+  so it applies in every repository. A push made from the terminal
+  reaches the session only as words, so no tool hook sees it. When the
+  prompt contains the word "pushed", it adds context that has the agent
+  start `watch-ci` in the background on every repository whose commits
+  were waiting, first and without asking, and report each run's
+  conclusion. Any other prompt, or unreadable input: nothing. Stdlib
+  Ruby. Always exits 0.
+
 ## Tests
 
 ```bash
