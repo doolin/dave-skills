@@ -66,6 +66,10 @@ code, pre, table, .mono {
 
 /* ---- navigation ------------------------------------------------- */
 
+/* A link to an anchor stops it below the two rows of chrome, not
+ * under them. */
+html { scroll-padding-top: 4.75rem; }
+
 /* Two rows in one block that stays put: the site row every page of
  * every section carries (DES-0001 §4), then the section's own row. */
 .chrome {
