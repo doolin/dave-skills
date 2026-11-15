@@ -1,0 +1,74 @@
+{
+  "about": "The S3 tags for every object a portfolio pipeline archives (clubstraylight.com CSL-0247, CSL-0257). Each SSDF task's controls are NIST's mapping from the SSDF reference column, SSDF 1.1 (final) and the 1.2 initial public draft, as the CI/CD atlas pages record it (dave-skills atlases/cicd/). Control ids are in OSCAL catalog form; S3 tag values cannot hold parentheses. mapping-basis says whose tie between the artifact and the task it is: nist (the SSDF's own text), dod-guidebook, esf, or atlas-reading (the atlas page's reading). One table for the portfolio, copied beside tag-evidence.mjs; clubstraylight.com's spec holds it to S3's limits, the SP 800-53 catalog, and every file name the portfolio archives.",
+  "tasks": {
+    "PO.3.3": {
+      "sp800-53-ssdf-1.1": "sa-15",
+      "sp800-53-ssdf-1.2-draft": "ac-2 au-3 au-6 au-7 au-9 au-12 cm-6 sa-15 si-6 si-12"
+    },
+    "PO.4.2": {
+      "sp800-53-ssdf-1.1": "sa-15 sa-15.1 sa-15.11",
+      "sp800-53-ssdf-1.2-draft": "sa-11 sa-15 sa-15.1 sa-15.11 si-12"
+    },
+    "PS.2.1": {
+      "sp800-53-ssdf-1.1": "sa-8",
+      "sp800-53-ssdf-1.2-draft": "au-7 sa-5 sa-8 sa-11"
+    },
+    "PS.3.1": {
+      "sp800-53-ssdf-1.1": "sa-10 sa-15 sa-15.11 sr-4",
+      "sp800-53-ssdf-1.2-draft": "cm-8 cm-12 cp-6 cp-9 mp-2 mp-3 mp-4 sa-10 sa-15 sa-15.11 sc-8 sc-28 si-12 sr-4"
+    },
+    "PS.3.2": {
+      "sp800-53-ssdf-1.1": "sa-8 sr-3 sr-4",
+      "sp800-53-ssdf-1.2-draft": "cm-8 cm-12 sa-8 sr-3 sr-4"
+    },
+    "PW.4.4": {
+      "sp800-53-ssdf-1.1": "sa-9 sr-3 sr-4 sr-4.3 sr-4.4",
+      "sp800-53-ssdf-1.2-draft": "ca-2 ca-5 ca-6 sa-9 sr-3 sr-4 sr-4.3 sr-4.4"
+    },
+    "PW.7.2": {
+      "sp800-53-ssdf-1.1": "sa-11 sa-11.1 sa-11.4 sa-15.7",
+      "sp800-53-ssdf-1.2-draft": "ca-2 cm-9 ra-5 sa-11 sa-11.1 sa-11.4 sa-15 sa-15.7 si-2"
+    },
+    "PW.8.2": {
+      "sp800-53-ssdf-1.1": "sa-11 sa-11.5 sa-11.8 sa-15.7",
+      "sp800-53-ssdf-1.2-draft": "ca-2 cm-3 cm-9 ra-5 ra-5.3 sa-11 sa-11.5 sa-11.8 sa-15 sa-15.7 si-2"
+    },
+    "RV.1.2": {
+      "sp800-53-ssdf-1.1": "sa-11",
+      "sp800-53-ssdf-1.2-draft": "cm-6 ra-5 sa-11 si-7"
+    }
+  },
+  "artifacts": [
+    { "match": "^[a-z]+-rspec\\.json$", "artifact-class": "test-results", "format": "rspec-json", "ssdf-task": "PW.8.2", "mapping-basis": "nist", "atlas-page": "atlases/cicd/test-results.html" },
+    { "match": "^rspec-results\\.json$", "artifact-class": "test-results", "format": "rspec-json", "ssdf-task": "PW.8.2", "mapping-basis": "nist", "atlas-page": "atlases/cicd/test-results.html" },
+    { "match": "^rspec-results\\.txt$", "artifact-class": "test-results", "format": "rspec-text", "ssdf-task": "PW.8.2", "mapping-basis": "nist", "atlas-page": "atlases/cicd/test-results.html" },
+    { "match": "^vitest-results\\.json$", "artifact-class": "test-results", "format": "vitest-json", "ssdf-task": "PW.8.2", "mapping-basis": "nist", "atlas-page": "atlases/cicd/test-results.html" },
+    { "match": "^test-results\\.json$", "artifact-class": "test-results", "format": "node-test-json", "ssdf-task": "PW.8.2", "mapping-basis": "nist", "atlas-page": "atlases/cicd/test-results.html" },
+    { "match": "^test-results\\.tap$", "artifact-class": "test-results", "format": "tap", "ssdf-task": "PW.8.2", "mapping-basis": "nist", "atlas-page": "atlases/cicd/test-results.html" },
+    { "match": "^[a-z]+-coverage\\.json$", "artifact-class": "coverage", "format": "simplecov-resultset-json", "ssdf-task": "PW.8.2", "mapping-basis": "esf dod-guidebook", "atlas-page": "atlases/cicd/coverage.html" },
+    { "match": "^bundler?-audit-results\\.txt$", "artifact-class": "vulnerability-scan", "format": "bundler-audit-text", "ssdf-task": "PW.4.4", "mapping-basis": "nist", "atlas-page": "atlases/cicd/vulnerability-scan.html" },
+    { "match": "^importmap-audit-results\\.txt$", "artifact-class": "vulnerability-scan", "format": "importmap-audit-text", "ssdf-task": "PW.4.4", "mapping-basis": "nist", "atlas-page": "atlases/cicd/vulnerability-scan.html" },
+    { "match": "^npm-audit\\.json$", "artifact-class": "vulnerability-scan", "format": "npm-audit-json", "ssdf-task": "PW.4.4", "mapping-basis": "nist", "atlas-page": "atlases/cicd/vulnerability-scan.html" },
+    { "match": "^audit-results\\.json$", "artifact-class": "vulnerability-scan", "format": "yarn-audit-json", "ssdf-task": "PW.4.4", "mapping-basis": "nist", "atlas-page": "atlases/cicd/vulnerability-scan.html" },
+    { "match": "^audit-results\\.txt$", "artifact-class": "vulnerability-scan", "format": "yarn-audit-text", "ssdf-task": "PW.4.4", "mapping-basis": "nist", "atlas-page": "atlases/cicd/vulnerability-scan.html" },
+    { "match": "^trivy-results\\.json$", "artifact-class": "vulnerability-scan", "format": "trivy-json", "ssdf-task": "PW.4.4", "mapping-basis": "nist", "atlas-page": "atlases/cicd/vulnerability-scan.html" },
+    { "match": "^libyear-results\\.txt$", "artifact-class": "outdated-dependencies", "format": "libyear-text", "ssdf-task": "PW.4.4", "mapping-basis": "atlas-reading", "atlas-page": "atlases/cicd/vulnerability-scan.html" },
+    { "match": "^sbom\\.cyclonedx\\.json$", "artifact-class": "sbom", "format": "cyclonedx-json", "ssdf-task": "PS.3.2", "mapping-basis": "nist", "atlas-page": "atlases/cicd/sbom.html" },
+    { "match": "^lint-results\\.txt$", "artifact-class": "static-analysis", "format": "lint-text", "ssdf-task": "PW.7.2", "mapping-basis": "nist", "atlas-page": "atlases/cicd/static-analysis.html" },
+    { "match": "^rubocop-results\\.json$", "artifact-class": "static-analysis", "format": "rubocop-json", "ssdf-task": "PW.7.2", "mapping-basis": "nist", "atlas-page": "atlases/cicd/static-analysis.html" },
+    { "match": "^rubocop-results\\.txt$", "artifact-class": "static-analysis", "format": "rubocop-text", "ssdf-task": "PW.7.2", "mapping-basis": "nist", "atlas-page": "atlases/cicd/static-analysis.html" },
+    { "match": "^brakeman-results\\.json$", "artifact-class": "static-analysis", "format": "brakeman-json", "ssdf-task": "PW.7.2", "mapping-basis": "nist", "atlas-page": "atlases/cicd/static-analysis.html" },
+    { "match": "^brakeman-results\\.txt$", "artifact-class": "static-analysis", "format": "brakeman-text", "ssdf-task": "PW.7.2", "mapping-basis": "nist", "atlas-page": "atlases/cicd/static-analysis.html" },
+    { "match": "^gitleaks-report\\.json$", "artifact-class": "secrets-scan", "format": "gitleaks-json", "ssdf-task": "RV.1.2", "mapping-basis": "dod-guidebook", "atlas-page": "atlases/cicd/secrets-scan.html" },
+    { "match": "^run-record\\.json$", "artifact-class": "audit-events", "format": "run-record-json", "ssdf-task": "PO.3.3", "mapping-basis": "nist", "atlas-page": "atlases/cicd/audit-events.html" },
+    { "match": "^audit-event-[a-z-]+\\.json$", "artifact-class": "audit-events", "format": "audit-event-json", "ssdf-task": "PO.3.3", "mapping-basis": "nist", "atlas-page": "atlases/cicd/audit-events.html" },
+    { "match": "^evidence-manifest\\.json$", "artifact-class": "evidence-manifest", "format": "evidence-manifest-json", "ssdf-task": "PS.3.1", "mapping-basis": "nist", "atlas-page": "atlases/cicd/evidence-manifest.html" },
+    { "match": "^(assessment-results|component-definition|ssp-fragment)\\.json$", "artifact-class": "oscal", "format": "oscal-json", "ssdf-task": "PO.4.2", "mapping-basis": "atlas-reading", "atlas-page": "atlases/cicd/oscal.html" },
+    { "match": "^timestamp\\.tsr$", "artifact-class": "timestamp", "format": "rfc3161-tsr", "ssdf-task": "PS.2.1", "mapping-basis": "atlas-reading", "atlas-page": "atlases/cicd/timestamp.html" },
+    { "match": "^tsa-certchain\\.pem$", "artifact-class": "timestamp", "format": "pem-certificate-chain", "ssdf-task": "PS.2.1", "mapping-basis": "atlas-reading", "atlas-page": "atlases/cicd/timestamp.html" },
+    { "match": "^ci-artifacts\\.zip$", "artifact-class": "evidence-bundle", "format": "zip", "ssdf-task": "PS.3.1", "mapping-basis": "nist", "atlas-page": "atlases/cicd/attestation.html" },
+    { "match": "^attestation\\.json$", "artifact-class": "attestation", "format": "attestation-json", "ssdf-task": "PS.3.1", "mapping-basis": "nist", "atlas-page": "atlases/cicd/attestation.html" },
+    { "match": "^attestation\\.pdf$", "artifact-class": "attestation", "format": "pdf", "ssdf-task": "PS.3.1", "mapping-basis": "nist", "atlas-page": "atlases/cicd/attestation.html" },
+    { "match": "^s3-receipt\\.json$", "artifact-class": "attestation", "format": "s3-receipt-json", "ssdf-task": "PS.3.1", "mapping-basis": "nist", "atlas-page": "atlases/cicd/attestation.html" }
+  ]
+}

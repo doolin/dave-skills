@@ -164,6 +164,40 @@ checksum.
 It records what was attested, not whether the checks passed: pass/fail
 lives in each tool's own output file.
 
+## Tagging the evidence
+
+Athena reads what is in an object, not its S3 tags, so each run also
+tags its evidence and writes the tags as data.
+`scripts/tag-evidence.mjs` runs as one step after the attest step,
+with the same AWS credentials:
+
+- It finds the run by listing `<root>/YYYY/MM/DD/` (today, then
+  yesterday, UTC) for the latest directory ending in the commit's
+  short SHA. So it works with either attest script and needs no
+  change to them; `--sha` and `--date` tag a past run.
+- It classes every object by file name from
+  `scripts/evidence-tags.json` and tags it with its artifact class,
+  format, SSDF task, NIST's SP 800-53 controls for that task (SSDF
+  1.1 and the 1.2 draft, ids in OSCAL form), whose tie it is
+  (`mapping-basis`), and its CI/CD atlas page.
+- It reads each object's tags back and uploads `tag-manifest.json`
+  beside the evidence: one JSON object per line per object, with its
+  size and SHA-256. form-terra's `ci_audit.evidence_tags` table reads
+  the manifests.
+- A file no class matches, or tags that read back different, fail
+  the step. A new kind of artifact gets its class in the table first.
+
+The table is the portfolio's, one copy in every repository beside the
+script; the classes' tasks come from the CI/CD atlas pages
+(`atlases/cicd/`). clubstraylight.com's spec
+(`audit/spec/ci_evidence_tags_spec.rb`) holds it to S3's tag limits,
+to the SP 800-53 catalog, and to every file name the portfolio
+archives. Change it there and copy it out.
+
+The role needs, besides `s3:PutObject`: `s3:PutObjectTagging` and
+`s3:GetObjectTagging` on `<bucket>/<root>/*`, and `s3:ListBucket` on
+the bucket with an `s3:prefix` condition of `<root>/*`.
+
 ## Local runs
 
 Running the attest script locally is allowed, and it may post a real

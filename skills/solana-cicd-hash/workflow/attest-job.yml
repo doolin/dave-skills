@@ -71,6 +71,22 @@ attest:
         AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
       run: node scripts/attest.mjs
 
+    # Tags every object the attest step archived with its artifact class,
+    # SSDF task, and SP 800-53 controls, reads them back, and uploads
+    # tag-manifest.json for Athena. Finds the run by commit; copy
+    # scripts/tag-evidence.mjs and scripts/evidence-tags.json from the
+    # skill. The role needs s3:PutObjectTagging, s3:GetObjectTagging, and
+    # s3:ListBucket on its prefix (see "Tagging the evidence").
+    - name: Tag the evidence in S3
+      if: vars.S3_COMPLIANCE_BUCKET != ''
+      env:
+        EVIDENCE_BUNDLE: ${{ vars.EVIDENCE_BUNDLE }}
+        S3_COMPLIANCE_BUCKET: ${{ vars.S3_COMPLIANCE_BUCKET }}
+        AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
+        EVIDENCE_DIRS: ci-artifacts,ci-output
+        OUTPUT_DIR: ci-output
+      run: node scripts/tag-evidence.mjs
+
     - name: Upload attestation artifacts
       if: always()
       uses: actions/upload-artifact@v4
