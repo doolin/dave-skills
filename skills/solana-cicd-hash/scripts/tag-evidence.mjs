@@ -115,7 +115,7 @@ const faults = [];
 const lines = [];
 for (const { key, size } of objects) {
   const name = key.slice(key.lastIndexOf("/") + 1);
-  const rules = table.artifacts.filter((rule) => new RegExp(rule.match).test(name));
+  const rules = table.artifacts.filter((candidate) => new RegExp(candidate.match).test(name));
   if (rules.length !== 1) {
     faults.push(`${name}: ${rules.length} classes match`);
     continue;
@@ -164,7 +164,7 @@ for (const { key, size } of objects) {
 }
 
 const manifestPath = `${outputDir}/${MANIFEST}`;
-writeFileSync(manifestPath, lines.map((line) => JSON.stringify(line)).join("\n") + "\n");
+writeFileSync(manifestPath, `${lines.map((line) => JSON.stringify(line)).join("\n")}\n`);
 if (!dryRun) aws(["s3", "cp", manifestPath, `s3://${bucket}/${prefix}/${MANIFEST}`]);
 
 if (faults.length > 0) {
